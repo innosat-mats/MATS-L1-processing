@@ -75,6 +75,8 @@ def readimg(filename):
     
         #Trailer
         trailer_bin = np.asarray([bin(data_arr[i]) for i in range(NRow*(NCol+1)+12,len(data_arr))])
+        for i in range(0,len(trailer_bin)):
+            trailer_bin[i]=trailer_bin[i][2:].zfill(16)
         Noverflow = int(trailer_bin[0],2)
         BlankLeadingValue = int(trailer_bin[1],2)
         BlankTrailingValue = int(trailer_bin[2],2)
@@ -93,7 +95,7 @@ def readimg(filename):
             BadCol = np.zeros(NBadCol)
             for k_bc in range(0,NBadCol):
                 BadCol[k_bc] = int(trailer_bin[9+k_bc],2)#check if this actually works
-    
+
     #original matlab code uses structured array, as of 20-03-2019 implementation as dictionary seems to be more useful choice
     #decision might depend on further (computational) use of data, which is so far unknown to me
     header = {}
@@ -417,20 +419,21 @@ def compare_image(image1, image2, header):
     ncolbinF = 2**int(header['NColBinFPGA'])
     
     if nrowskip + nrowbin*nrow > 511:
-        nrow = np.floor((511-nrowskip)/nrowbin)
+        nrow = int(np.floor((511-nrowskip)/nrowbin))
         
     if ncolskip + ncolbinC*ncolbinF*ncol > 2047:
-        nrow = np.floor((2047-ncolskip)/(ncolbinC*ncolbinF))
-    print(nrow,image1.shape)        
-    image1 = image1[0:nrow-1, 0:ncol-1]
-    image2 = image2[0:nrow-1, 0:ncol-1]
-    
+        ncol = int(np.floor((2047-ncolskip)/(ncolbinC*ncolbinF)))#calculation for nrow in original, seems questionable
+
+    image1 = image1[0:nrow, 0:ncol]
+    image2 = image2[0:nrow, 0:ncol]
+
     r_scl=np.zeros(nrow)
     r_off=np.zeros(nrow)
     r_std=np.zeros(nrow)
-    
-    for jj in range(0,nrow-1):
-        x=np.concatenate((np.ones((ncol-1,1)), np.expand_dims(image1[jj,].conj().transpose(), axis=1)), axis=1)#-1 to adjust to python indexing?
+
+    for jj in range(0,nrow):
+        
+        x=np.concatenate((np.ones((ncol,1)), np.expand_dims(image1[jj,].conj().transpose(), axis=1)), axis=1)#-1 to adjust to python indexing?
         y=image2[jj,].conj().transpose()
         bb, ab, aa, cc = np.linalg.lstsq(x,y)
         
@@ -449,13 +452,13 @@ def compare_image(image1, image2, header):
         r_off[jj]=bb[0]
         r_std[jj]=np.std(y[0]-ft[0])
         
-    c_scl=np.zeros(nrow)
-    c_off=np.zeros(nrow)
-    c_std=np.zeros(nrow)
+    c_scl=np.zeros(ncol)
+    c_off=np.zeros(ncol)
+    c_std=np.zeros(ncol)
    
-    for jj in range(0,ncol-1):
+    for jj in range(0,ncol):
         
-        x=np.concatenate((np.ones((nrow-1,1)), np.expand_dims(image1[:,jj], axis=1)), axis=1)
+        x=np.concatenate((np.ones((nrow,1)), np.expand_dims(image1[:,jj], axis=1)), axis=1)
         y=image2[:,jj]
         bb, ab, aa, cc = np.linalg.lstsq(x,y)
         
@@ -468,12 +471,11 @@ def compare_image(image1, image2, header):
         bb, ab, aa, cc = np.linalg.lstsq(x[inside[1],], y[inside[1]])
             
         ft=np.squeeze([a*bb[1] for a in x[:,1]]) + bb[0]
-        
         c_scl[jj]=bb[1]
         c_off[jj]=bb[0]
         c_std[jj]=np.std(y[0]-ft[0])
     
-    nsz=(nrow-1)*(ncol-1)
+    nsz=(nrow)*(ncol)
     la_1=np.reshape(image1, (nsz,1))
     la_2=np.reshape(image2, (nsz,1))
     
