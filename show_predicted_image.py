@@ -9,6 +9,7 @@ Created on Wed Aug  7 13:53:14 2019
 
 import numpy as np
 from L1_functions import readimgpath, predict_image
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.pyplot as plt
 
 ref_hsm_image, ref_hsm_header = readimgpath('/home/franzk/Documents/MATS/L1_processing/data/2019-02-08 rand6/', 0, 0)
@@ -23,11 +24,15 @@ image, header = readimgpath = readimgpath('/home/franzk/Documents/MATS/L1_proces
 
 mean_img=np.mean(image)
 
-plt.imshow(image, cmap='viridis', vmin=mean_img-image_display_adjustment, vmax=mean_img+image_display_adjustment)
+plt.figure()
+ax = plt.gca()
+im = ax.imshow(image, cmap='viridis', vmin=mean_img-image_display_adjustment, vmax=mean_img+image_display_adjustment)
 plt.title('CCD image')
 plt.xlabel('Pixels')
 plt.ylabel('Pixels')
-plt.colorbar()
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.05)
+plt.colorbar(im, cax=cax)
 plt.show()
 
 if header['Ending'] == 'Wrong Size':
@@ -37,11 +42,15 @@ else:
     
     pred_mean_img=np.mean(prim)
     
-    plt.imshow(prim, cmap='viridis', vmin=pred_mean_img-image_display_adjustment, vmax=pred_mean_img+image_display_adjustment)
+    plt.figure()
+    ax = plt.gca()
+    im = ax.imshow(prim, cmap='viridis', vmin=pred_mean_img-image_display_adjustment, vmax=pred_mean_img+image_display_adjustment)
     plt.title('Generated from reference')
     plt.xlabel('Pixels')
     plt.ylabel('Pixels')
-    plt.colorbar()
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    plt.colorbar(im, cax=cax)
     plt.show()
     
 print('Image: '+str(image_index)+', CCD image mean: '+str(mean_img)+', Predicted image mean: '+str(pred_mean_img)+', Blank: '+str(header['BlankLeadingValue']))
