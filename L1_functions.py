@@ -14,18 +14,6 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 
-#ismember function taken from https://stackoverflow.com/questions/15864082/python-equivalent-of-matlabs-ismember-function
-#needs to be tested, if actually replicates matlab ismember function
-
-def ismember(a, b):
-    bind = {}
-    for i, elt in enumerate(b):
-        if elt not in bind:
-            bind[elt] = i
-    return [bind.get(itm, None) for itm in a]  # None can be replaced by any other "not in b" value
-
-
-
 def readimg(filename):
 
     data_arr=np.fromfile(filename, dtype='uint16')#check endianess, uint16 instead of ubit16 seems to work
