@@ -6,31 +6,31 @@ Created on Fri May 10 10:00:39 2019
 @author: franzk
 """
 import numpy as np
-import traceback
 from L1_functions import readimgpath, predict_image, compare_image
 
-Nimages = 50
+Nimages = 100
 
-imagetoskip = [0]
+#index of images to skip
+imagetoskip = []
 
-blanks_l=np.zeros((Nimages,1))
-blanks_t=np.zeros((Nimages,1))
-zero_l=np.zeros((Nimages,1))
-ncols=np.zeros((Nimages,1))
-nrows=np.zeros((Nimages,1))
+#initialising arrays with NaN values to clearly identify skipped images in final array
+blanks_l=np.full((Nimages,1), np.nan)
+blanks_t=np.full((Nimages,1), np.nan)
+zero_l=np.full((Nimages,1), np.nan)
+ncols=np.full((Nimages,1), np.nan)
+nrows=np.full((Nimages,1), np.nan)
 
-ncolbin=np.zeros((Nimages,1))
-nrowbin=np.zeros((Nimages,1))
+ncolbin=np.full((Nimages,1), np.nan)
+nrowbin=np.full((Nimages,1), np.nan)
 
-p_offsets=np.zeros((Nimages,1))
-p_scales=np.zeros((Nimages,1))
-p_std=np.zeros((Nimages,1))
+p_offsets=np.full((Nimages,1), np.nan)
+p_scales=np.full((Nimages,1), np.nan)
+p_std=np.full((Nimages,1), np.nan)
 
 ref_hsm_image, ref_hsm_header = readimgpath('/home/franzk/Documents/MATS/L1_processing/data/2019-02-08 rand6/', 0, 0)
 ref_lsm_image, ref_lsm_header = readimgpath('/home/franzk/Documents/MATS/L1_processing/data/2019-02-08 rand6/', 4, 0)
 
 for jj in range(0,Nimages):
-    #if ismember(jj, imagetoskip):
     if jj in imagetoskip:
         continue
     try:
@@ -46,7 +46,8 @@ for jj in range(0,Nimages):
     nrowbin[jj]=int(header['NColBinCCD'])
     
     zero_l[jj]=int(header['ZeroLevel'])
-    
+
+        
     if header['Ending']=='Wrong size' or int(header['BlankLeadingValue'])==0:
         continue
     try:
@@ -59,5 +60,4 @@ for jj in range(0,Nimages):
         p_std[jj]=t_std
         
     except Exception:
-        traceback.print_exc()
-        print('Image prediction did not work for image\n', jj)
+        print('Image prediction did not work for image', jj)
