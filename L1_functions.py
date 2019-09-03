@@ -14,15 +14,17 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 
+
 def readimg(filename):
 
-    data_arr=np.fromfile(filename, dtype='uint16')#check endianess, uint16 instead of ubit16 seems to work
+    data_arr=np.fromfile(filename, dtype='uint16')
     #convert header to binary
-    #header_bin = [bin(np.double(data_arr[i])) for i in range(0,12)]#check if at least 16 bits, check if indexing correct
     header_bin = np.asarray([bin(data_arr[i]) for i in range(0,12)])#this is a string 
     #change format of header_bin elements to be formatted like matlab char array
+    #print(header_bin)
     for i in range(0,len(header_bin)):
-        header_bin[i]=header_bin[i][2:].zfill(16)
+        header_bin[i]=header_bin[i][2:].zfill(16)    
+    #print(header_bin)
     #read header
     Frame_count = int(header_bin[0],2)
     NRow = int(header_bin[1],2)
@@ -38,7 +40,7 @@ def readimg(filename):
     Gain = int(header_bin[10],2)
     SignalMode = Gain & 4096
     Temperature_read = int(header_bin[11],2)
-
+    #print(len(header_bin[4]))
     #read image
     if len(data_arr)< NRow*(NCol+1)/(2**(NColBinFPGA)):#check for differences in python 2 and 3
         img_flag = 0
@@ -83,7 +85,17 @@ def readimg(filename):
             BadCol = np.zeros(NBadCol)
             for k_bc in range(0,NBadCol):
                 BadCol[k_bc] = int(trailer_bin[9+k_bc],2)#check if this actually works
-
+    
+    #for yet unknown reasons the header entries are in some cases stripped by the last few digits
+    #this causes an incorrect conversion to decimal values (since part of the binary string is missing)
+    #as of 2019-08-22 this behaviour could be reproduced on a different machine, but not explained
+    #checking for the correct size of the binary strings avoids issues arising from wrongly converted data
+    
+    if len(header_bin[1]) < 16:
+        raise Exception('Binary string shortened')
+    
+    
+    
     #original matlab code uses structured array, as of 20-03-2019 implementation as dictionary seems to be more useful choice
     #decision might depend on further (computational) use of data, which is so far unknown to me
     header = {}
@@ -117,8 +129,8 @@ def readimg(filename):
 
 
 def readimgpath(path, file_number, plot):
-    #stuff happens
     filename = '%sF_0%02d/D_0%04d' % (path, np.floor(file_number/100),file_number)
+    #when using Microsoft Windows as Operating system replace / in the string with \\
     image, header, img_flag = readimg(filename)
 
     if plot>0:
