@@ -52,12 +52,18 @@ def readimageviewpic2(dirname,IDstring,rawflag=0):
 # The new version of this function is read_pnm_image_and_txt      
     imagefile= dirname + '/'+ IDstring +'.pnm'
     txtfile= dirname +'/'+ IDstring +'_output.txt'
-    image_raw = np.int64(Image.open(imagefile))
-    CCDitem=read_txtfile_create_CCDitem(txtfile)
-    CCDitem['IMAGE']=image_raw    
+    try:
+        image_raw = np.int64(Image.open(imagefile))
+        CCDitem=read_txtfile_create_CCDitem(txtfile)
+        CCDitem['IMAGE']=image_raw    
+    except:
+        print('There is something wrong with image file ',imagefile)
+        CCDitem=-999
     return CCDitem
+    
+  
 
-def readimageviewpics(dirname,rawflag, filelist=[]):
+def readimageviewpics(dirname,rawflag=0, filelist=[]):
     from os import listdir
     from os.path import isfile, join    
     #Reads  all images in directory
@@ -67,8 +73,9 @@ def readimageviewpics(dirname,rawflag, filelist=[]):
     for pnm_file in pnm_files:
         IDstring=pnm_file[:-4]
         CCDitem=readimageviewpic2(dirname,IDstring,rawflag)
-        CCDitems.append(CCDitem)
-
+        if CCDitem != -999:
+            CCDitems.append(CCDitem)
+        
     return CCDitems
 
 
@@ -97,6 +104,7 @@ def read_MATS_image(filename,pathdir=''):
     json_file.close
             
     for i in range(len(CCD_image_data)):
+#        print(pathdir+str(CCD_image_data[i]['IMAGEFILE']) + '_data.npy')
         CCD_image_data[i]['IMAGE'] = np.load(pathdir+str(CCD_image_data[i]['IMAGEFILE']) + '_data.npy')
 
     return CCD_image_data
@@ -291,8 +299,11 @@ def readimg(filename):
     Texposure_MSB = int(header_bin[8],2)
     Texposure_LSB = int(header_bin[9],2)
     Gain = int(header_bin[10],2)
-    SignalMode = Gain & 4096 
+    SignalMode = Gain >> 12 & 1   
     Temperature_read = int(header_bin[11],2)
+
+
+
 
     #read image
     if len(data_arr)< NRow*(NCol+1)/(2**(NColBinFPGA)):#check for differences in python 2 and 3
@@ -351,7 +362,7 @@ def readimg(filename):
     header['NCSKIP'] = NColSkip
     header['NFLUSH'] = N_flush
     header['TEXPMS'] = Texposure_LSB + Texposure_MSB*2**16
-    header['DigGain'] = Gain & 15 
+    header['DigGain'] = Gain & 0b1111
     header['SigMode'] = SignalMode
     header['TEMP'] = Temperature_read
     header['Noverflow'] = Noverflow # FBINOV?
@@ -366,6 +377,7 @@ def readimg(filename):
     header['BC'] = BadCol
     header['Ending'] = Ending        
     
+
     
     header['CCDSEL'] = 1 #LM hardcoded - should not be used   
     header['channel'] = 'KTH test channel' 
@@ -403,7 +415,7 @@ def readimage_create_CCDitem(path, file_number): #reads file from georigis stuff
     Texposure_MSB = int(header_bin[8],2)
     Texposure_LSB = int(header_bin[9],2)
     Gain = int(header_bin[10],2)
-    SignalMode = Gain & 4096 
+    SignalMode = Gain >> 12 & 1      
     Temperature_read = int(header_bin[11],2)
 
 
@@ -464,7 +476,7 @@ def readimage_create_CCDitem(path, file_number): #reads file from georigis stuff
     CCDitem['NCSKIP'] = NColSkip
     CCDitem['NFLUSH'] = N_flush
     CCDitem['TEXPMS'] = Texposure_LSB + Texposure_MSB*2**16
-    CCDitem['DigGain'] = Gain & 15 
+    CCDitem['DigGain'] = Gain & 0b1111
     CCDitem['SigMode'] = SignalMode 
     CCDitem['TEMP'] = Temperature_read
     CCDitem['Noverflow'] = Noverflow # FBINOV?
@@ -486,7 +498,9 @@ def readimage_create_CCDitem(path, file_number): #reads file from georigis stuff
     
 
     
-    
+  
+
+
     
     return CCDitem, img_flag
 
@@ -514,15 +528,21 @@ def readracimg(filename):
     header['NRowBinCCD'] = metadata['NRBIN'][0]
     header['NRowSkip'] = metadata['NRSKIP'][0]
     header['NCol'] = metadata['NCOL'][0]
-    binstr_NCBIN=bin(metadata['NCBIN'][0])[2:].zfill(16)
-    header['NColBinFPGA'] = int(binstr_NCBIN[2:8]) #Note that bit 0 is binstr_NCBIN[16]
-    header['NColBinCCD'] = int(binstr_NCBIN[8:16])
+    header['NColBinFPGA'] = metadata['NCBIN'][0] >> 8 & 0b1111
+    header['NColBinCCD'] = metadata['NCBIN'][0] & 0b11111111
     header['NColSkip'] = metadata['NCSKIP'][0]
     header['N_flush'] = metadata['NFLUSH'][0]
     header['Texposure'] = metadata['TEXPMS'][0]
-    header['DigGain'] = metadata['GAIN'][0] & 15 
+    header['DigGain'] = metadata['GAIN'] & 0b1111
+    header['SignalMode'] = metadata['GAIN'] >> 12 & 1          
+     
     
-    header['SignalMode'] =  metadata['GAIN'][0] & 4096 #LM Selects bit 13 not 12 !  #
+    
+
+
+
+
+    
     header['Temperature_read'] = metadata['TEMP'][0] #LM what is this the temperature of and how do I convert it? 
 #  Temperature is measured in the CRBD – readout ADC, so closer to OBC.
 #It’s a 15 bit value from 2.048V (+/-0.5%) reference.
@@ -551,8 +571,8 @@ def readracimg(filename):
     header['WDW'] = metadata['WDW'][0]   
     header['WDWOV'] = metadata['WDWOV'][0]
     
-    header['TIMIMG_FLAG'] = metadata['GAIN'][0]  & 256
-    
+    header['TimingFlag'] =  metadata['GAIN'] >> 8 & 1
+  
     
 #    img_flag=1 #LM is this needed? Ask Georgi
     return image, header
@@ -603,15 +623,16 @@ def read_txtfile_create_CCDitem(filepath):
 
 
 # Extract variables from certain bits within the same element, see 6.4.1 Software ICD /LM 20191115               
-    CCDitem['NColBinFPGA'] = int(CCDitem['NCBIN']) & (4096-256)
-    CCDitem['NColBinCCD'] = int(CCDitem['NCBIN']) & 255
+
+    CCDitem['NColBinFPGA'] =  CCDitem['NCBIN'] >> 8 & 0b1111
+    CCDitem['NColBinCCD'] = CCDitem['NCBIN'] & 0b11111111
     del CCDitem['NCBIN']
-    CCDitem['DigGain'] = int(CCDitem['GAIN']) & 15 
-    CCDitem['TimingFlag'] = int(CCDitem['GAIN']) & 256
-    CCDitem['SigMode'] =  int(CCDitem['GAIN']) & 4096            
+    CCDitem['DigGain'] = CCDitem['GAIN'] & 0b1111
+    CCDitem['TimingFlag'] = CCDitem['GAIN'] >> 8 & 1
+    CCDitem['SigMode'] =CCDitem['GAIN'] >> 12 & 1          
     del CCDitem['GAIN']
-    CCDitem['WinModeFlag']=int(CCDitem['WDW'])& 128
-    CCDitem['WinMode']=int(CCDitem['WDW'])& 7
+    CCDitem['WinModeFlag']=CCDitem['WDW'] >> 7 & 1
+    CCDitem['WinMode']=CCDitem['WDW'] & 0b111
     del CCDitem['WDW']
     
 
@@ -639,7 +660,7 @@ def read_txtfile_create_CCDitem(filepath):
     return CCDitem
 
 
-def get_true_image(image, header):
+def get_true_image_old(image, header):
     #calculate true image by removing readout offset (pixel blank value) and
     #compensate for bad colums 
     
@@ -662,6 +683,33 @@ def get_true_image(image, header):
         true_image[0:int(header['NROW']), j_c] = true_image[0:int(header['NROW']), j_c] * (2**int(header['NColBinFPGA'])*ncolbinC/n_coadd[j_c])
     
     return true_image
+
+
+def get_true_image(header):
+    #calculate true image by removing readout offset (pixel blank value) and
+    #compensate for bad colums 
+    
+    #note that header is now a CCDitem
+    ncolbinC=int(header['NColBinCCD'])
+    if ncolbinC == 0:
+        ncolbinC = 1
+    
+    #remove gain
+    true_image = header['IMAGE'] * 2**(int(header['DigGain'])) 
+    
+    #bad column analysis
+    n_read, n_coadd = binning_bc(int(header['NCOL'])+1, int(header['NCSKIP']), 2**int(header['NColBinFPGA']), ncolbinC, header['BC'])
+    
+    #go through the columns
+    for j_c in range(0, int(header['NCOL'])):
+        #remove blank values and readout offsets
+        true_image[0:int(header['NROW']), j_c] = true_image[0:int(header['NROW']), j_c] - n_read[j_c]*(header['TBLNK']-128)-128
+        
+        #compensate for bad columns
+        true_image[0:int(header['NROW']), j_c] = true_image[0:int(header['NROW']), j_c] * (2**int(header['NColBinFPGA'])*ncolbinC/n_coadd[j_c])
+    
+    return true_image
+
 
 def binning_bc(Ncol, Ncolskip, NcolbinFPGA, NcolbinCCD, BadColumns):
     
@@ -698,7 +746,28 @@ def binning_bc(Ncol, Ncolskip, NcolbinFPGA, NcolbinCCD, BadColumns):
     return n_read, n_coadd
 
 
-def desmear_true_image(image, header):
+def desmear_true_image(header):
+    #note that header is now a CCDitem
+    nrow = int(header['NROW'])
+    ncol = int(header['NCOL']) + 1
+    
+    #calculate extra time per row
+    T_row_extra, T_delay = calculate_time_per_row(header)
+    T_exposure = int(header['TEXPMS'])/1000#check for results when shifting from python 2 to 3
+    
+    image=header['IMAGE']
+    TotTime=0
+    for irow in range(1,nrow):
+        for krow in range(0,irow):
+            image[irow,0:ncol]=image[irow,0:ncol] - image[krow,0:ncol]*(T_row_extra/T_exposure)
+            TotTime=TotTime+T_row_extra
+           
+    #row 0 here is the first row to read out from the chip
+
+    return image
+
+
+def desmear_true_image_old(image, header):
     
     nrow = int(header['NROW'])
     ncol = int(header['NCOL']) + 1
@@ -1002,8 +1071,11 @@ class CCD:
         elif channel=='KTH test channel':
             CCDID=16 
         
-        darkdir='/Users/lindamegner/MATS/retrieval/Calibration/FM_calibration_at_KTH/FM_CCD_DC_calibration_data_reduced/'
-        filename= darkdir+ 'FM0' +str(CCDID) +'_CCD_DC_calibration_DATA_reduced.mat'
+
+        filename='/Users/lindamegner/MATS/retrieval/Calibration/FM_calibration_at_KTH/MATS_CCD_DC_calibration_FINAL/FM0'+str(CCDID)+'_CCD_DC_calibration.mat'
+
+#        darkdir='/Users/lindamegner/MATS/retrieval/Calibration/FM_calibration_at_KTH/FM_CCD_DC_calibration_data_reduced/'
+#        filename= darkdir+ 'FM0' +str(CCDID) +'_CCD_DC_calibration_DATA_reduced.mat'
         mat = scipy.io.loadmat(filename)
 
         self.dc_zero_avr_HSM=mat['dc_zero_avr_HSM']
@@ -1035,6 +1107,18 @@ class CCD:
         self.log_b_avr_LSM=mat['log_b_avr_LSM']
         self.log_b_std_LSM=mat['log_b_std_LSM']
         
+        #2D dark current subtraction stuff
+        self.log_a_img_avr_LSM=mat['log_a_img_avr_LSM']
+        self.log_a_img_err_LSM=mat['log_a_img_err_LSM']
+        self.log_b_img_avr_LSM=mat['log_b_img_avr_LSM']
+        self.log_b_img_err_LSM=mat['log_b_img_err_LSM']
+        
+        self.log_a_img_avr_HSM=mat['log_a_img_avr_HSM']
+        self.log_a_img_err_HSM=mat['log_a_img_err_HSM']
+        self.log_b_img_avr_HSM=mat['log_b_img_avr_HSM']
+        self.log_b_img_err_HSM=mat['log_b_img_err_HSM']
+        
+        
         self.hot_pix=np.where(self.image_HSM>=0.8*np.max(self.image_HSM))
 
         if   (self.channel=='UV1' or self.channel=='UV2'):
@@ -1043,10 +1127,20 @@ class CCD:
             self.ampcorrection=1
                   
     def darkcurrent(self, T, mode): #electrons/s
+
         if mode == 0: 
             darkcurrent=10**(self.log_a_avr_HSM*T+self.log_b_avr_HSM)
         elif mode == 1:
             darkcurrent=10**(self.log_a_avr_LSM*T+self.log_b_avr_LSM)
+        else :
+            print('Undefined mode')
+        return darkcurrent
+    
+    def darkcurrent2D(self, T, mode): #electrons/s
+        if mode == 0: 
+            darkcurrent=10**(self.log_a_img_avr_HSM*T+self.log_b_img_avr_HSM)
+        elif mode == 1:
+            darkcurrent=10**(self.log_a_img_avr_LSM*T+self.log_b_img_avr_LSM)
         else :
             print('Undefined mode')
         return darkcurrent
