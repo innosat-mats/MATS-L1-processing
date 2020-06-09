@@ -9,7 +9,7 @@ Created on Mon Jan 13 15:18:00 2020
 import json
 import datetime
 import numpy as np
-import matplotlib.pyplot as plt
+
 import scipy.interpolate
 
 def read_MATS_packets(filename):
@@ -25,37 +25,43 @@ def get_time(relativetime,endtime):
 
 def add_temperature_info(CCDitem,temperaturedata, relativetimedata, temperature=-999):
     #Find the temperature of the CCDs. If not read from rac set the temperature.
-    if CCDitem['read_from']==1:        
+    if CCDitem['read_from']=='rac':        
         #find the closest time when heater settings have been recorded. Could be changed to interpolate.
         ind = (np.abs(relativetimedata-CCDitem['reltime'])).argmin()  
-        # HTR1A=temperaturedata[ind,0]
-        # HTR1B=temperaturedata[ind,1]
-        # HTR2A=temperaturedata[ind,2]
-        # HTR2B=temperaturedata[ind,3]
-        # HTR8A=temperaturedata[ind,4]
+        HTR1A=temperaturedata[ind,0]
+        HTR1B=temperaturedata[ind,1]
+        HTR2A=temperaturedata[ind,2]
+        HTR2B=temperaturedata[ind,3]
+        HTR8A=temperaturedata[ind,4]
         HTR8B=temperaturedata[ind,5]
-        temperature=HTR8B    #Temperatere taken from UV channel at the moment
-    elif CCDitem['read_from']==0: #Take temperature from ADC
+        temperature=HTR8B
+ #       temperature=[HTR1A,HTR1B,HTR2A,HTR2B,HTR8A,HTR8B]    #Temperatere taken from UV channel at the moment
+    elif CCDitem['read_from']=='imgview' or CCDitem['read_from']=='KTH': #Take temperature from ADC
         #Check ADC temperature. This will not be part of the calibration routine but is used as a sanity test.  
         #273mV @ 25°C with 0.85 mV/°C
         ADC_temp_in_mV=int(CCDitem['TEMP'])/32768*2048 
         ADC_temp_in_degreeC=1./0.85*ADC_temp_in_mV-296
         temperature=ADC_temp_in_degreeC #Change this to read temperature sensors from rac file
         #temperature=-18 #-18C is measured at TVAC tests in August 2019    
-    elif CCDitem['read_from']==2:    
-#        print('Warning: No temperature infromation. Temperature is set in code which will affect dark current reduction')
-        CCDitem['temperature']=temperature
+    else:
+        raise Exception('read_from needs to be rac, imgview or KTH')
+#  #      print('Warning: No temperature infromation. Temperature is set in code which will affect dark current reduction')
+    CCDitem['temperature']=temperature
     return CCDitem
 
 def create_temperature_info_array(filename):
-    package_data=read_MATS_packets(filename)
+    import pandas as pd
+
+    df = pd.read_csv(filename, skiprows=[0]) 
+    package_data=df.to_dict('records')
+    
     
     lastpackage=package_data[len(package_data)-1]
-    endtime=int(lastpackage['DFH_CUC_time_seconds'])+int(lastpackage['DFH_CUC_time_fraction'])/2**16
-    
+    #endtime=int(lastpackage['DFH_CUC_time_seconds'])+int(lastpackage['DFH_CUC_time_fraction'])/2**16
+    endtime=float(1.e-9*lastpackage['TMHeaderNanoseconds'])
     
     # Find all packages with heater information
-    packdicts= [d for d in package_data if d['Source_data']['SID']==10]
+    packdicts= [d for d in package_data if d['SID']=='HTR']
     
     
 
@@ -66,26 +72,22 @@ def create_temperature_info_array(filename):
     # Build 2D array with heater information. 6 entires (heater channels) for every package number.  
     for packdict in packdicts:
         index=index+1
-        relativetime=int(packdict['DFH_CUC_time_seconds'])+int(packdict['DFH_CUC_time_fraction'])/2**16
+ #       relativetime=int(packdict['DFH_CUC_time_seconds'])+int(packdict['DFH_CUC_time_fraction'])/2**16
+        relativetime=float(1.e-9*packdict['TMHeaderNanoseconds'])
         timestamp=get_time(relativetime,endtime)
 #        print(timestamp)
         
     #    packdict['timestamp']=timestamp    
     
-        HTR1A=packdict['Source_data']['HTR1A']
-        HTR1B=packdict['Source_data']['HTR1B']
-        HTR2A=packdict['Source_data']['HTR2A']
-        HTR2B=packdict['Source_data']['HTR2B']
-        HTR8A=packdict['Source_data']['HTR8A']    
-        HTR8B=packdict['Source_data']['HTR8B']
+
         
     #    templist.append(temp_in_counts[0])
-        HTRdata[index,0]=HTR1A[0]
-        HTRdata[index,1]=HTR1B[0]
-        HTRdata[index,2]=HTR2A[0]
-        HTRdata[index,3]=HTR2B[0] 
-        HTRdata[index,4]=HTR8A[0]
-        HTRdata[index,5]=HTR8B[0] 
+        HTRdata[index,0]=packdict['HTR1A']
+        HTRdata[index,1]=packdict['HTR1B']
+        HTRdata[index,2]=packdict['HTR2A']
+        HTRdata[index,3]=packdict['HTR2B']
+        HTRdata[index,4]=packdict['HTR8A']
+        HTRdata[index,5]=packdict['HTR8B']
         
         relativetimedata[index]=relativetime
         
@@ -117,27 +119,24 @@ def create_temperature_info_array(filename):
     # Rntc = 3.3 * 3900 ./ Vadc - 3900;
     
 
-    # From datasheet
-    temp = np.arange(-55,85,5)
-    RtR25 =np.array([96.3, 67.01, 47.17, 33.65, 24.26, 17.7, 13.04, 9.707, 7.293, 5.533, 4.232, 3.265,
-    		2.539, 1.99, 1.571, 1.249, 1.0000, 0.8057, 0.6531, 0.5327, 0.4369, 0.3603, 0.2986,
-    		0.2488, 0.2083, 0.1752, 0.1481, 0.1258])
+    # # From datasheet, now in Level0 calibration
+    # temp = np.arange(-55,85,5)
+    # RtR25 =np.array([96.3, 67.01, 47.17, 33.65, 24.26, 17.7, 13.04, 9.707, 7.293, 5.533, 4.232, 3.265,
+    # 		2.539, 1.99, 1.571, 1.249, 1.0000, 0.8057, 0.6531, 0.5327, 0.4369, 0.3603, 0.2986,
+    # 		0.2488, 0.2083, 0.1752, 0.1481, 0.1258])
     
     
-    Rntc = 10000 * RtR25
-    Vadc = (3.3 * 3900) / (Rntc + 3900)
-    D = (2**12 - 1) * Vadc / 2.5
+    # Rntc = 10000 * RtR25
+    # Vadc = (3.3 * 3900) / (Rntc + 3900)
+    # D = (2**12 - 1) * Vadc / 2.5
     
     
-    HTRtemp=np.empty(HTRdata.shape)
-    y_interp = scipy.interpolate.interp1d(D, temp)
-    for i in range(0,6): 
-        HTRtemp[:,i]=y_interp(HTRdata[:,i])
+    # HTRtemp=np.empty(HTRdata.shape)
+    # y_interp = scipy.interpolate.interp1d(D, temp)
+    # for i in range(0,6): 
+    #     HTRtemp[:,i]=y_interp(HTRdata[:,i])
     
-#        plt.plot(relativetimedata, HTRtemp[:,i])
-    
-#        print('mean temp',np.mean(HTRtemp[:,i]))
-#    plt.show()
+
 
     
-    return HTRtemp, relativetimedata
+    return HTRdata, relativetimedata

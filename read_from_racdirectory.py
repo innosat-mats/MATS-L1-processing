@@ -3,7 +3,7 @@
 """
 Created on Wed May 27 10:17:10 2020
 
-Test to read one json image 
+Read in all image files in rac directory.
 @author: lindamegner
 """
 
@@ -12,14 +12,17 @@ Test to read one json image
 
 
 import matplotlib.pyplot as plt    
-from read_in_functions import read_CCDitemsx 
-from LindasCalibrationFunctions import plotCCDitem, plot_CCDimage
+from read_in_functions import read_CCDitems 
+from LindasCalibrationFunctions import plotCCDitem
 
 
-pathdir='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/27052020_nadir_func/'
-rac_dir=pathdir+'OldRacOutput/'
 
-CCDitems=read_CCDitemsx(rac_dir, pathdir)    
+
+pathdir='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/Flatfields/Diffusor/DiffusorFlatTests/'
+rac_dir=pathdir+'RacFiles_out/'
+
+
+CCDitems=read_CCDitems(rac_dir)    
 
  
 
