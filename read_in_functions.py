@@ -83,15 +83,7 @@ def read_all_files_in_protocol(df,read_from, directory):
         
     for CCDitem in CCDitems: 
 
-        CCDitem['read_from']=read_from
         CCDitem['DarkBright']=df.DarkBright[df.PicID==CCDitem['id']].iloc[0]
-        try:
-            CCDitem['reltime']=1.e-9*CCDitem['EXP Nanoseconds']
-        except:
-            try:
-                CCDitem['reltime']=int(CCDitem['EXPTS'])+int(CCDitem['EXPTSS'])/2**16 
-            except:
-                raise Exception('No info on the relative time')
 
       
     return CCDitems    
@@ -140,6 +132,16 @@ def read_CCDitem_from_imgview(dirname,IDstring):
         print('There is something wrong with image file ',imagefile)
         CCDitem=-999
         raise Exception()
+            
+    CCDitem['read_from']='imgview'
+    try:
+        CCDitem['reltime']=1.e-9*CCDitem['EXP Nanoseconds']
+    except:
+        try:
+            CCDitem['reltime']=int(CCDitem['EXPTS'])+int(CCDitem['EXPTSS'])/2**16 
+        except:
+            raise Exception('No info on the relative time')
+    
 
     return CCDitem
     
@@ -173,8 +175,11 @@ def readselectedimageviewpics(dirname,IDlist):
     CCDitems=[]
     for IDstring in IDlist:
         CCDitem=read_CCDitem_from_imgview(dirname,IDstring)
+        
+        
         if CCDitem != -999:
             CCDitems.append(CCDitem)
+            
     return CCDitems
 
 
@@ -215,17 +220,32 @@ def read_MATS_image(rac_dir):
 
 
 
-def read_CCDitem(rac_dir,PicID):
+def read_CCDitem(rac_dir,PicID, labtemp=999):
 # reads data from one image (itemnumber) in the rac file
+    from math import log
+    import pandas as pd
+    from PIL import Image
+    from get_temperature import create_temperature_info_array, add_temperature_info
+
+    df = pd.read_csv(rac_dir+'CCD.csv', skiprows=[0]) 
+    CCD_image_data=df.to_dict('records')
 
     
-    CCD_image_data=read_MATS_image(rac_dir)
+ #   CCD_image_data=read_MATS_image(rac_dir)
  #   CCD_image_data=read_MATS_image(rac_image_json_dir+rac_sub_dir+rac_image_json_file,rac_image_json_dir)
 
-    itemnumber=int(PicID[:-2])
-    CCDSEL=int(PicID[-1:])
-    CCDitem=next(item for item in CCD_image_data if item['EXP Nanoseconds'] == itemnumber and item['CCDSEL']== CCDSEL)
-    
+    if PicID.count('_')==1: # new way of naming as of June 2020 in protocol
+        itemnumber=int(PicID[:-2])
+        CCDSEL=int(PicID[-1:])
+        CCDitem=next(item for item in CCD_image_data if item['EXP Nanoseconds'] == itemnumber and item['CCDSEL']== CCDSEL)
+    elif PicID.count('_')==2: # old way of naming as of spring 2020 in protociol
+        itemnumber=int(PicID.split('_')[0])
+        CCDSEL=int(PicID[-1:])
+        
+
+        CCDitem=next(item for item in CCD_image_data if str(item['EXP Nanoseconds'])[:-9] == str(itemnumber) and item['CCDSEL']== CCDSEL)
+    else:   
+        raise Exception('strange naming in protocol, PicID=', PicID)
    # CCDitem=list(filter(lambda item: item['EXP Nanoseconds'] == itemnumber, CCD_image_data))
  
 
@@ -247,23 +267,73 @@ def read_CCDitem(rac_dir,PicID):
     else:
         print('Error in CCDSEL, CCDSEL=',int(CCDitem['CCDSEL']))  
         
-    
+        
+        
+                
     CCDitem['channel']=channel
-#       Renaming of stuff. The names in the code here is based on the old rac extract file (prior to May 2020) rac_extract file works        
+#   Renaming of stuff. The names in the code here is based on the old rac extract file (prior to May 2020) rac_extract file works        
     CCDitem['id']=str(CCDitem['EXP Nanoseconds'])+'_'+str(CCDitem['CCDSEL'])
-    CCDitem['NColBinCCD']=CCDitem['NCBIN CCDColumns']
-    del CCDitem['NCBIN CCDColumns']
-    CCDitem['NColBinFPGA']=CCDitem['NCBIN FPGAColumns']
-    del CCDitem['NCBIN FPGAColumns']
+        
+  # TODO LM June 2020: Change  all code so that the new names, i. CCDitem['NCBIN CCDColumns'] and CCDitem['NCBIN FPGAColumns'] are used instead of the old.
+    try:
+        CCDitem['NColBinCCD']
+    except:
+        CCDitem['NColBinCCD']=CCDitem['NCBIN CCDColumns']
+   
+    #CCDitem['NColBinFPGA']=CCDitem['NCBIN FPGAColumns']
+    try:  
+        CCDitem['NColBinFPGA']
+    except: 
+        CCDitem['NColBinFPGA']=log(CCDitem['NCBIN FPGAColumns'])/log(2)
+       
+        #del CCDitem['NCBIN FPGAColumns']
     if CCDitem['GAIN Mode']=='High':
         CCDitem['DigGain'] = 0 
     elif CCDitem['GAIN Mode']=='Low':
         CCDitem['DigGain'] = 1   
     else:
         raise Exception('GAIN mode set to strange value')
+       
+    CCDitem['SigMode']=0
+   # This should be read in, 0 should be high in output LM 200604  
+#       CCDitem['']=CCDitem['']  
+           
+    CCDitem['read_from']='rac'
+    try:
+        CCDitem['reltime']=1.e-9*CCDitem['EXP Nanoseconds']
+    except:
+        try:
+            CCDitem['reltime']=int(CCDitem['EXPTS'])+int(CCDitem['EXPTSS'])/2**16 
+        except:
+            raise Exception('No info on the relative time')
+
+
+
+#        print(pathdir+str(CCD_image_data[i]['IMAGEFILE']) + '_data.npy')
+    pngfile=rac_dir+str(CCDitem['Image File Name'])
+    jsonfile=pngfile[0:-4]+'.json'
+    try:
+        CCDitem['IMAGE'] = np.float64(Image. open(pngfile))
+        with open(jsonfile) as f:
+            CCDitem['jsondata'] = json.load(f)
+       
+    except:    
+        print('Warning, one image file seems corrupt and has been rmeoved')
+
+    
         
-    CCDitem['SigMode']=0 # This should be read in, 0 should be high in output LM 200604  
- #       CCDitem['']=CCDitem['']  
+        #Added temperature read in 
+    
+    if CCDitem['read_from']=='rac':    
+        temperaturedata, relativetimedata=create_temperature_info_array(rac_dir+'HTR.csv')
+    elif CCDitem['read_from']!='rac':
+        temperaturedata=999
+        relativetimedata=999
+    
+    #plot_full_temperature_info(temperaturedata,relativetimedata)
+  
+    CCDitem=add_temperature_info(CCDitem,temperaturedata,relativetimedata,labtemp)
+
 
 
 
@@ -346,8 +416,10 @@ def read_CCDitemsx(rac_dir,pathdir):
 
     return CCD_image_data
 
-def read_CCDitems(rac_dir):
+def read_CCDitems(rac_dir,labtemp=999):
     from math import log
+    from get_temperature import create_temperature_info_array, add_temperature_info
+
 # reads data from all images (itemnumbers) in the rac file
 
 #    CCD_image_data=read_MATS_image(rac_dir+'images.json') #lest of dictionries
@@ -423,7 +495,35 @@ def read_CCDitems(rac_dir):
             
         CCDitem['SigMode']=0
         # This should be read in, 0 should be high in output LM 200604  
- #       CCDitem['']=CCDitem['']  
+ #       CCDitem['']=CCDitem['']
+        CCDitem['read_from']='rac'
+        try:
+            CCDitem['reltime']=1.e-9*CCDitem['EXP Nanoseconds']
+        except:
+            try:
+                CCDitem['reltime']=int(CCDitem['EXPTS'])+int(CCDitem['EXPTSS'])/2**16 
+            except:
+                raise Exception('No info on the relative time')
+
+
+        
+        #Added temperature read in 
+    
+    if CCDitem['read_from']=='rac':    
+        temperaturedata, relativetimedata=create_temperature_info_array(rac_dir+'HTR.csv')
+    elif CCDitem['read_from']!='rac':
+        temperaturedata=999
+        relativetimedata=999
+    
+    #plot_full_temperature_info(temperaturedata,relativetimedata)
+
+    for CCDitem in CCD_image_data:
+
+        CCDitem=add_temperature_info(CCDitem,temperaturedata,relativetimedata,labtemp)
+#        timestamp=epoch+datetime.timedelta(0,CCDitem['reltime'])
+
+
+
                 
     return CCD_image_data
 

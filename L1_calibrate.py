@@ -36,7 +36,7 @@ def L1_calibrate(CCDitem):
         image_lsb=CCDitem['IMAGE']   
     
 
-    print('mean image_lsb',np.mean(image_lsb))     
+    #print('mean image_lsb',np.mean(image_lsb))     
     # Step 1 and 2: Remove bias and compensate form bad columns, image still in LSB
     image_bias_sub = get_true_image(image_lsb, CCDitem)
 #    image_bias_sub = get_true_image(CCDitem)

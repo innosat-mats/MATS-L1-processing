@@ -29,7 +29,7 @@ df_protocol=readprotocol(directory+protocol)
 
 df_bright=df_protocol[df_protocol.DarkBright=='D']
 CCDitems=read_all_files_in_protocol(df_bright, read_from,directory)
-CCDitems=add_temperature_info_to_CCDitems(CCDitems,read_from,directory)
+
 
 
 

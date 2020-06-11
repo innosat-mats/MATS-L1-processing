@@ -53,7 +53,7 @@ def plot_CCDimage(image,fig,axis,title='',clim=999):
         std=np.std(image)
         sp.set_clim([mean-3*std, mean+3*std])
     else:
-        plt.clim(clim)        
+        sp.set_clim(clim)        
     fig.colorbar(sp,ax=axis)
     axis.set_title(title)
     return sp
