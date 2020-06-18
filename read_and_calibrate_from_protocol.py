@@ -19,10 +19,10 @@ from L1_calibrate import L1_calibrate
 directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/TemperatureTest/DarkMeas_20200424/'
 protocol='protocol.txt'
 
-directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/Flatfields/Diffusor/DiffusorFlatTests/'
+#directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/Flatfields/Diffusor/DiffusorFlatTests/'
 #protocol='ABOUT.txt'
 
-protocol='ProtocolList1.txt'
+#protocol='ProtocolList1.txt'
 
 read_from='rac'  
 df_protocol=readprotocol(directory+protocol)
@@ -31,8 +31,10 @@ df_bright=df_protocol[df_protocol.DarkBright=='D']
 CCDitems=read_all_files_in_protocol(df_bright, read_from,directory)
 
 
-
-
+#Overwrite temperature to check that rac files and img view files give the same result 
+#  (For the image view pics the temperature is taken from the ADC)
+#for CCDitem in CCDitems:
+#    CCDitem['temperature']=16.5
 
 
 
@@ -56,5 +58,5 @@ for CCDitem in CCDitems[0:4]:
     
         fig=plt.figure()
         ax=fig.gca()
-        plotCCDitem(CCDitem,fig, ax[0])   
+        plotCCDitem(CCDitem,fig, ax)   
       

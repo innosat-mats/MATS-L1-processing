@@ -61,13 +61,14 @@ def add_temperature_info_to_CCDitems(CCDitems,read_from,directory,labtemp=999):
     return CCDitems
 
 
-def read_all_files_in_protocol(df,read_from, directory):
+def read_all_files_in_protocol_old(df,read_from, directory):
     
 
         
     if read_from=='rac':
         CCDitemsunsorted=read_CCDitems(directory+'RacFiles_out/')
         CCDitems=[]
+        
         for PicID in list(df['PicID']):        
             item=searchlist(CCDitemsunsorted, key='id', value=PicID)
             if item:  #checks that item is not a NoneType object
@@ -87,6 +88,29 @@ def read_all_files_in_protocol(df,read_from, directory):
 
       
     return CCDitems    
+
+
+def read_all_files_in_protocol(df,read_from, directory):
+    
+
+        
+    if read_from=='rac':
+        CCDitems=[]
+        
+        for PicID in list(df['PicID']):   
+            CCDitem=read_CCDitem(directory+'RacFiles_out/',PicID,labtemp=999)
+            CCDitem['DarkBright']=df.DarkBright[df.PicID==PicID].iloc[0]
+            CCDitems.append(CCDitem)
+
+            
+    elif read_from=='imgview':
+        CCDitems=readselectedimageviewpics(directory+'PayloadImages/',list(df['PicID']))
+    else: 
+        raise Exception('read_from must be rac or imgview')
+        
+
+    return CCDitems    
+
 
 
 def readprotocol(filename):
@@ -142,6 +166,11 @@ def read_CCDitem_from_imgview(dirname,IDstring):
         except:
             raise Exception('No info on the relative time')
     
+    #Add and convert temperature from sensor in OBC
+    ADC_temp_in_mV=int(CCDitem['TEMP'])/32768*2048 
+    ADC_temp_in_degreeC=1./0.85*ADC_temp_in_mV-296
+    temperature=ADC_temp_in_degreeC #Change this to read temperature sensors from rac file  
+    CCDitem['temperature']=temperature
 
     return CCDitem
     
@@ -326,9 +355,10 @@ def read_CCDitem(rac_dir,PicID, labtemp=999):
     
     if CCDitem['read_from']=='rac':    
         temperaturedata, relativetimedata=create_temperature_info_array(rac_dir+'HTR.csv')
-    elif CCDitem['read_from']!='rac':
+    else:
         temperaturedata=999
         relativetimedata=999
+        raise Exception('Procedure CCDitem should never be called when not read_from not equals rac ')
     
     #plot_full_temperature_info(temperaturedata,relativetimedata)
   
