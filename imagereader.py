@@ -15,7 +15,7 @@
 from __future__ import print_function
 
 import sys
-sys.path.insert(1, '/Users/lindamegner/MATS/retrieval/git/MATS-L0-processing')
+sys.path.insert(1, '/home/olemar/Projects/MATS/MATS-L0-processing')
 
 
 from os import listdir

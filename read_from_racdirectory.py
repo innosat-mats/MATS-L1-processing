@@ -7,10 +7,6 @@ Read in all image files in rac directory.
 @author: lindamegner
 """
 
-
-
-
-
 import matplotlib.pyplot as plt    
 from read_in_functions import read_CCDitems 
 from LindasCalibrationFunctions import plotCCDitem
