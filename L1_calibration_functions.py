@@ -29,8 +29,10 @@ import scipy.io
 #needs to be tested, if actually replicates matlab ismember function
 
 
-class CCD:
+class CCD:   
     def __init__(self, channel):
+        from L1_calibration_functions import read_flatfield 
+
         self.channel=channel
         if channel=='IR1':
             CCDID=16
@@ -96,8 +98,15 @@ class CCD:
         self.log_b_img_avr_HSM=mat['log_b_img_avr_HSM']
         self.log_b_img_err_HSM=mat['log_b_img_err_HSM']
         
+        # Read in flat fields
         
-        self.hot_pix=np.where(self.image_HSM>=0.8*np.max(self.image_HSM))
+        self.flatfield_HSM=read_flatfield(self, 0)
+        self.flatfield_LSM=read_flatfield(self, 1)
+        
+        
+        
+        
+#        self.hot_pix=np.where(self.image_HSM>=0.8*np.max(self.image_HSM))
 
         if   (self.channel=='UV1' or self.channel=='UV2'):
             self.ampcorrection=3/2 #Amplification hack - check with Gabriel how to to properly
@@ -139,17 +148,52 @@ class CCD:
             alpha_avr=self.alpha_avr_LSM
         else :
             print('Undefined mode')
-        return alpha_avr   
+        return alpha_avr  
+    
+    def flatfield(self, mode): # return flatfield at 0C for the CCD (in LSB?)
+        if mode == 0: 
+            flatfield=self.flatfield_HSM
+        elif mode == 1:
+            flatfield=self.flatfield_LSM
+        else :
+            print('Undefined mode')
+        return flatfield     
+    
+def compensate_flatfield(CCDitem, image='No picture'):
+    if type(image) is str:
+        image=CCDitem['IMAGE']
+    image_flatf_fact=calculate_flatfield(CCDitem)  
+    image_flatf_comp=image/image_flatf_fact
+    return image_flatf_comp   
 
-def subtract_dark(image, CCDitem):
+def calculate_flatfield(CCDitem):
+    try: CCDunit=CCDitem['CCDunit']
+    except: raise Exception('No CCDunit defined for the CCDitem')  
+    image_flatf=CCDunit.flatfield(int(CCDitem['SigMode']))
+    #TODO absolute calibration should be done here. For now just scaling to mean of measured picture
+    image_flatf_fact=image_flatf/np.mean(image_flatf)
+    #TODO Add temperature dependence on flatfield
+    return image_flatf_fact
 
-    CCDunit=CCD(CCDitem['channel']) #TODO: Remember to clear out the non used bits of CCD /Linda
-  
-    totdarkcurrent=CCDunit.darkcurrent2D(CCDitem['temperature'],int(CCDitem['SigMode']))*int(CCDitem['TEXPMS'])/1000. # tot dark current in electrons
-    totbinpix=int(CCDitem['NColBinCCD'])*2**int(CCDitem['NColBinFPGA']) #Note that the numbers are described in differnt ways see table 69 in Software iCD
-    image_dark_sub=image-totbinpix*CCDunit.ampcorrection*totdarkcurrent/CCDunit.alpha_avr(int(CCDitem['SigMode']))
+
+def subtract_dark(CCDitem, image='No picture'):
+    if type(image) is str:
+        image=CCDitem['IMAGE']    
+    image_dark_sub=image-calculate_dark(CCDitem)
+    testimg=calculate_dark(CCDitem)
+    print('meanflat', 'minflat','%.15f' % np.mean(testimg),'%.15f' % testimg.min())
+
     return image_dark_sub
 
+def calculate_dark(CCDitem):
+    try: CCDunit=CCDitem['CCDunit']
+    except: raise Exception('No CCDunit defined for the CCDitem')
+#    CCDunit=CCD(CCDitem['channel'])   
+    totdarkcurrent=CCDunit.darkcurrent2D(CCDitem['temperature'],int(CCDitem['SigMode']))*int(CCDitem['TEXPMS'])/1000. # tot dark current in electrons
+    totbinpix=int(CCDitem['NColBinCCD'])*2**int(CCDitem['NColBinFPGA']) #Note that the numbers are described in differnt ways see table 69 in Software iCD
+    dark_calc_image=totbinpix*CCDunit.ampcorrection*totdarkcurrent/CCDunit.alpha_avr(int(CCDitem['SigMode']))
+    
+    return dark_calc_image
 
 def winmode_correct(CCDitem):
     if (CCDitem['WinMode']) <=4:
@@ -161,9 +205,12 @@ def winmode_correct(CCDitem):
     image_lsb=winfactor*CCDitem['IMAGE'] 
     return image_lsb
 
-def get_true_image(image, header):
+def get_true_image(header, image='No picture'):
     #calculate true image by removing readout offset (pixel blank value) and
     #compensate for bad colums 
+    if type(image) is str:
+        image=header['IMAGE']
+    
     
     ncolbinC=int(header['NColBinCCD'])
     if ncolbinC == 0:
@@ -174,7 +221,7 @@ def get_true_image(image, header):
     
     #bad column analysis
     n_read, n_coadd = binning_bc(int(header['NCOL'])+1, int(header['NCSKIP']), 2**int(header['NColBinFPGA']), ncolbinC, header['BC'])
-    
+
     #go through the columns
     for j_c in range(0, int(header['NCOL'])):
         #remove blank values and readout offsets
@@ -185,31 +232,38 @@ def get_true_image(image, header):
     
     return true_image
 
+def get_true_image_reverse(header, true_image='No picture'):
+    #add readout offset (pixel blank value) and bad colums stuff, 
+    # by reversing get_true_image
 
-def get_true_image_remove(header):
-    #calculate true image by removing readout offset (pixel blank value) and
-    #compensate for bad colums 
+    if type(true_image) is str:
+        true_image=header['IMAGE']
     
-    #note that header is now a CCDitem
+
+    
     ncolbinC=int(header['NColBinCCD'])
     if ncolbinC == 0:
         ncolbinC = 1
-    
-    #remove gain
-    true_image = header['IMAGE'] * 2**(int(header['DigGain'])) 
-    
+
+  
     #bad column analysis
     n_read, n_coadd = binning_bc(int(header['NCOL'])+1, int(header['NCSKIP']), 2**int(header['NColBinFPGA']), ncolbinC, header['BC'])
-    
+ 
+            
     #go through the columns
     for j_c in range(0, int(header['NCOL'])):
-        #remove blank values and readout offsets
-        true_image[0:int(header['NROW']), j_c] = true_image[0:int(header['NROW']), j_c] - n_read[j_c]*(header['TBLNK']-128)-128
-        
         #compensate for bad columns
-        true_image[0:int(header['NROW']), j_c] = true_image[0:int(header['NROW']), j_c] * (2**int(header['NColBinFPGA'])*ncolbinC/n_coadd[j_c])
+        true_image[0:int(header['NROW']), j_c] = true_image[0:int(header['NROW']), j_c] / (2**int(header['NColBinFPGA'])*ncolbinC/n_coadd[j_c])
+  
+        #add blank values and readout offsets
+        true_image[0:int(header['NROW']), j_c] = true_image[0:int(header['NROW']), j_c] + n_read[j_c]*(header['TBLNK']-128)+128
+        
+
+    #add gain
+    image = true_image / 2**(int(header['DigGain'])) 
     
-    return true_image
+    return image
+
 
 
 def binning_bc(Ncol, Ncolskip, NcolbinFPGA, NcolbinCCD, BadColumns):
@@ -247,28 +301,12 @@ def binning_bc(Ncol, Ncolskip, NcolbinFPGA, NcolbinCCD, BadColumns):
     return n_read, n_coadd
 
 
-def desmear_true_image_remove(header):
-    #note that header is now a CCDitem
-    nrow = int(header['NROW'])
-    ncol = int(header['NCOL']) + 1
+
+
+def desmear_true_image(header, image='No picture'):
+    if type(image) is str:
+        image=header['IMAGE']
     
-    #calculate extra time per row
-    T_row_extra, T_delay = calculate_time_per_row(header)
-    T_exposure = int(header['TEXPMS'])/1000#check for results when shifting from python 2 to 3
-    
-    image=header['IMAGE']
-    TotTime=0
-    for irow in range(1,nrow):
-        for krow in range(0,irow):
-            image[irow,0:ncol]=image[irow,0:ncol] - image[krow,0:ncol]*(T_row_extra/T_exposure)
-            TotTime=TotTime+T_row_extra
-           
-    #row 0 here is the first row to read out from the chip
-
-    return image
-
-
-def desmear_true_image(image, header):
     
     nrow = int(header['NROW'])
     ncol = int(header['NCOL']) + 1
@@ -285,6 +323,38 @@ def desmear_true_image(image, header):
     #row 0 here is the first row to read out from the chip
 
     return image
+
+def desmear_true_image_reverse(header,  image='No picture'):
+    #add readout offset (pixel blank value) and bad colums stuff, 
+    # by reversing get_true_image    
+    
+    if type(image) is str:
+        image=header['IMAGE']    
+
+
+    nrow = int(header['NROW'])
+    ncol = int(header['NCOL']) + 1
+    #calculate extra time per row
+    T_row_extra, T_delay = calculate_time_per_row(header)
+    T_exposure = float(header['TEXPMS'])/1000.#check for results when shifting from python 2 to 3
+    
+    TotTime=0
+    #row 0 here is the first row to read out from the chip
+    # # #Code version 1 (copy the nonsmeared image) to desmear, the result should be the same as code version 1
+    # tmpimage=image.copy()  
+    # for irow in range(1,nrow):
+    #     for krow in range(0,irow):
+    #         image[irow,0:ncol]=image[irow,0:ncol] + tmpimage[krow,0:ncol]*((T_row_extra)/T_exposure)
+    #         TotTime=TotTime+T_row_extra
+    
+    #Code version 2 (loop backwards)to desmear, the result should be the same as code version 2
+    for irow in range(nrow-1,0,-1):
+        for krow in range(0,irow):
+            image[irow,0:ncol]=image[irow,0:ncol] + image[krow,0:ncol]*(T_row_extra/T_exposure)
+            TotTime=TotTime+T_row_extra
+
+    return image           
+
 
 def calculate_time_per_row(header):
     
@@ -552,4 +622,36 @@ def compensate_bad_columns(image, header):
 
 
 
+def read_flatfield(CCDunit, mode):
+    from LindasCalibrationFunctions import read_files_in_protocol_as_ItemsUnits
+    from read_in_functions import readprotocol
+    #Note that 1 and 0 are switched  for signal mode
+    
+    if mode==0: #HSM
+        directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/Flatfields/20200330_flatfields_0C/'
+        #protocol='flatfields_200330_SigMod1_LMprotocol.txt'
+        protocol='readin_flatfields_SigMod1.txt'        
+
+    elif mode == 1: #LSM
+        directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/Flatfields/20200330_flatfields_0C/'
+      
+        protocol='readin_flatfields_SigMod0.txt' 
+    else :
+        print('Undefined mode')
+
+    read_from='rac'  
+    df_protocol=readprotocol(directory+protocol)
+    #df_only2 = df_protocol[(df_protocol.index-2) % 3 != 0]
+        
+    #The below reads all images in protocol - very inefficient. Should be only one file read in LM200810
+    CCDItemsUnits=read_files_in_protocol_as_ItemsUnits(df_protocol,directory+'RacFiles_out/',3,read_from)
+    #Pick the rignt image, thsi should be hard coded in the end
+    CCDItemsUnitsSelect= list(filter(lambda x: ( x.imageItem['channel']==CCDunit.channel),CCDItemsUnits))
+    if len(CCDItemsUnitsSelect)>1:
+        print('Several possible pictures found')
+    try: flatfield=CCDItemsUnitsSelect[0].subpic  
+    except:   print("No flatfield CCDItemUnit found - undefined flatfield") 
+    
+    flatfield=np.float16(flatfield)
+    return flatfield
     

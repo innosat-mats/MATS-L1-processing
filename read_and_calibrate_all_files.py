@@ -32,13 +32,14 @@ for CCDitem in CCDitems[0:]:
     
     if calibrate:
     
-        image_lsb,image_bias_sub,image_desmeared, image_dark_sub =L1_calibrate(CCDitem)
+        image_lsb,image_bias_sub,image_desmeared, image_dark_sub, image_flatf_comp =L1_calibrate(CCDitem)
   
-        fig,ax=plt.subplots(4,1)
+        fig,ax=plt.subplots(5,1)
         plot_CCDimage(image_lsb,fig, ax[0], 'Original LSB')    
         plot_CCDimage(image_bias_sub,fig, ax[1], 'Bias subtracted')  
         plot_CCDimage(image_desmeared,fig, ax[2],' Desmeared LSB')  
-        plot_CCDimage(image_dark_sub,fig, ax[3], ' Dark current subtracted LSB')          
+        plot_CCDimage(image_dark_sub,fig, ax[3], ' Dark current subtracted LSB') 
+        plot_CCDimage(image_flatf_comp,fig, ax[4], ' Flatfield compensated LSB')  
         fig.suptitle(CCDitem['channel'])
 
     else:    

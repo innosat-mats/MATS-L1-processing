@@ -32,21 +32,43 @@ def add_temperature_info(CCDitem,temperaturedata, relativetimedata, temperature=
         HTR1B=temperaturedata[ind,1]
         HTR2A=temperaturedata[ind,2]
         HTR2B=temperaturedata[ind,3]
-        HTR8A=temperaturedata[ind,4]
-        HTR8B=temperaturedata[ind,5]
-        temperature=HTR8B
- #       temperature=[HTR1A,HTR1B,HTR2A,HTR2B,HTR8A,HTR8B]    #Temperatere taken from UV channel at the moment
+        HTR8A=temperaturedata[ind,4] #UV2
+        HTR8B=temperaturedata[ind,5] #UV1
+
+            #Add shift to the temperature These temperatures are relative to UV2 CCD , ie. HTR8A
+        if CCDitem['channel']=='IR1':
+            CCDitem['temperature']=HTR8A#+1.4
+        elif CCDitem['channel']=='IR2':
+            CCDitem['temperature']=HTR8A#+1 
+        elif CCDitem['channel']=='IR3':
+            CCDitem['temperature']=HTR8A#+1 
+        elif CCDitem['channel']=='IR4':
+            CCDitem['temperature']=HTR8A#+1 
+        elif CCDitem['channel']=='UV1':
+            CCDitem['temperature']=HTR8B#+0
+        elif CCDitem['channel']=='UV2':
+            CCDitem['temperature']=HTR8A#-0.5   # + 0.4 for Lindas measurements 
+        elif CCDitem['channel']=='NADIR':
+            CCDitem['temperature']=HTR8A 
+        else:     
+            raise Exception('the CCD lacks defined temperature')
+        CCDitem['temperature_HTR']=HTR8A
+
     elif CCDitem['read_from']=='imgview' or CCDitem['read_from']=='KTH': #Take temperature from ADC
         #Check ADC temperature. This will not be part of the calibration routine but is used as a sanity test.  
         #273mV @ 25°C with 0.85 mV/°C
         ADC_temp_in_mV=int(CCDitem['TEMP'])/32768*2048 
         ADC_temp_in_degreeC=1./0.85*ADC_temp_in_mV-296
         temperature=ADC_temp_in_degreeC #Change this to read temperature sensors from rac file
-        #temperature=-18 #-18C is measured at TVAC tests in August 2019    
+        #temperature=-18 #-18C is measured at TVAC tests in August 2019  
+        CCDitem['temperature']=temperature
     else:
         raise Exception('read_from needs to be rac, imgview or KTH')
 #  #      print('Warning: No temperature infromation. Temperature is set in code which will affect dark current reduction')
-    CCDitem['temperature']=temperature
+
+    
+    
+
     return CCDitem
 
 def create_temperature_info_array(filename):

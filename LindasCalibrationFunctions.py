@@ -51,7 +51,7 @@ def plot_CCDimage(image,fig,axis,title='',clim=999):
     if clim==999:
         mean=np.mean(image)
         std=np.std(image)
-        sp.set_clim([mean-3*std, mean+3*std])
+        sp.set_clim([mean-1*std, mean+1*std])
     else:
         sp.set_clim(clim)        
     fig.colorbar(sp,ax=axis)

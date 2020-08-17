@@ -90,31 +90,31 @@ def read_all_files_in_protocol_old(df,read_from, directory):
     return CCDitems    
 
 
-def read_all_files_in_protocol(df,read_from, directory):
-    
-
-        
+def read_all_files_in_protocol(df,read_from, directory):            
     if read_from=='rac':
-        CCDitems=[]
-        
+        CCDitems=[]        
         for PicID in list(df['PicID']):   
             CCDitem=read_CCDitem(directory+'RacFiles_out/',PicID,labtemp=999)
             CCDitem['DarkBright']=df.DarkBright[df.PicID==PicID].iloc[0]
-            CCDitems.append(CCDitem)
-
-            
+            CCDitems.append(CCDitem)            
     elif read_from=='imgview':
         CCDitems=readselectedimageviewpics(directory+'PayloadImages/',list(df['PicID']))
     else: 
-        raise Exception('read_from must be rac or imgview')
-        
-
+        raise Exception('read_from must be rac or imgview')    
     return CCDitems    
 
 
 
+def read_all_files_in_directory(read_from,directory):
+    if read_from=='rac':
+        CCDitems=read_CCDitems(directory+'RacFiles_out/')
+    else:
+        raise Exception('read_from = imgview is not yet implemented')   
+    return CCDitems
+
 def readprotocol(filename):
     import pandas as pd
+
     df = pd.read_csv(filename, sep=" ", comment='#', skipinitialspace=True, skiprows=())
     return df
 

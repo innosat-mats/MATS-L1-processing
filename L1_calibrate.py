@@ -7,7 +7,7 @@ Created on Mon Mar 23 11:41:36 2020
 """
 
 import numpy as np
-from L1_calibration_functions import get_true_image, desmear_true_image, CCD
+from L1_calibration_functions import get_true_image, desmear_true_image, CCD, subtract_dark, compensate_flatfield
 #from L1_calibration_functions import get_true_image_old, desmear_true_image_old
 #################################################
 #       L1 calibration routine                  #
@@ -15,6 +15,21 @@ from L1_calibration_functions import get_true_image, desmear_true_image, CCD
 
 
 def L1_calibrate(CCDitem):
+    global CCDunits
+
+    try: CCDunits
+    except:CCDunits={}
+    
+    
+    #Check  if the CCDunit has been created. It takes time to create it so it should not be created if not needed
+    try: CCDitem['CCDunit']
+    except: 
+        try:
+            CCDunits[CCDitem['channel']]
+        except:  
+            CCDunits[CCDitem['channel']]=CCD(CCDitem['channel']) 
+        CCDitem['CCDunit']=CCDunits[CCDitem['channel']]
+
 
     #  Hack to have no compensation for bad colums at the time. TODO later.
     CCDitem['NBC']=0
@@ -23,26 +38,30 @@ def L1_calibrate(CCDitem):
     #Step0 Compensate for window mode. This should be done first, because it is done in Mikaels software
     # TODO: Cchek if automatic mode and implement it.
     
-    #The below should really be doene for old rac files too (extracted prior to May2020)    
-    if CCDitem['read_from']=='imgview':
-        if (CCDitem['WinMode']) <=4:
-            winfactor=2**CCDitem['WinMode']
-        elif (CCDitem['WinMode']) ==7:       
-            winfactor=1       # Check that this is what you want!  
-        else:
-            raise Exception('Undefined Window')
-        image_lsb=winfactor*CCDitem['IMAGE']     
-    else:    
-        image_lsb=CCDitem['IMAGE']   
+# =============================================================================
+#     #The below should really be doene for old rac files (extracted prior to May2020)    
+#     if CCDitem['read_from']=='imgview':
+#         if (CCDitem['WinMode']) <=4:
+#             winfactor=2**CCDitem['WinMode']
+#         elif (CCDitem['WinMode']) ==7:       
+#             winfactor=1       # Check that this is what you want!  
+#         else:
+#             raise Exception('Undefined Window')
+#         image_lsb=winfactor*CCDitem['IMAGE']     
+#     else:    
+#         image=_lsb=CCDitem['IMAGE']   
+# =============================================================================
     
 
-    #print('mean image_lsb',np.mean(image_lsb))     
-    # Step 1 and 2: Remove bias and compensate form bad columns, image still in LSB
-    image_bias_sub = get_true_image(image_lsb, CCDitem)
+    image_lsb=CCDitem['IMAGE']
+    
+    
+    # Step 1 and 2: Remove bias and compensate for bad columns, image still in LSB
+    image_bias_sub = get_true_image(CCDitem, image_lsb)
 #    image_bias_sub = get_true_image(CCDitem)
     
     # Step 4: Desmear
-    image_desmeared = desmear_true_image(image_bias_sub.copy(), CCDitem)
+    image_desmeared = desmear_true_image(CCDitem,image_bias_sub.copy())
 #    image_desmeared = desmear_true_image(CCDitem)
   
     
@@ -52,21 +71,15 @@ def L1_calibrate(CCDitem):
     # TBD: The temperature needs to be decided in a better way then taken from the ADC as below.
     # Either read from rac files of temperature sensors or estimated from the top of the image
     
-    
-    
-    CCDunit=CCD(CCDitem['channel']) #TODO: Remember to clear out the non used bits of CCD /Linda
-  
-    # print('mean desmeared '+CCDitem['channel']+': ', np.mean(image_desmeared))    
-    
-    totdarkcurrent=CCDunit.darkcurrent2D(CCDitem['temperature'],CCDitem['SigMode'])*CCDitem['TEXPMS']/1000. # tot dark current in electrons
-    totbinpix=CCDitem['NColBinCCD']*2**CCDitem['NColBinFPGA'] #Note that the numbers are described in differnt ways see table 69 in Software iCD
-    image_dark_sub=image_desmeared-totbinpix*CCDunit.ampcorrection*totdarkcurrent/CCDunit.alpha_avr(CCDitem['SigMode'])
 
-    
+
+    image_dark_sub=subtract_dark(CCDitem,image_desmeared) 
     # Step 6 Remove flat field of the particular CCD. TBD.
+    
+    image_flatf_comp=compensate_flatfield(CCDitem,image_dark_sub) 
     
     # Step 7 Remove ghost imaging. TBD. 
     
     # Step 8 Transform from LSB to electrons and then to photons. TBD.
 
-    return image_lsb, image_bias_sub, image_desmeared, image_dark_sub
+    return image_lsb, image_bias_sub, image_desmeared, image_dark_sub, image_flatf_comp
