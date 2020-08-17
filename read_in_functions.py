@@ -107,7 +107,7 @@ def read_all_files_in_protocol(df,read_from, directory):
 
 def read_all_files_in_directory(read_from,directory):
     if read_from=='rac':
-        CCDitems=read_CCDitems(directory+'RacFiles_out/')
+        CCDitems=read_CCDitems(directory)
     else:
         raise Exception('read_from = imgview is not yet implemented')   
     return CCDitems
