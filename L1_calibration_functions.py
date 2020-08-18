@@ -646,12 +646,20 @@ def read_flatfield(CCDunit, mode):
     #The below reads all images in protocol - very inefficient. Should be only one file read in LM200810
     CCDItemsUnits=read_files_in_protocol_as_ItemsUnits(df_protocol,directory+'RacFiles_out/',3,read_from)
     #Pick the rignt image, thsi should be hard coded in the end
-    CCDItemsUnitsSelect= list(filter(lambda x: ( x.imageItem['channel']==CCDunit.channel),CCDItemsUnits))
-    if len(CCDItemsUnitsSelect)>1:
-        print('Several possible pictures found')
-    try: flatfield=CCDItemsUnitsSelect[0].subpic  
-    except:   print("No flatfield CCDItemUnit found - undefined flatfield") 
+
+    if CCDunit.channel=='NADIR': #Hack since we dont have any nadir flat fields yet. 
+        #Cannot be zero due to zero devision in calculate_flatfield. Should be fixed. 
+        flatfield=np.zeros((511,2048))+0.01
     
-    flatfield=np.float16(flatfield)
+    else:
+        CCDItemsUnitsSelect= list(filter(lambda x: ( x.imageItem['channel']==CCDunit.channel),CCDItemsUnits))
+
+
+        if len(CCDItemsUnitsSelect)>1:
+            print('Several possible pictures found')
+        try: flatfield=CCDItemsUnitsSelect[0].subpic  
+        except:   print("No flatfield CCDItemUnit found - undefined flatfield") 
+    
+
     return flatfield
     

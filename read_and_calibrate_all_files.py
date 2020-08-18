@@ -17,10 +17,10 @@ import matplotlib.pyplot as plt
 from L1_calibrate import L1_calibrate
 
 
-#directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/27052020_nadir_func/'
-directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/NadirTests/27052020_nadir_lightleakage/'
+directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/27052020_nadir_func/'
+#directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/NadirTests/27052020_nadir_lightleakage/'
 
-
+#directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/Flatfields/20200511_temperature_dependence/'
 read_from='rac'  
 CCDitems=read_all_files_in_directory(read_from,directory)
 

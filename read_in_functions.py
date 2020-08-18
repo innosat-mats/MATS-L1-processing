@@ -107,7 +107,7 @@ def read_all_files_in_protocol(df,read_from, directory):
 
 def read_all_files_in_directory(read_from,directory):
     if read_from=='rac':
-        CCDitems=read_CCDitems(directory)
+        CCDitems=read_CCDitems(directory+'RacFiles_out/')
     else:
         raise Exception('read_from = imgview is not yet implemented')   
     return CCDitems
@@ -232,8 +232,10 @@ def read_MATS_image(rac_dir):
     
     for item in CCD_image_data:
 #        print(pathdir+str(CCD_image_data[i]['IMAGEFILE']) + '_data.npy')
-        item['Image File Name'] = item['File'][2:-4] + '_' + str(item['EXP Nanoseconds']) + '.png'
+        item['Image File Name'] = item['File'][9:-4] + '_' + str(item['EXP Nanoseconds']) + '.png'
         pngfile=rac_dir+str(item['Image File Name'])
+        if pngfile[-6]!='_': # old naming scheme - add "_CCDSEL" to make new naming scheme
+            pngfile=pngfile[:-4]+'_'+str(item['CCDSEL'])+'.png'
         jsonfile=pngfile[0:-4]+'.json'
         try:
             item['IMAGE'] = np.float64(Image. open(pngfile))
@@ -241,7 +243,7 @@ def read_MATS_image(rac_dir):
                 item['jsondata'] = json.load(f)
        
         except:    
-            print('Warning, one image file seems corrupt and has been rmeoved')
+            print('Warning, the following image file could not be found:',pngfile)
             CCD_image_data.remove(item)
     
     return CCD_image_data
