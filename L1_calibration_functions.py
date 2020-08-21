@@ -180,9 +180,6 @@ def subtract_dark(CCDitem, image='No picture'):
     if type(image) is str:
         image=CCDitem['IMAGE']    
     image_dark_sub=image-calculate_dark(CCDitem)
-    testimg=calculate_dark(CCDitem)
-    print('meanflat', 'minflat','%.15f' % np.mean(testimg),'%.15f' % testimg.min())
-
     return image_dark_sub
 
 def calculate_dark(CCDitem):
@@ -644,7 +641,7 @@ def read_flatfield(CCDunit, mode):
     #df_only2 = df_protocol[(df_protocol.index-2) % 3 != 0]
         
     #The below reads all images in protocol - very inefficient. Should be only one file read in LM200810
-    CCDItemsUnits=read_files_in_protocol_as_ItemsUnits(df_protocol,directory+'RacFiles_out/',3,read_from)
+    CCDItemsUnits=read_files_in_protocol_as_ItemsUnits(df_protocol,directory,3,read_from)
     #Pick the rignt image, thsi should be hard coded in the end
 
     if CCDunit.channel=='NADIR': #Hack since we dont have any nadir flat fields yet. 

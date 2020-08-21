@@ -239,11 +239,11 @@ def read_MATS_image(rac_dir, extract_images=True):
 
     for item in CCD_image_data:
         #        print(pathdir+str(CCD_image_data[i]['IMAGEFILE']) + '_data.npy')
-        item['Image File Name'] = item['File'][2:-4] + \
+        item['Image File Name'] = item['File'][9:-4] + \
             '_' + str(item['EXP Nanoseconds']) + '.png'
         pngfile = rac_dir+str(item['Image File Name'])
-        # if pngfile[-6] != '_':  # old naming scheme - add "_CCDSEL" to make new naming scheme !FIXME: this does not work!
-        #    pngfile = pngfile[:-4]+'_'+str(item['CCDSEL'])+'.png'
+        if pngfile[-6] != '_':  # old naming scheme - add "_CCDSEL" to make new naming scheme !FIXME: this does not work!/OMC. It works for me!  Cannot fix it unless I know whats broken. ;) /LM
+           pngfile = pngfile[:-4]+'_'+str(item['CCDSEL'])+'.png'
         jsonfile = pngfile[0:-4]+'.json'
         try:
             if extract_images:
@@ -253,7 +253,7 @@ def read_MATS_image(rac_dir, extract_images=True):
             with open(jsonfile) as f:
                 item["jsondata"] = json.load(f)
         except:
-            print("Warning, one image file seems corrupt and has been rmeoved")
+            print("Warning, the image file: ",pngfile," cannot be found or read")
             CCD_image_data.remove(item)
 
     return CCD_image_data
@@ -360,7 +360,7 @@ def read_CCDitem(rac_dir, PicID, labtemp=999):
             CCDitem["jsondata"] = json.load(f)
 
     except:
-        print("Warning, one image file seems corrupt and has been rmeoved")
+        print("Warning, the image file: ",pngfile," cannot be found or read")
 
         # Added temperature read in
 
