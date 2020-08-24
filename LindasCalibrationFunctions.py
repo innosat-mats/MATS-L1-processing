@@ -23,11 +23,11 @@ def read_files_in_protocol_as_ItemsUnits(df, imagedir, numberofimagesinunit, rea
         #   ItemsUnit=ItemsUnitCreate(df[line:line+2],directory+'PayloadImages/')
         if read_from == "imgview":
             ItemsUnit = ItemsUnitCreate(
-                df[line : line + numberofimagesinunit], imagedir
+                df[line : line + numberofimagesinunit], imagedir+'PayloadImages/'
             )
         elif read_from == "rac":
             ItemsUnit = ItemsUnitCreateFromRac(
-                df[line : line + numberofimagesinunit], imagedir
+                df[line : line + numberofimagesinunit], imagedir+'RacFiles_out/'
             )
         else:
             raise Exception("where should it be read from, imgview or rac?")
@@ -122,10 +122,22 @@ def UniqueValuesInKey(listofdicts, keystr):
     return uniqueValues
 
 
+def matrixmean(mat1,mat2,mat3='none',mat4='none'):
+    if mat3=='none' and mat4=='none':
+        matav=(mat1+mat2)/2.0
+    elif mat3=='none':
+         matav=(mat1+mat2+mat4)/3.0
+    elif mat4=='none':
+         matav=(mat1+mat2+mat3)/3.0
+    else:
+         matav=(mat1+mat2+mat3+mat4)/4.0
+    return matav
+
 class ItemsUnitCreate:
-    import numpy as np
+
 
     def __init__(self, df, dirname):
+        import numpy as np
         self.df = df
         df_B = df[df.DarkBright == "B"]
         df_D = df[df.DarkBright == "D"]
@@ -147,7 +159,7 @@ class ItemsUnitCreate:
         elif len(df_B) == 2:
             self.image1Item = read_CCDitem_from_imgview(dirname, df_B.PicID.iloc[0])
             self.image2Item = read_CCDitem_from_imgview(dirname, df_B.PicID.iloc[1])
-            self.image = (self.image1Item["IMAGE"] + self.image2Item["IMAGE"]) / 2.0
+            self.image = matrixmean(self.image1Item["IMAGE"], self.image2Item["IMAGE"])
         else:
             raise Exception(str(len(df_B)) + " brightimage(s) in dataframe")
 
@@ -157,7 +169,12 @@ class ItemsUnitCreate:
         elif len(df_D) == 2:
             self.dark1Item = read_CCDitem_from_imgview(dirname, df_D.PicID.iloc[0])
             self.dark2Item = read_CCDitem_from_imgview(dirname, df_D.PicID.iloc[1])
-            self.dark = (self.dark1Item["IMAGE"] + self.dark2Item["IMAGE"]) / 2.0
+            self.dark = matrixmean(self.dark1Item["IMAGE"],self.dark2Item["IMAGE"])
+        elif len(df_D) == 3:
+            self.dark1Item = read_CCDitem_from_imgview(dirname, df_D.PicID.iloc[0])
+            self.dark2Item = read_CCDitem_from_imgview(dirname, df_D.PicID.iloc[1])
+            self.dark3Item = read_CCDitem_from_imgview(dirname, df_D.PicID.iloc[2])
+            self.dark = matrixmean(self.dark1Item["IMAGE"],self.dark2Item["IMAGE"],self.dark3Item["IMAGE"] )    
         else:
             raise Exception(str(len(df_D)) + " dark pictures in dataframe")
         self.subpic = self.image - self.dark
@@ -190,9 +207,10 @@ class ItemsUnitCreate:
 
 
 class ItemsUnitCreateFromRac:
-    import numpy as np
+
 
     def __init__(self, df, dirname):
+        import numpy as np
         self.df = df
         df_B = df[df.DarkBright == "B"]
         df_D = df[df.DarkBright == "D"]
@@ -214,7 +232,7 @@ class ItemsUnitCreateFromRac:
         elif len(df_B) == 2:
             self.image1Item = read_CCDitem(dirname, df_B.PicID.iloc[0])
             self.image2Item = read_CCDitem(dirname, df_B.PicID.iloc[1])
-            self.image = (self.image1Item["IMAGE"] + self.image2Item["IMAGE"]) / 2.0
+            self.image = matrixmean(self.image1Item["IMAGE"],self.image2Item["IMAGE"])
         else:
             raise Exception(str(len(df_B)) + " brightimage(s) in dataframe")
 
@@ -224,7 +242,12 @@ class ItemsUnitCreateFromRac:
         elif len(df_D) == 2:
             self.dark1Item = read_CCDitem(dirname, df_D.PicID.iloc[0])
             self.dark2Item = read_CCDitem(dirname, df_D.PicID.iloc[1])
-            self.dark = (self.dark1Item["IMAGE"] + self.dark2Item["IMAGE"]) / 2.0
+            self.dark = matrixmean(self.dark1Item["IMAGE"],self.dark2Item["IMAGE"])
+        elif len(df_D) == 3:
+            self.dark1Item = read_CCDitem(dirname, df_D.PicID.iloc[0])
+            self.dark2Item = read_CCDitem(dirname, df_D.PicID.iloc[1])
+            self.dark3Item = read_CCDitem(dirname, df_D.PicID.iloc[2])
+            self.dark = matrixmean(self.dark1Item["IMAGE"],self.dark2Item["IMAGE"], self.dark3Item["IMAGE"])   
         else:
             raise Exception(str(len(df_D)) + " dark pictures in dataframe")
         self.subpic = self.image - self.dark
