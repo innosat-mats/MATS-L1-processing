@@ -239,7 +239,7 @@ def read_MATS_image(rac_dir, extract_images=True):
 
     for item in CCD_image_data:
         #        print(pathdir+str(CCD_image_data[i]['IMAGEFILE']) + '_data.npy')
-        item['Image File Name'] = item['File'][2:-4] + \
+        item['Image File Name'] = item['File'][:-4] + \
             '_' + str(item['EXP Nanoseconds']) + '.png'
         pngfile = rac_dir+str(item['Image File Name'])
         # if pngfile[-6] != '_':  # old naming scheme - add "_CCDSEL" to make new naming scheme !FIXME: this does not work!
