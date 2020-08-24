@@ -239,10 +239,12 @@ def read_MATS_image(rac_dir, extract_images=True):
 
     for item in CCD_image_data:
         #        print(pathdir+str(CCD_image_data[i]['IMAGEFILE']) + '_data.npy')
-        item['Image File Name'] = item['File'][9:-4] + \
-            '_' + str(item['EXP Nanoseconds']) + '.png'
+        # item['Image File Name'] = item['File'][0:-4] + \
+        #     '_' + str(item['EXP Nanoseconds']) + '.png'
+        # if item['Image File Name'][0:2] == './':
+        #     item['Image File Name'] = item['Image File Name'][2:]
         pngfile = rac_dir+str(item['Image File Name'])
-        if pngfile[-6] != '_':  # old naming scheme - add "_CCDSEL" to make new naming scheme !FIXME: this does not work!/OMC. It works for me!  Cannot fix it unless I know whats broken. ;) /LM
+        if pngfile[-6] != '_':  # old naming scheme - add "_CCDSEL" to make new naming scheme
             pngfile = pngfile[:-4]+'_'+str(item['CCDSEL'])+'.png'
         jsonfile = pngfile[0:-4]+'.json'
         try:
