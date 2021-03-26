@@ -11,119 +11,143 @@ Forward model for MATS' calibration
 import numpy as np
 import matplotlib.pyplot as plt
 
-from L1_calibration_functions import CCD
+from read_in_functions import readprotocol, read_all_files_in_protocol
+from L1_calibration_functions import get_true_image, desmear_true_image, subtract_dark, compensate_flatfield, CCD
+from L1_calibration_functions import calculate_flatfield, calculate_dark, desmear_true_image_reverse, get_true_image_reverse, bin_image_using_predict_and_get_true_image, bin_image_with_BC 
+
+#from LindasCalibrationFunctions import plot_CCDimage 
 
 
-class SimageItem(object):
 
-    def __init__(self, CCDitem, photons): 
-        global CCDunits
 
-        try: CCDunits
-        except:CCDunits={}
+def plot(pic,fig,axis,title='',clim=999):
+
+                    
+    sp=axis.pcolormesh(pic,cmap=plt.cm.jet)
+    axis.set_title(title)
+    if clim==999:
+        mean=pic.mean()
+        std=pic.std()
+        sp.set_clim([mean-1*std,mean+1*std])
+       
+    else:
+        sp.set_clim(clim)
+
+    fig.colorbar(sp,ax=axis)
+
+    return sp    
+    
+
+
+def forward(photons,CCDitem):
+    simage_raw=np.float64(photons*np.ones([511,2048]))
+    #simage_raw=np.float64(photons*np.ones_like(CCDitem['IMAGE']))
+    # TOD0 Step 8 Transform from photons to electrons and then to LSB.   
+
+    #if CCDitem['NCBIN CCDColumns']>1 or CCDitem['NCBIN FPGAColumns']>1 or CCDitem['NRBIN']>1 : 
+    simage_raw_binned=bin_image_using_predict_and_get_true_image(CCDitem.copy(), simage_raw.copy())
+   # simage_raw_binned=get_true_image(CCDitem.copy(),simage_raw_binned)  
+    
+    #plotmean=photons*CCDitem['NCBIN CCDColumns']*CCDitem['NCBIN FPGAColumns']*CCDitem['NRBIN']
+    #clims=[plotmean-np.sqrt(plotmean), plotmean+np.sqrt(plotmean)]
+    plot(simage_raw_binned, fig, ax[0,f], title='raw simulated image')
+    
+    # Now modify the image in forward direction and Plot the result
     
     
-        #Check  if the CCDunit has been created. It takes time to create it so it should not be created if not needed
-        try: CCDitem['CCDunit']
-        except: 
-            try:
-                CCDunits[CCDitem['channel']]
-            except:  
-                CCDunits[CCDitem['channel']]=CCD(CCDitem['channel']) 
-            CCDitem['CCDunit']=CCDunits[CCDitem['channel']]
-
-        
-        
-        
-        
-        self.CCDitem=CCDitem
-        # for key in CCDitem:
-        #     setattr(self, key, CCDitem[key])
-        rawsimage=np.float64(photons*np.ones_like(CCDitem['IMAGE']))
-
-        #Step 8 Transform from photons to electrons and then to LSB.
-        self.rawsimage=rawsimage
-        self.simage=self.rawsimage
-        
-        #  Hack to have no compensation for bad colums at the time. TODO later.
-        self.CCDitem['NBC']=0
-        self.CCDitem['BC']=np.array([])  
-        
-        
-        
-        
-
     # Step 7 Add ghost imaging. TBD.
-    # Step 6 Add flat field of the particular CCD. TBD.
+    
+    
+    #flatfield
+    CCDitem_nobin=CCDitem.copy()
+    CCDitem_nobin['NCBIN CCDColumns']=1 
+    CCDitem_nobin['NCBIN FPGAColumns']=1
+    CCDitem_nobin['NRBIN']=1    
+    image_flatf_fact=calculate_flatfield(CCDitem_nobin.copy())      
+    simage_flatf=simage_raw*image_flatf_fact 
+    #simage_flatf=simage_raw*image_flatf_fact[CCDitem['NRSKIP']:CCDitem['NRSKIP']+CCDitem['NROW'],
+    #                                     CCDitem['NCSKIP']:CCDitem['NCSKIP']+CCDitem['NCOL']+1]
 
-    # Step 5 Add dark current
+
+    simage_flatf_binned=bin_image_using_predict_and_get_true_image(CCDitem.copy(), simage_flatf.copy())
+    #simage_flatf_binned=get_true_image(CCDitem.copy(),simage_flatf_binned)
+    plot(simage_flatf_binned, fig, ax[1,f], title='raw+flat')
+    
+    #dark
     # TBD: Decide on threshold fro when to use pixel correction (little dark current) and when to use average image correction (large dark current). 
     # TBD: The temperature needs to be decided in a better way then taken from the ADC as below.
     # Either read from rac files of temperature sensors or estimated from the top of the image
-
-
-    def add_flatf(self):
-        from L1_calibration_functions import calculate_flatfield
-        image_flatf_fact=calculate_flatfield(self.CCDitem)      
-        self.simage=self.simage*image_flatf_fact 
-
- 
-
-
-    def add_dark(self):
-        from L1_calibration_functions import calculate_dark
-        self.simage=self.simage+calculate_dark(self.CCDitem)
-
-
-
-        
-    def add_smear(self):   
-        # Step 4: Desmear
-        from L1_calibration_functions import desmear_true_image_reverse        
-        self.simage=desmear_true_image_reverse(self.CCDitem.copy(), self.simage.copy())
-        
-
-
-
-
-    def add_bias(self):
-        from L1_calibration_functions import get_true_image_reverse
-        
-
-        self.simage=get_true_image_reverse(self.CCDitem.copy(),self.simage.copy())
-        # Step 1 and 2: Remove bias and compensate form bad columns, image still in LSB
-        #image_bias_sub = get_true_image(image_lsb, CCDitem)
-        #    image_bias_sub = get_true_image(CCDitem)
     
-        
-        # #Hack to fix bad columns
-        # CCDitem['NBC']=0
-        # CCDitem['BC']=np.array([])     
+    simage_dark=simage_flatf+calculate_dark(CCDitem_nobin.copy())
+    #dark_fullpic=calculate_dark(CCDitem.copy())    
+    #simage_dark=simage_flatf+dark_fullpic[CCDitem['NRSKIP']:CCDitem['NRSKIP']+CCDitem['NROW'],
+    #                                      CCDitem['NCSKIP']:CCDitem['NCSKIP']+CCDitem['NCOL']+1]
+
     
     
-    def plot(self,fig,axis,whichpic='simage',title='',clim=999):
-
-        if whichpic=='simage':
-            pic=self.simage
-        elif whichpic=='rawsimage':
-            pic=self.rawsimage
-        else:
-            raise Exception('whichpic must be image or raw')
-                        
-        sp=axis.pcolormesh(pic,cmap=plt.cm.jet)
-        axis.set_title(title)
-        if clim==999:
-            mean=pic.mean()
-            std=pic.std()
-            sp.set_clim([mean-1*std,mean+1*std])
-           
-        else:
-            sp.set_clim(clim)
-
-        fig.colorbar(sp,ax=axis)
-
-        return sp    
+    
+    
+    # Binning and bad columns
+    simage_dark_binned=bin_image_using_predict_and_get_true_image(CCDitem.copy(), simage_dark.copy())
+    # testfig=plt.figure()
+    # testax=testfig.gca()
+    # hej=simage_binned-simage_dark
+    # plot(hej, testfig, testax, title='in-out')
+   
+    #simage_dark_binned=get_true_image(CCDitem.copy(),simage_dark_binned)
+    
+    
+    plot(simage_dark_binned, fig, ax[2,f], title='raw+flat+dark+binned')
+    
+    #add smear
+    simage_smear=desmear_true_image_reverse(CCDitem.copy(), simage_dark_binned.copy())
+    plot(simage_smear, fig, ax[3,f], title='raw+flat+dark+smear')
+    
+    
         
+    #add bias
+    simage_bias=get_true_image_reverse(CCDitem.copy(),simage_smear.copy())
+    plot(simage_bias,fig, ax[4,f], title='raw+flat+dark+smear+bias')
+    
+    return simage_raw,simage_raw_binned, simage_flatf, simage_flatf_binned, simage_dark, simage_dark_binned, simage_smear, simage_bias
+        
+    
+    
+    
+
+def backward(input_image,CCDitem):    
+    
+        # # Do normal calibration to reverse the forward model   
+    image=input_image.copy()
+    plot(image,fig, ax[4,b], 'From forward')
+    plot(input_image-image,fig, ax[4,d], 'simage-image')
+
+    image_bias_sub = get_true_image(CCDitem, image)
+    plot(image_bias_sub,fig, ax[3,b], 'Bias subtracted') 
+    plot(simage_smear-image_bias_sub,fig, ax[3,d], 'simage-image')
+    
+    image_desmeared = desmear_true_image(CCDitem,image_bias_sub.copy())
+    plot(image_desmeared,fig, ax[2,b],' Desmeared LSB')  
+    plot(simage_dark_binned-image_desmeared,fig, ax[2,d], 'simage-image')
+    
+    image_dark_sub=subtract_dark(CCDitem,image_desmeared.copy())
+    plot(image_dark_sub,fig, ax[1,b], ' Dark current subtracted.')     
+    plot(simage_flatf_binned-image_dark_sub,fig, ax[1,d], 'simage-image')
+    
+    
+    image_flatf_comp=compensate_flatfield(CCDitem,image_dark_sub.copy())
+    #plotmean=photons*CCDitem['NCBIN CCDColumns']*CCDitem['NCBIN FPGAColumns']*CCDitem['NRBIN']
+    #clims=[plotmean-np.sqrt(plotmean), plotmean+np.sqrt(plotmean)]
+
+    plot(image_flatf_comp,fig, ax[0,b], ' Flat field compensated.')     
+    plot(simage_raw_binned-image_flatf_comp,fig, ax[0,d], 'simage-image')
+    
+    fig.suptitle('Forward model followed by backward i.e calibration')
+    
+
+    return image, image_bias_sub, image_desmeared, image_dark_sub, image_flatf_comp
+
+
 
 # =============================================================================
 # Main
@@ -132,113 +156,61 @@ class SimageItem(object):
 
 
 
-from read_in_functions import readprotocol, read_all_files_in_protocol
-from L1_calibration_functions import get_true_image, desmear_true_image, subtract_dark, compensate_flatfield
-import copy
-from LindasCalibrationFunctions import plot_CCDimage 
-
+clims=[-2,2]
 
 # Read in a CCDitem 
 
 
 
-directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/Flatfields/Diffusor/DiffusorFlatTests/'
-protocol='ForwardModelTestProto.txt'
+#directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/Flatfields/Diffusor/DiffusorFlatTests/'
+#protocol='ForwardModelTestProto.txt'
+
+
+directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/Binning/Binning-simulation/'
+protocol='PROTOCOL-BINNING.txt'
+
 read_from='rac'  
 df_protocol=readprotocol(directory+protocol)
 df_bright=df_protocol[df_protocol.DarkBright=='B']
 CCDitems=read_all_files_in_protocol(df_bright, read_from,directory)
 # The imagge of this CCDitem is not used  , only the meta data
-myCCDitem=CCDitems[0]
+
+
+CCDunits={}
+
+
+CCDitem=CCDitems[0]
+
+
+    
+    
+#Check  if the CCDunit has been created. It takes time to create it so it should not be created if not needed
+try: CCDitem['CCDunit']
+except: 
+    try:
+        CCDunits[CCDitem['channel']]
+    except:  
+        CCDunits[CCDitem['channel']]=CCD(CCDitem['channel']) 
+    CCDitem['CCDunit']=CCDunits[CCDitem['channel']]
+
+
+    
+
+#  Hack to have no compensation for bad colums at the time. TODO later.
+#CCDitem['NBC']=0
+CCDitem['BC']=np.array(CCDitem['BC'])  
+    
 
 
 
-
-photons=4000 
-mySimageItem = SimageItem(myCCDitem, photons)
-
-
-# Now modify the image in forward direction and Plot the result
 fig,ax=plt.subplots(5,3)
 f=0
 b=1
 d=2
 
+# Create simage
+photons= 1000
 
-mySimageItem.plot(fig, ax[0,f], whichpic='rawsimage', title='raw simulated image')
-myS0=mySimageItem.simage
-mySimageItem.add_flatf()
+simage_raw,simage_raw_binned, simage_flatf, simage_flatf_binned, simage_dark, simage_dark_binned, simage_smear, simage_bias=forward(photons,CCDitem)
 
-# image_flatf_comp=compensate_flatfield(mySimageItem.CCDitem.copy(),mySimageItem.simage.copy())
-# plot_CCDimage(image_flatf_comp,fig, ax[0,b], ' Flat field reversed. Original?')
-# plot_CCDimage(myS0-image_flatf_comp,fig, ax[0,d], 'simage-image')
-# diff=myS0-image_flatf_comp
-# print('maxdiff', 'mindiff', diff.max(), diff.min())
-
-mySimageItem.plot(fig, ax[1,f], whichpic='simage', title='raw+flat')
-myS1=mySimageItem.simage.copy()
-mySimageItem.add_dark()
-
-#image_dark_sub=subtract_dark(mySimageItem.CCDitem.copy(),mySimageItem.simage.copy())
-#plot_CCDimage(image_dark_sub,fig, ax[1,b], ' Dark current subtracted. Original?')
-#plot_CCDimage(myS1-image_dark_sub,fig, ax[1,d], 'simage-image')
-
-
-mySimageItem.plot(fig, ax[2,f], whichpic='simage', title='raw+flat+dark')
-myS2=mySimageItem.simage.copy()
-mySimageItem.add_smear()
-#image_desmeared = desmear_true_image(mySimageItem.CCDitem.copy(),mySimageItem.simage.copy())
-#plot_CCDimage(image_desmeared,fig, ax[2,b],' Desmeared LSB') 
-mySimageItem.plot(fig, ax[3,f], whichpic='simage', title='raw+flat+dark+smear')
-myS3=mySimageItem.simage.copy()
-mySimageItem.add_bias()
-#image_bias_sub = get_true_image(mySimageItem.CCDitem.copy(),mySimageItem.simage.copy())
-#plot_CCDimage(image_bias_sub,fig, ax[3,b], 'Bias subtracted') 
-mySimageItem.plot(fig, ax[4,f], whichpic='simage', title='raw+flat+dark+smear+bias')
-myS4=mySimageItem.simage.copy()
-
-#plot_CCDimage(mySimageItem.simage.copy(),fig, ax[4,b], 'From forward')
-
-
-
-# # Do normal calibration to reverse the forward model
-deSimageItem=copy.copy(mySimageItem)
-
-# fig,ax=plt.subplots(4,1)
-
-image=deSimageItem.simage.copy()    
-plot_CCDimage(image,fig, ax[4,b], 'From forward')
-diff4=myS4-image
-plot_CCDimage(myS4-image,fig, ax[4,d], 'simage-image')
-
-image_bias_sub = get_true_image(deSimageItem.CCDitem, image)
-plot_CCDimage(image_bias_sub,fig, ax[3,b], 'Bias subtracted') 
-diff3=myS3-image_bias_sub
-plot_CCDimage(myS3-image_bias_sub,fig, ax[3,d], 'simage-image')
-
-image_desmeared = desmear_true_image(deSimageItem.CCDitem,image_bias_sub.copy())
-plot_CCDimage(image_desmeared,fig, ax[2,b],' Desmeared LSB')  
-diff2=myS2-image_desmeared
-plot_CCDimage(myS2-image_desmeared,fig, ax[2,d], 'simage-image')
-
-image_dark_sub=subtract_dark(deSimageItem.CCDitem,image_desmeared.copy())
-plot_CCDimage(image_dark_sub,fig, ax[1,b], ' Dark current subtracted.')     
-diff1=myS1-image_dark_sub
-plot_CCDimage(myS1-image_dark_sub,fig, ax[1,d], 'simage-image')
-
-
-
-
-image_flatf_comp=compensate_flatfield(deSimageItem.CCDitem,image_dark_sub.copy())
-plot_CCDimage(image_flatf_comp,fig, ax[0,b], ' Flat field compensated.')     
-diff0=myS0-image_flatf_comp
-plot_CCDimage(myS0-image_flatf_comp,fig, ax[0,d], 'simage-image')
-
-fig.suptitle('Calibrate fo reverse forward model')
-
-# fig2=plt.figure()
-# ax2=fig2.gca()
-# sp=ax2.pcolormesh(testimage)
-# fig2.colorbar(sp,ax=ax2)
-#sp.set_clim([])
-
+image, image_bias_sub, image_desmeared, image_dark_sub, image_flatf_comp=backward(simage_bias,CCDitem)

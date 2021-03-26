@@ -20,10 +20,14 @@ from L1_calibrate import L1_calibrate
 
 
 
-directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/Flatfields/Diffusor/DiffusorFlatTests/'
-protocol='ABOUT.txt'
+#directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/Flatfields/Diffusor/DiffusorFlatTests/'
+#protocol='ABOUT.txt'
 
+# directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/Flatfields/20200330_flatfields_0C/'
+# protocol='flatfields_200330_SigMod0_LMprotocol.txt'
 
+directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/Flatfields/Diffusor/200910_flatfields/'
+protocol='protocol_SensitivityToDiffusorGeometry.txt'
 
 read_from='rac'  
 df_protocol=readprotocol(directory+protocol)
@@ -32,10 +36,10 @@ df_bright=df_protocol[df_protocol.DarkBright=='B']
 CCDitems=read_all_files_in_protocol(df_bright, read_from,directory)
 
 
-calibrate=False
+calibrate=True
 
 
-for CCDitem in CCDitems[0:4]:
+for CCDitem in CCDitems[:4]:
     
     if calibrate:
  
@@ -53,5 +57,4 @@ for CCDitem in CCDitems[0:4]:
     
         fig=plt.figure()
         ax=fig.gca()
-        plotCCDitem(CCDitem,fig, ax)   
-      
+        plotCCDitem(CCDitem,fig, ax,CCDitem['channel']+' '+str(CCDitem['TEXPMS']/1000)+'s')   
