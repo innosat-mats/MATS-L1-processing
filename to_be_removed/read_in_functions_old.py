@@ -100,9 +100,6 @@ def read_all_files_in_protocol(df, read_from, directory):
             CCDitem = read_CCDitem(
                 directory + "RacFiles_out/", PicID, labtemp=999)
             CCDitem["DarkBright"] = df.DarkBright[df.PicID == PicID].iloc[0]
-            CCDitem["Shutter"] = df.Shutter[df.PicID == PicID].iloc[0]
-            CCDitem["Comment"] = df.Comment[df.PicID == PicID].iloc[0]
-             
             CCDitems.append(CCDitem)
     elif read_from == "imgview":
         CCDitems = readselectedimageviewpics(
@@ -113,8 +110,7 @@ def read_all_files_in_protocol(df, read_from, directory):
     return CCDitems
 
 
-
-def read_all_files_in_directory(read_from, directory): 
+def read_all_files_in_directory(read_from, directory):
     if read_from == 'rac':
         CCDitems = read_CCDitems(directory+'RacFiles_out/')
     else:
@@ -165,8 +161,9 @@ def read_CCDitem_from_imgview(dirname, IDstring):
         CCDitem = read_txtfile_create_CCDitem(txtfile)
         CCDitem["IMAGE"] = image_raw
     except:
+        print("There is something wrong with image file ", imagefile)
         CCDitem = -999
-        raise Exception("There is something wrong with image file ", imagefile)
+        raise Exception()
 
     CCDitem["read_from"] = "imgview"
     try:
@@ -231,7 +228,6 @@ def readselectedimageviewpics(dirname, IDlist):
 def read_MATS_image(rac_dir, extract_images=True):
     import pandas as pd
     from PIL import Image
-    import math
 
     # If you use an newer version of the rac extract reader then pathdir is not needed. Nwwer is approximately from the start of 2020.
     #    json_file = open(filename,'r')
@@ -243,15 +239,13 @@ def read_MATS_image(rac_dir, extract_images=True):
 
     for item in CCD_image_data:
         #        print(pathdir+str(CCD_image_data[i]['IMAGEFILE']) + '_data.npy')
-        if type(item['EXP Nanoseconds']) is float and math.isnan(item['EXP Nanoseconds'])==False: # LM 201113 In old versions, as such of TVAC in summer 2919 this was read in as float not integer, hence convert
-            item['EXP Nanoseconds']=int(item['EXP Nanoseconds'])
-        if type(item['CCDSEL']) is float and math.isnan(item['CCDSEL'])==False: # LM 201113 In old versions, as such of TVAC in summer 2919 this was read in as float not integer, hence convert
-            item['CCDSEL']=int(item['CCDSEL'])
-        item['Image File Name'] = item['File'][9:-4] + \
-            '_' + str(item['EXP Nanoseconds']) + '.png'
+        # item['Image File Name'] = item['File'][0:-4] + \
+        #     '_' + str(item['EXP Nanoseconds']) + '.png'
+        # if item['Image File Name'][0:2] == './':
+        #     item['Image File Name'] = item['Image File Name'][2:]
         pngfile = rac_dir+str(item['Image File Name'])
-        if pngfile[-6] != '_':  # old naming scheme - add "_CCDSEL" to make new naming scheme !FIXME: this does not work!/OMC. It works for me!  Cannot fix it unless I know whats broken. ;) /LM
-           pngfile = pngfile[:-4]+'_'+str(item['CCDSEL'])+'.png'
+        if pngfile[-6] != '_':  # old naming scheme - add "_CCDSEL" to make new naming scheme
+            pngfile = pngfile[:-4]+'_'+str(item['CCDSEL'])+'.png'
         jsonfile = pngfile[0:-4]+'.json'
         try:
             if extract_images:
@@ -261,9 +255,9 @@ def read_MATS_image(rac_dir, extract_images=True):
             with open(jsonfile) as f:
                 item["jsondata"] = json.load(f)
         except:
-            print("Warning, the image file: ",pngfile," cannot be found or read")
+            print("Warning, the image file: ",
+                  pngfile, " cannot be found or read")
             CCD_image_data.remove(item)
-    
 
     return CCD_image_data
 
@@ -369,7 +363,7 @@ def read_CCDitem(rac_dir, PicID, labtemp=999):
             CCDitem["jsondata"] = json.load(f)
 
     except:
-        print("Warning, the image file: ",pngfile," cannot be found or read")
+        print("Warning, the image file: ", pngfile, " cannot be found or read")
 
         # Added temperature read in
 
@@ -466,20 +460,14 @@ def read_CCDitemsx(rac_dir, pathdir):
     return CCD_image_data
 
 
-def read_CCDitems(rac_dir, labtemp=999): 
+def read_CCDitems(rac_dir, labtemp=999):
     from math import log
-    from math import isnan
     from get_temperature import create_temperature_info_array, add_temperature_info
 
     # reads data from all images (itemnumbers) in the rac file
 
     #    CCD_image_data=read_MATS_image(rac_dir+'images.json') #lest of dictionries
     CCD_image_data = read_MATS_image(rac_dir)
-    
-    # Throw out items that have not been properly read:
-    for CCDitem in CCD_image_data:   
-        if isnan(CCDitem["CCDSEL"]):
-            CCD_image_data.remove(CCDitem)     
 
     for CCDitem in CCD_image_data:
 
@@ -500,7 +488,6 @@ def read_CCDitems(rac_dir, labtemp=999):
         # CCDitem['SigMode']=CCDitem['SigMode'][0]
         # CCDitem['WinModeFlag']=CCDitem['WinModeFlag'][0]
         # CCDitem['WinMode']=CCDitem['WinMode'][0]
-
 
         if int(CCDitem["CCDSEL"]) == 1:  # input CCDSEL=1
             channel = "IR1"
@@ -557,15 +544,6 @@ def read_CCDitems(rac_dir, labtemp=999):
                 )
             except:
                 raise Exception("No info on the relative time")
-
-        #Convert BC to list of integer instead of str        
-        if CCDitem['BC']=='[]':
-            CCDitem['BC'] =np.array([])
-        else:
-            strlist=CCDitem['BC'][1:-1].split(' ')
-            CCDitem['BC'] = np.array([int(i) for i in strlist])
-            
-
 
         # Added temperature read in
 

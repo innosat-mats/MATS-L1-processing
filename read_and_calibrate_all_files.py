@@ -14,13 +14,8 @@ from LindasCalibrationFunctions import  plotCCDitem
 
 from read_in_functions import read_all_files_in_directory
 import matplotlib.pyplot as plt
-from L1_calibrate import calibrate_all_items
-
-
-#directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/27052020_nadir_func/'
-#directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/NadirTests/27052020_nadir_lightleakage/'
-
-#directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/Flatfields/20200511_temperature_dependence/'
+from L1_calibrate import L1_calibrate
+from LindasCalibrationFunctions import plot_CCDimage
 
 directory='/Users/lindamegner/MATS/retrieval/Calibration/CoolingTests/Rac22C/'
 read_from='rac'  
@@ -28,12 +23,21 @@ CCDitems=read_all_files_in_directory(read_from,directory)
 
 
 
-calibrate=False
+calibrate=True
+plot=True
 
 if calibrate:
+    for CCDitem in CCDitems[:3]:
+        image_lsb,image_bias_sub,image_desmeared, image_dark_sub, image_flatf_comp =L1_calibrate(CCDitem)
 
-    calibrate_all_items(CCDitems[:3], plot=True)
-
+        if plot==True:
+            fig,ax=plt.subplots(5,1)
+            plot_CCDimage(image_lsb,fig, ax[0], 'Original LSB')    
+            plot_CCDimage(image_bias_sub,fig, ax[1], 'Bias subtracted')  
+            plot_CCDimage(image_desmeared,fig, ax[2],' Desmeared LSB')  
+            plot_CCDimage(image_dark_sub,fig, ax[3], ' Dark current subtracted LSB')  
+            plot_CCDimage(image_flatf_comp,fig, ax[4], ' Flat field compensated LSB')         
+            fig.suptitle(CCDitem['channel'])
 
 else:    
 
@@ -41,8 +45,3 @@ else:
         fig=plt.figure()
         ax=fig.gca()
         plotCCDitem(CCDitem,fig, ax, title=CCDitem['channel'])
-        #print(CCDitem['temperature'])
-        #print(CCDitem['EXP Date'])
-      
-        
-        #ax.text(200,450,CCDitem['channel'])
