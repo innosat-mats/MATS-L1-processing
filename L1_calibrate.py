@@ -22,18 +22,24 @@ from L1_calibration_functions import (
 def calibrate_all_items(CCDitems, plot=False):
     import matplotlib.pyplot as plt
     from LindasCalibrationFunctions import plot_CCDimage
+
     for CCDitem in CCDitems:
-        image_lsb,image_bias_sub,image_desmeared, image_dark_sub, image_flatf_comp =L1_calibrate(CCDitem)
+        (
+            image_lsb,
+            image_bias_sub,
+            image_desmeared,
+            image_dark_sub,
+            image_flatf_comp,
+        ) = L1_calibrate(CCDitem)
 
-        if plot==True:
-            fig,ax=plt.subplots(5,1)
-            plot_CCDimage(image_lsb,fig, ax[0], 'Original LSB')    
-            plot_CCDimage(image_bias_sub,fig, ax[1], 'Bias subtracted')  
-            plot_CCDimage(image_desmeared,fig, ax[2],' Desmeared LSB')  
-            plot_CCDimage(image_dark_sub,fig, ax[3], ' Dark current subtracted LSB')  
-            plot_CCDimage(image_flatf_comp,fig, ax[4], ' Flat field compensated LSB')         
-            fig.suptitle(CCDitem['channel'])
-
+        if plot == True:
+            fig, ax = plt.subplots(5, 1)
+            plot_CCDimage(image_lsb, fig, ax[0], "Original LSB")
+            plot_CCDimage(image_bias_sub, fig, ax[1], "Bias subtracted")
+            plot_CCDimage(image_desmeared, fig, ax[2], " Desmeared LSB")
+            plot_CCDimage(image_dark_sub, fig, ax[3], " Dark current subtracted LSB")
+            plot_CCDimage(image_flatf_comp, fig, ax[4], " Flat field compensated LSB")
+            fig.suptitle(CCDitem["channel"])
 
 
 def L1_calibrate(CCDitem):
@@ -91,11 +97,10 @@ def L1_calibrate(CCDitem):
     # Either read from rac files of temperature sensors or estimated from the top of the image
     image_dark_sub = subtract_dark(CCDitem, image_desmeared)
 
-
     # Step 6 Remove flat field of the particular CCD.
 
-    image_flatf_comp = compensate_flatfield(CCDitem, image_dark_sub)    
-    CCDitem["image_calibrated"]=image_flatf_comp
+    image_flatf_comp = compensate_flatfield(CCDitem, image_dark_sub)
+    CCDitem["image_calibrated"] = image_flatf_comp
 
     # Step 7 Remove ghost imaging. TBD.
 

@@ -17,7 +17,7 @@ import json
 from PIL import Image
 
 
-#import imagereader
+# import imagereader
 
 
 def plot_full_temperature_info(temperaturedata, relativetimedata):
@@ -28,8 +28,7 @@ def plot_full_temperature_info(temperaturedata, relativetimedata):
     HTR8A = temperaturedata[:, 4]
     HTR8B = temperaturedata[:, 5]
 
-    plt.plot(relativetimedata / 60.0, HTR1A,
-             label="splitter plate, regulation")
+    plt.plot(relativetimedata / 60.0, HTR1A, label="splitter plate, regulation")
     plt.plot(relativetimedata / 60.0, HTR1B, label="splitter plate, measuring")
     plt.plot(relativetimedata / 60.0, HTR2A, label="limb house, regulation")
     plt.plot(relativetimedata / 60.0, HTR2B, label="limb house, measuring")
@@ -97,12 +96,11 @@ def read_all_files_in_protocol(df, read_from, directory):
     if read_from == "rac":
         CCDitems = []
         for PicID in list(df["PicID"]):
-            CCDitem = read_CCDitem(
-                directory + "RacFiles_out/", PicID, labtemp=999)
+            CCDitem = read_CCDitem(directory + "RacFiles_out/", PicID, labtemp=999)
             CCDitem["DarkBright"] = df.DarkBright[df.PicID == PicID].iloc[0]
             CCDitem["Shutter"] = df.Shutter[df.PicID == PicID].iloc[0]
             CCDitem["Comment"] = df.Comment[df.PicID == PicID].iloc[0]
-             
+
             CCDitems.append(CCDitem)
     elif read_from == "imgview":
         CCDitems = readselectedimageviewpics(
@@ -113,10 +111,9 @@ def read_all_files_in_protocol(df, read_from, directory):
     return CCDitems
 
 
-
-def read_all_files_in_directory(read_from, directory): 
-    if read_from == 'rac':
-        CCDitems = read_CCDitems(directory+'RacFiles_out/')
+def read_all_files_in_directory(read_from, directory):
+    if read_from == "rac":
+        CCDitems = read_CCDitems(directory + "RacFiles_out/")
     else:
         raise Exception("read_from = imgview is not yet implemented")
     return CCDitems
@@ -125,8 +122,7 @@ def read_all_files_in_directory(read_from, directory):
 def readprotocol(filename):
     import pandas as pd
 
-    df = pd.read_csv(filename, sep=" ", comment="#",
-                     skipinitialspace=True, skiprows=())
+    df = pd.read_csv(filename, sep=" ", comment="#", skipinitialspace=True, skiprows=())
     return df
 
 
@@ -243,16 +239,24 @@ def read_MATS_image(rac_dir, extract_images=True):
 
     for item in CCD_image_data:
         #        print(pathdir+str(CCD_image_data[i]['IMAGEFILE']) + '_data.npy')
-        if type(item['EXP Nanoseconds']) is float and math.isnan(item['EXP Nanoseconds'])==False: # LM 201113 In old versions, as such of TVAC in summer 2919 this was read in as float not integer, hence convert
-            item['EXP Nanoseconds']=int(item['EXP Nanoseconds'])
-        if type(item['CCDSEL']) is float and math.isnan(item['CCDSEL'])==False: # LM 201113 In old versions, as such of TVAC in summer 2919 this was read in as float not integer, hence convert
-            item['CCDSEL']=int(item['CCDSEL'])
-        item['Image File Name'] = item['File'][9:-4] + \
-            '_' + str(item['EXP Nanoseconds']) + '.png'
-        pngfile = rac_dir+str(item['Image File Name'])
-        if pngfile[-6] != '_':  # old naming scheme - add "_CCDSEL" to make new naming scheme !FIXME: this does not work!/OMC. It works for me!  Cannot fix it unless I know whats broken. ;) /LM
-           pngfile = pngfile[:-4]+'_'+str(item['CCDSEL'])+'.png'
-        jsonfile = pngfile[0:-4]+'.json'
+        if (
+            type(item["EXP Nanoseconds"]) is float
+            and math.isnan(item["EXP Nanoseconds"]) == False
+        ):  # LM 201113 In old versions, as such of TVAC in summer 2919 this was read in as float not integer, hence convert
+            item["EXP Nanoseconds"] = int(item["EXP Nanoseconds"])
+        if (
+            type(item["CCDSEL"]) is float and math.isnan(item["CCDSEL"]) == False
+        ):  # LM 201113 In old versions, as such of TVAC in summer 2919 this was read in as float not integer, hence convert
+            item["CCDSEL"] = int(item["CCDSEL"])
+        item["Image File Name"] = (
+            item["File"][9:-4] + "_" + str(item["EXP Nanoseconds"]) + ".png"
+        )
+        pngfile = rac_dir + str(item["Image File Name"])
+        if (
+            pngfile[-6] != "_"
+        ):  # old naming scheme - add "_CCDSEL" to make new naming scheme !FIXME: this does not work!/OMC. It works for me!  Cannot fix it unless I know whats broken. ;) /LM
+            pngfile = pngfile[:-4] + "_" + str(item["CCDSEL"]) + ".png"
+        jsonfile = pngfile[0:-4] + ".json"
         try:
             if extract_images:
                 item["IMAGE"] = np.float64(Image.open(pngfile))
@@ -261,9 +265,8 @@ def read_MATS_image(rac_dir, extract_images=True):
             with open(jsonfile) as f:
                 item["jsondata"] = json.load(f)
         except:
-            print("Warning, the image file: ",pngfile," cannot be found or read")
+            print("Warning, the image file: ", pngfile, " cannot be found or read")
             CCD_image_data.remove(item)
-    
 
     return CCD_image_data
 
@@ -322,8 +325,7 @@ def read_CCDitem(rac_dir, PicID, labtemp=999):
 
     CCDitem["channel"] = channel
     #   Renaming of stuff. The names in the code here is based on the old rac extract file (prior to May 2020) rac_extract file works
-    CCDitem["id"] = str(CCDitem["EXP Nanoseconds"]) + \
-        "_" + str(CCDitem["CCDSEL"])
+    CCDitem["id"] = str(CCDitem["EXP Nanoseconds"]) + "_" + str(CCDitem["CCDSEL"])
 
     # TODO LM June 2020: Change  all code so that the new names, i. CCDitem['NCBIN CCDColumns'] and CCDitem['NCBIN FPGAColumns'] are used instead of the old.
     try:
@@ -369,7 +371,7 @@ def read_CCDitem(rac_dir, PicID, labtemp=999):
             CCDitem["jsondata"] = json.load(f)
 
     except:
-        print("Warning, the image file: ",pngfile," cannot be found or read")
+        print("Warning, the image file: ", pngfile, " cannot be found or read")
 
         # Added temperature read in
 
@@ -386,8 +388,7 @@ def read_CCDitem(rac_dir, PicID, labtemp=999):
 
     # plot_full_temperature_info(temperaturedata,relativetimedata)
 
-    CCDitem = add_temperature_info(
-        CCDitem, temperaturedata, relativetimedata, labtemp)
+    CCDitem = add_temperature_info(CCDitem, temperaturedata, relativetimedata, labtemp)
 
     return CCDitem
 
@@ -466,7 +467,7 @@ def read_CCDitemsx(rac_dir, pathdir):
     return CCD_image_data
 
 
-def read_CCDitems(rac_dir, labtemp=999): 
+def read_CCDitems(rac_dir, labtemp=999):
     from math import log
     from math import isnan
     from get_temperature import create_temperature_info_array, add_temperature_info
@@ -475,11 +476,11 @@ def read_CCDitems(rac_dir, labtemp=999):
 
     #    CCD_image_data=read_MATS_image(rac_dir+'images.json') #lest of dictionries
     CCD_image_data = read_MATS_image(rac_dir)
-    
+
     # Throw out items that have not been properly read:
-    for CCDitem in CCD_image_data:   
+    for CCDitem in CCD_image_data:
         if isnan(CCDitem["CCDSEL"]):
-            CCD_image_data.remove(CCDitem)     
+            CCD_image_data.remove(CCDitem)
 
     for CCDitem in CCD_image_data:
 
@@ -501,7 +502,6 @@ def read_CCDitems(rac_dir, labtemp=999):
         # CCDitem['WinModeFlag']=CCDitem['WinModeFlag'][0]
         # CCDitem['WinMode']=CCDitem['WinMode'][0]
 
-
         if int(CCDitem["CCDSEL"]) == 1:  # input CCDSEL=1
             channel = "IR1"
         elif int(CCDitem["CCDSEL"]) == 4:  # input CCDSEL=8
@@ -521,8 +521,7 @@ def read_CCDitems(rac_dir, labtemp=999):
 
         CCDitem["channel"] = channel
         #       Renaming of stuff. The names in the code here is based on the old rac extract file (prior to May 2020) rac_extract file works
-        CCDitem["id"] = str(CCDitem["EXP Nanoseconds"]) + \
-            "_" + str(CCDitem["CCDSEL"])
+        CCDitem["id"] = str(CCDitem["EXP Nanoseconds"]) + "_" + str(CCDitem["CCDSEL"])
 
         # TODO LM June 2020: Change  all code so that the new names, i. CCDitem['NCBIN CCDColumns'] and CCDitem['NCBIN FPGAColumns'] are used instead of the old.
         try:
@@ -558,14 +557,12 @@ def read_CCDitems(rac_dir, labtemp=999):
             except:
                 raise Exception("No info on the relative time")
 
-        #Convert BC to list of integer instead of str        
-        if CCDitem['BC']=='[]':
-            CCDitem['BC'] =np.array([])
+        # Convert BC to list of integer instead of str
+        if CCDitem["BC"] == "[]":
+            CCDitem["BC"] = np.array([])
         else:
-            strlist=CCDitem['BC'][1:-1].split(' ')
-            CCDitem['BC'] = np.array([int(i) for i in strlist])
-            
-
+            strlist = CCDitem["BC"][1:-1].split(" ")
+            CCDitem["BC"] = np.array([int(i) for i in strlist])
 
         # Added temperature read in
 
@@ -652,15 +649,13 @@ def readimg(filename):
     else:
         img_flag = 1
         image = np.reshape(
-            np.double(data_arr[11 + 1: NRow * (NCol + 1) + 12]
-                      ), (NCol + 1, NRow)
+            np.double(data_arr[11 + 1 : NRow * (NCol + 1) + 12]), (NCol + 1, NRow)
         )
         image = np.matrix(image).getH()
 
         # Trailer
         trailer_bin = np.asarray(
-            [bin(data_arr[i])
-             for i in range(NRow * (NCol + 1) + 12, len(data_arr))]
+            [bin(data_arr[i]) for i in range(NRow * (NCol + 1) + 12, len(data_arr))]
         )
         Noverflow = int(trailer_bin[0], 2)
         BlankLeadingValue = int(trailer_bin[1], 2)
@@ -722,8 +717,7 @@ def readimage_create_CCDitem(
     path, file_number
 ):  # reads file from georigis stuff LM20191113
 
-    filename = "%sF_0%02d/D_0%04d" % (path,
-                                      np.floor(file_number / 100), file_number)
+    filename = "%sF_0%02d/D_0%04d" % (path, np.floor(file_number / 100), file_number)
     data_arr = np.fromfile(
         filename, dtype="uint16"
     )  # check endianess, uint16 instead of ubit16 seems to work
@@ -774,15 +768,13 @@ def readimage_create_CCDitem(
     else:
         img_flag = 1
         image = np.reshape(
-            np.double(data_arr[11 + 1: NRow * (NCol + 1) + 12]
-                      ), (NCol + 1, NRow)
+            np.double(data_arr[11 + 1 : NRow * (NCol + 1) + 12]), (NCol + 1, NRow)
         )
         image = np.matrix(image).getH()
 
         # Trailer
         trailer_bin = np.asarray(
-            [bin(data_arr[i])
-             for i in range(NRow * (NCol + 1) + 12, len(data_arr))]
+            [bin(data_arr[i]) for i in range(NRow * (NCol + 1) + 12, len(data_arr))]
         )
         Noverflow = int(trailer_bin[0], 2)
         BlankLeadingValue = int(trailer_bin[1], 2)
@@ -843,7 +835,7 @@ def readimage_create_CCDitem(
     return CCDitem, img_flag
 
 
-'''
+"""
 def readracimg(filename):
     #   Linda Megner; function to read in from rac file but yield similar result
     #    as when read in by readimg . Note that this header has more info.
@@ -908,19 +900,17 @@ def readracimg(filename):
 
     #    img_flag=1 #LM is this needed? Ask Georgi
     return image, header
-'''
+"""
 
 
 def readimgpath(path, file_number, plot):
 
-    filename = "%sF_0%02d/D_0%04d" % (path,
-                                      np.floor(file_number / 100), file_number)
+    filename = "%sF_0%02d/D_0%04d" % (path, np.floor(file_number / 100), file_number)
     image, header, img_flag = readimg(filename)
 
     if plot > 0:
         mean_img = np.mean(image)
-        plt.imshow(image, cmap="viridis", vmin=mean_img -
-                   100, vmax=mean_img + 100)
+        plt.imshow(image, cmap="viridis", vmin=mean_img - 100, vmax=mean_img + 100)
         plt.title("CCD image")
         plt.xlabel("Pixels")
         plt.ylabel("Pixels")
@@ -1020,8 +1010,7 @@ def read_CCDitems_no_images(rac_dir, labtemp=999):
 
         CCDitem["channel"] = channel
         #       Renaming of stuff. The names in the code here is based on the old rac extract file (prior to May 2020) rac_extract file works
-        CCDitem["id"] = str(CCDitem["EXP Nanoseconds"]) + \
-            "_" + str(CCDitem["CCDSEL"])
+        CCDitem["id"] = str(CCDitem["EXP Nanoseconds"]) + "_" + str(CCDitem["CCDSEL"])
 
         # TODO LM June 2020: Change  all code so that the new names, i. CCDitem['NCBIN CCDColumns'] and CCDitem['NCBIN FPGAColumns'] are used instead of the old.
         try:
