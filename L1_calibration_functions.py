@@ -237,18 +237,19 @@ def calculate_dark(CCDitem):
         * int(CCDitem["TEXPMS"])
         / 1000.0
     )  # tot dark current in electrons
-    totbinpix = int(CCDitem["NColBinCCD"]) * 2 ** int(
-        CCDitem["NColBinFPGA"]
-    )  # Note that the numbers are described in differnt ways see table 69 in Software iCD
+    # totbinpix = int(CCDitem["NColBinCCD"]) * 2 ** int(
+    #    CCDitem["NColBinFPGA"]
+    # )  # Note that the numbers are described in differnt ways see table 69 in Software iCD
     dark_calc_image = (
-        totbinpix
-        * CCDunit.ampcorrection
+        CCDunit.ampcorrection
         * totdarkcurrent
         / CCDunit.alpha_avr(int(CCDitem["SigMode"]))
     )
 
     if (
-        CCDitem["NCBIN CCDColumns"] > 1 or CCDitem["NCBIN FPGAColumns"] > 1
+        (CCDitem["NCBIN CCDColumns"] > 1)
+        or (CCDitem["NCBIN FPGAColumns"] > 1)
+        or (CCDitem["NRBIN"] > 1)
     ):  # Or row binning
         dark_calc_image = bin_image_using_predict_and_get_true_image(
             CCDitem, dark_calc_image
