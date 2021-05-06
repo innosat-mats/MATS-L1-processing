@@ -31,8 +31,10 @@ def main(directory="data/", calibrate=True, plot=False):
     """
 
     read_from = "rac"  # read from extracted rac file
-    CCDitems = read_all_files_in_directory(read_from, directory)
 
+    CCDitems = read_all_files_in_directory(read_from, directory)  # read in data
+
+    # calibrate and/or plot the images
     if calibrate:
         for CCDitem in CCDitems:
             (
@@ -57,7 +59,6 @@ def main(directory="data/", calibrate=True, plot=False):
                 fig.suptitle(CCDitem["channel"])
 
     else:
-
         for CCDitem in CCDitems[:]:
             fig = plt.figure()
             ax = fig.gca()
