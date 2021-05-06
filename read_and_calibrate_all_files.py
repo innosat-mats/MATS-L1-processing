@@ -3,7 +3,10 @@
 """
 Created on Thu Apr 23 13:33:31 2020
 
-@author: lindamegner
+@author: Linda Megner, Ole Martin Christensen
+
+Main function, loops though all images in a folder an calibrates them
+
 """
 
 # %%
@@ -20,16 +23,18 @@ from LindasCalibrationFunctions import plot_CCDimage
 import argparse
 
 
-def main(directory="data/"):
+def main(directory="data/", calibrate=True, plot=False):
+    """Run program.
 
-    read_from = "rac"
+    Keyword arguments:
+    directory -- input directory
+    """
+
+    read_from = "rac"  # read from extracted rac file
     CCDitems = read_all_files_in_directory(read_from, directory)
 
-    calibrate = True
-    plot = True
-
     if calibrate:
-        for CCDitem in CCDitems[:3]:
+        for CCDitem in CCDitems:
             (
                 image_lsb,
                 image_bias_sub,
@@ -38,7 +43,7 @@ def main(directory="data/"):
                 image_flatf_comp,
             ) = L1_calibrate(CCDitem)
 
-            if plot == True:
+            if plot:
                 fig, ax = plt.subplots(5, 1)
                 plot_CCDimage(image_lsb, fig, ax[0], "Original LSB")
                 plot_CCDimage(image_bias_sub, fig, ax[1], "Bias subtracted")
@@ -71,9 +76,22 @@ if __name__ == "__main__":
         dest="in_directory",
         help="input diretory of mats images and metadata",
     )
+    parser.add_argument(
+        "-nc",
+        "-no_calibrate",
+        action="store_false",
+        dest="no_calibrate",
+        help="flag to calibrate",
+    )
+    parser.add_argument(
+        "-p",
+        "-plot",
+        action="store_true",
+        dest="plot",
+        help="flag to plot",
+    )
 
     args = parser.parse_args()
-
-    main(args.in_directory)
+    main(args.in_directory, args.no_calibrate)
 
 # %%
