@@ -276,7 +276,7 @@ def read_CCDitem(rac_dir, PicID, labtemp=999):
     from math import log
     import pandas as pd
     from PIL import Image
-    from get_temperature import create_temperature_info_array, add_temperature_info
+    from .get_temperature import create_temperature_info_array, add_temperature_info
 
     df = pd.read_csv(rac_dir + "CCD.csv", skiprows=[0])
     CCD_image_data = df.to_dict("records")
@@ -470,7 +470,7 @@ def read_CCDitemsx(rac_dir, pathdir):
 def read_CCDitems(rac_dir, labtemp=999):
     from math import log
     from math import isnan
-    from get_temperature import create_temperature_info_array, add_temperature_info
+    from .get_temperature import create_temperature_info_array, add_temperature_info
 
     # reads data from all images (itemnumbers) in the rac file
 

@@ -31,7 +31,7 @@ import scipy.io
 
 class CCD:
     def __init__(self, channel):
-        from L1_calibration_functions import read_flatfield
+        from .L1_calibration_functions import read_flatfield
 
         self.channel = channel
         if channel == "IR1":
@@ -1146,18 +1146,18 @@ def compensate_bad_columns(header, image="No picture"):
 
 
 def read_flatfield(CCDunit, mode):
-    from LindasCalibrationFunctions import read_files_in_protocol_as_ItemsUnits
-    from read_in_functions import readprotocol
+    from .LindasCalibrationFunctions import read_files_in_protocol_as_ItemsUnits
+    from .read_in_functions import readprotocol
 
     # Note that 1 and 0 are switched  for signal mode
 
     if mode == 0:  # HSM
-        directory = "/home/olemar/Projects/MATS/MATS-L1-processsing/data/20200330_flatfields_0C/"
+        directory = "/home/olemar/Projects/MATS/MATS-L1-processing/data/20200330_flatfields_0C/"
         # protocol='flatfields_200330_SigMod1_LMprotocol.txt'
         protocol = "readin_flatfields_SigMod1.txt"
 
     elif mode == 1:  # LSM
-        directory = "/home/olemar/Projects/MATS/MATS-L1-processsing/data/20200330_flatfields_0C/"
+        directory = "/home/olemar/Projects/MATS/MATS-L1-processing/data/20200330_flatfields_0C/"
 
         protocol = "readin_flatfields_SigMod0.txt"
     else:

@@ -10,13 +10,15 @@ Functions for data analysis of during the MATS calibration
 
 """
 
-from read_in_functions import read_CCDitem_from_imgview
+from .read_in_functions import read_CCDitem_from_imgview
 import matplotlib.pyplot as plt
-from read_in_functions import read_CCDitem
+from .read_in_functions import read_CCDitem
+
 
 def printvar(my_var):
-    my_var_name = [ k for k,v in locals().iteritems() if v == my_var][0]
-    print(my_var_name,': ', my_var)
+    my_var_name = [k for k, v in locals().iteritems() if v == my_var][0]
+    print(my_var_name, ": ", my_var)
+
 
 def read_files_in_protocol_as_ItemsUnits(df, imagedir, numberofimagesinunit, read_from):
     # reads files in a protocol as ItemsUnits
@@ -26,11 +28,11 @@ def read_files_in_protocol_as_ItemsUnits(df, imagedir, numberofimagesinunit, rea
         #   ItemsUnit=ItemsUnitCreate(df[line:line+2],directory+'PayloadImages/')
         if read_from == "imgview":
             ItemsUnit = ItemsUnitCreate(
-                df[line : line + numberofimagesinunit], imagedir+'PayloadImages/'
+                df[line : line + numberofimagesinunit], imagedir + "PayloadImages/"
             )
         elif read_from == "rac":
             ItemsUnit = ItemsUnitCreateFromRac(
-                df[line : line + numberofimagesinunit], imagedir+'RacFiles_out/'
+                df[line : line + numberofimagesinunit], imagedir + "RacFiles_out/"
             )
         else:
             raise Exception("where should it be read from, imgview or rac?")
@@ -118,19 +120,20 @@ def plotCCDitem(CCDitem, fig, axis, title="", clim=999):
 
 
 def diffplot(image1, image2, title1, title2, clim=999, climdiff=999):
-    from LindasCalibrationFunctions import  plot_CCDimage    
-    fig, ax =plt.subplots(3,1)
-    diffimg=image1-image2
-    if clim==999:        
-        plot_CCDimage(image1,fig, ax[0], title=title1)
-        plot_CCDimage(image2,fig, ax[1], title=title2)
+    from LindasCalibrationFunctions import plot_CCDimage
+
+    fig, ax = plt.subplots(3, 1)
+    diffimg = image1 - image2
+    if clim == 999:
+        plot_CCDimage(image1, fig, ax[0], title=title1)
+        plot_CCDimage(image2, fig, ax[1], title=title2)
     else:
-        plot_CCDimage(image1,fig, ax[0], title=title1, clim=clim)
-        plot_CCDimage(image2,fig, ax[1], title=title2, clim=clim)
-    if climdiff==999:   
-        plot_CCDimage(diffimg,fig, ax[2], title='pic 1-pic2')
+        plot_CCDimage(image1, fig, ax[0], title=title1, clim=clim)
+        plot_CCDimage(image2, fig, ax[1], title=title2, clim=clim)
+    if climdiff == 999:
+        plot_CCDimage(diffimg, fig, ax[2], title="pic 1-pic2")
     else:
-        plot_CCDimage(diffimg,fig, ax[2], title='pic 1-pic2', clim=climdiff)
+        plot_CCDimage(diffimg, fig, ax[2], title="pic 1-pic2", clim=climdiff)
     return fig
 
 
@@ -142,22 +145,22 @@ def UniqueValuesInKey(listofdicts, keystr):
     return uniqueValues
 
 
-def matrixmean(mat1,mat2,mat3='none',mat4='none'):
-    if mat3=='none' and mat4=='none':
-        matav=(mat1+mat2)/2.0
-    elif mat3=='none':
-         matav=(mat1+mat2+mat4)/3.0
-    elif mat4=='none':
-         matav=(mat1+mat2+mat3)/3.0
+def matrixmean(mat1, mat2, mat3="none", mat4="none"):
+    if mat3 == "none" and mat4 == "none":
+        matav = (mat1 + mat2) / 2.0
+    elif mat3 == "none":
+        matav = (mat1 + mat2 + mat4) / 3.0
+    elif mat4 == "none":
+        matav = (mat1 + mat2 + mat3) / 3.0
     else:
-         matav=(mat1+mat2+mat3+mat4)/4.0
+        matav = (mat1 + mat2 + mat3 + mat4) / 4.0
     return matav
 
+
 class ItemsUnitCreate:
-
-
     def __init__(self, df, dirname):
         import numpy as np
+
         self.df = df
         df_B = df[df.DarkBright == "B"]
         df_D = df[df.DarkBright == "D"]
@@ -189,12 +192,16 @@ class ItemsUnitCreate:
         elif len(df_D) == 2:
             self.dark1Item = read_CCDitem_from_imgview(dirname, df_D.PicID.iloc[0])
             self.dark2Item = read_CCDitem_from_imgview(dirname, df_D.PicID.iloc[1])
-            self.dark = matrixmean(self.dark1Item["IMAGE"],self.dark2Item["IMAGE"])
+            self.dark = matrixmean(self.dark1Item["IMAGE"], self.dark2Item["IMAGE"])
         elif len(df_D) == 3:
             self.dark1Item = read_CCDitem_from_imgview(dirname, df_D.PicID.iloc[0])
             self.dark2Item = read_CCDitem_from_imgview(dirname, df_D.PicID.iloc[1])
             self.dark3Item = read_CCDitem_from_imgview(dirname, df_D.PicID.iloc[2])
-            self.dark = matrixmean(self.dark1Item["IMAGE"],self.dark2Item["IMAGE"],self.dark3Item["IMAGE"] )    
+            self.dark = matrixmean(
+                self.dark1Item["IMAGE"],
+                self.dark2Item["IMAGE"],
+                self.dark3Item["IMAGE"],
+            )
         else:
             raise Exception(str(len(df_D)) + " dark pictures in dataframe")
         self.subpic = self.image - self.dark
@@ -227,10 +234,9 @@ class ItemsUnitCreate:
 
 
 class ItemsUnitCreateFromRac:
-
-
     def __init__(self, df, dirname):
         import numpy as np
+
         self.df = df
         df_B = df[df.DarkBright == "B"]
         df_D = df[df.DarkBright == "D"]
@@ -252,7 +258,7 @@ class ItemsUnitCreateFromRac:
         elif len(df_B) == 2:
             self.image1Item = read_CCDitem(dirname, df_B.PicID.iloc[0])
             self.image2Item = read_CCDitem(dirname, df_B.PicID.iloc[1])
-            self.image = matrixmean(self.image1Item["IMAGE"],self.image2Item["IMAGE"])
+            self.image = matrixmean(self.image1Item["IMAGE"], self.image2Item["IMAGE"])
         else:
             raise Exception(str(len(df_B)) + " brightimage(s) in dataframe")
 
@@ -262,12 +268,16 @@ class ItemsUnitCreateFromRac:
         elif len(df_D) == 2:
             self.dark1Item = read_CCDitem(dirname, df_D.PicID.iloc[0])
             self.dark2Item = read_CCDitem(dirname, df_D.PicID.iloc[1])
-            self.dark = matrixmean(self.dark1Item["IMAGE"],self.dark2Item["IMAGE"])
+            self.dark = matrixmean(self.dark1Item["IMAGE"], self.dark2Item["IMAGE"])
         elif len(df_D) == 3:
             self.dark1Item = read_CCDitem(dirname, df_D.PicID.iloc[0])
             self.dark2Item = read_CCDitem(dirname, df_D.PicID.iloc[1])
             self.dark3Item = read_CCDitem(dirname, df_D.PicID.iloc[2])
-            self.dark = matrixmean(self.dark1Item["IMAGE"],self.dark2Item["IMAGE"], self.dark3Item["IMAGE"])   
+            self.dark = matrixmean(
+                self.dark1Item["IMAGE"],
+                self.dark2Item["IMAGE"],
+                self.dark3Item["IMAGE"],
+            )
         else:
             raise Exception(str(len(df_D)) + " dark pictures in dataframe")
         self.subpic = self.image - self.dark
