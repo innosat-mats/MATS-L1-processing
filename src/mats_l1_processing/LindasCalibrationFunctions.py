@@ -10,9 +10,9 @@ Functions for data analysis of during the MATS calibration
 
 """
 
-from .read_in_functions import read_CCDitem_from_imgview
+from mats_l1_processing.read_in_functions import read_CCDitem_from_imgview
 import matplotlib.pyplot as plt
-from .read_in_functions import read_CCDitem
+from mats_l1_processing.read_in_functions import read_CCDitem
 
 
 def printvar(my_var):

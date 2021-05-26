@@ -7,7 +7,7 @@ Created on Mon Mar 23 11:41:36 2020
 """
 
 import numpy as np
-from .L1_calibration_functions import (
+from mats_l1_processing.L1_calibration_functions import (
     get_true_image,
     desmear_true_image,
     CCD,
