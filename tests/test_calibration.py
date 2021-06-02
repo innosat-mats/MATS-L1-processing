@@ -7,5 +7,21 @@ __copyright__ = "Ole Martin Christensen"
 __license__ = "MIT"
 
 
-def test_main():
-    main("/home/olemar/Projects/MATS/MATS-L1-processing/data/")
+def test_calibrate():
+    main("/home/olemar/Projects/MATS/MATS-L1-processing/data/RacFiles_out/")
+
+
+def test_plot():
+    main(
+        "/home/olemar/Projects/MATS/MATS-L1-processing/data/RacFiles_out/",
+        calibrate=False,
+        plot=True,
+    )
+
+
+def test_calibrate_and_plot():
+    main(
+        "/home/olemar/Projects/MATS/MATS-L1-processing/data/RacFiles_out/",
+        calibrate=True,
+        plot=True,
+    )
