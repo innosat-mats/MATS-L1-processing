@@ -21,6 +21,7 @@ from mats_l1_processing.L1_calibrate import L1_calibrate
 from mats_l1_processing.LindasCalibrationFunctions import plot_CCDimage
 
 import argparse
+from tqdm import tqdm
 
 
 def main(directory="data/", calibrate=True, plot=False):
@@ -36,7 +37,7 @@ def main(directory="data/", calibrate=True, plot=False):
 
     # calibrate and/or plot the images
     if calibrate:
-        for CCDitem in CCDitems:
+        for CCDitem in tqdm(CCDitems):
             (
                 image_lsb,
                 image_bias_sub,

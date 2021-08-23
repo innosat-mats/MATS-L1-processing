@@ -113,7 +113,11 @@ def read_MATS_image(rac_dir, extract_images=True):
             item["EXP Nanoseconds"] = int(item["EXP Nanoseconds"])
 
         # LM 201113 In old versions, as such of TVAC in summer 2019 this was read in as float not integer, hence convert
-        if (type(item["CCDSEL"]) is float) and (math.isnan(item["CCDSEL"]) == False):
+        if (type(item["CCDSEL"]) is float) and (
+            math.isnan(item["CCDSEL"]) == False
+        ):  # reads data from all images (itemnumbers) in the rac file
+
+            #    CCD_image_data=read_MATS_image(rac_dir+'images.json') #lest of dictionries
             item["CCDSEL"] = int(item["CCDSEL"])
 
         pngfile = rac_dir + str(item["Image File Name"])
@@ -143,9 +147,6 @@ def read_CCDitem(rac_dir, PicID, labtemp=999):
     df = pd.read_csv(rac_dir + "CCD.csv", skiprows=[0])
     CCD_image_data = df.to_dict("records")
 
-    #   CCD_image_data=read_MATS_image(rac_dir)
-    #   CCD_image_data=read_MATS_image(rac_image_json_dir+rac_sub_dir+rac_image_json_file,rac_image_json_dir)
-
     if PicID.count("_") == 1:  # new way of naming as of June 2020 in protocol
         itemnumber = int(PicID[:-2])
         CCDSEL = int(PicID[-1:])
@@ -166,7 +167,6 @@ def read_CCDitem(rac_dir, PicID, labtemp=999):
         )
     else:
         raise Exception("strange naming in protocol, PicID=", PicID)
-    # CCDitem=list(filter(lambda item: item['EXP Nanoseconds'] == itemnumber, CCD_image_data))
 
     if int(CCDitem["CCDSEL"]) == 1:  # input CCDSEL=1
         channel = "IR1"
@@ -334,9 +334,6 @@ def read_CCDitems(rac_dir, labtemp=999):
     from math import isnan
     from .get_temperature import create_temperature_info_array, add_temperature_info
 
-    # reads data from all images (itemnumbers) in the rac file
-
-    #    CCD_image_data=read_MATS_image(rac_dir+'images.json') #lest of dictionries
     CCD_image_data = read_MATS_image(rac_dir)
 
     # Throw out items that have not been properly read:
