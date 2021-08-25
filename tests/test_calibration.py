@@ -8,12 +8,12 @@ __license__ = "MIT"
 
 
 def test_calibrate():
-    main("/home/olemar/Projects/MATS/MATS-L1-processing/testdata/RacFiles_out/")
+    main("testdata/RacFiles_out/")
 
 
 def test_plot():
     main(
-        "/home/olemar/Projects/MATS/MATS-L1-processing/testdata/RacFiles_out/",
+        "testdata/RacFiles_out/",
         calibrate=False,
         plot=True,
     )
@@ -21,7 +21,7 @@ def test_plot():
 
 def test_calibrate_and_plot():
     main(
-        "/home/olemar/Projects/MATS/MATS-L1-processing/testdata/RacFiles_out/",
+        "testdata/RacFiles_out/",
         calibrate=True,
         plot=True,
     )
