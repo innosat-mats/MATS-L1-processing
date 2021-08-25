@@ -306,3 +306,23 @@ class ItemsUnitCreateFromRac:
         fig.colorbar(sp, ax=axis)
 
         return sp
+
+def read_all_files_in_protocol(df, read_from, directory):
+    if read_from == "rac":
+        CCDitems = []
+        for PicID in list(df["PicID"]):
+            CCDitem = read_CCDitem(
+                directory + "RacFiles_out/", PicID, labtemp=999)
+            CCDitem["DarkBright"] = df.DarkBright[df.PicID == PicID].iloc[0]
+            CCDitem["Shutter"] = df.Shutter[df.PicID == PicID].iloc[0]
+            CCDitem["Comment"] = df.Comment[df.PicID == PicID].iloc[0]
+             
+            CCDitems.append(CCDitem)
+    elif read_from == "imgview":
+        CCDitems = readselectedimageviewpics(
+            directory + "PayloadImages/", list(df["PicID"])
+        )
+    else:
+        raise Exception("read_from must be rac or imgview")
+    return CCDitems
+
