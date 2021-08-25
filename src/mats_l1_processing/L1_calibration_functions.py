@@ -52,7 +52,7 @@ class CCD:
             CCDID = 16
 
         filename = (
-            "data/MATS_CCD_DC_calibration_FINAL/FM0"
+            "testdata/MATS_CCD_DC_calibration_FINAL/FM0"
             + str(CCDID)
             + "_CCD_DC_calibration.mat"
         )
@@ -1155,14 +1155,14 @@ def read_flatfield(CCDunit, mode):
 
     if mode == 0:  # HSM
         directory = (
-            "/home/olemar/Projects/MATS/MATS-L1-processing/data/20200330_flatfields_0C/"
+            "testdata/20200330_flatfields_0C/"
         )
         # protocol='flatfields_200330_SigMod1_LMprotocol.txt'
         protocol = "readin_flatfields_SigMod1.txt"
 
     elif mode == 1:  # LSM
         directory = (
-            "/home/olemar/Projects/MATS/MATS-L1-processing/data/20200330_flatfields_0C/"
+            "testdata/20200330_flatfields_0C/"
         )
 
         protocol = "readin_flatfields_SigMod0.txt"
