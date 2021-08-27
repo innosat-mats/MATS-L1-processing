@@ -18,7 +18,9 @@ Installation
 ==========
 
 1. pip install . (requirements.txt not perfect yet so some additional packets may be required)
-2. Add calibration_data and testdata folder from box
+
+2. Add calibration_data and testdata folder from box https://chalmersuniversity.box.com/s/d25rklkjtw9shsayff3g34sryru6piv8 to root folder
+
 3. run pytest by typing "pytest" in root folder
 
 Note
