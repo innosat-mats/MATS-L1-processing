@@ -18,8 +18,7 @@ Installation
 ==========
 
 1. pip install . (requirements.txt not perfect yet so some additional packets may be required)
-2. Make a folder called testdata and copy files from box (Calibration/CalibratoinSoftware/testdata) 
-into this folder
+2. Add calibration_data and testdata folder from box
 3. run pytest by typing "pytest" in root folder
 
 Note
