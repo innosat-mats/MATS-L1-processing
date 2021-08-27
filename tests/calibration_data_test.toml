@@ -1,0 +1,6 @@
+# This document defines the position of various files used for the calibration of MATS data. 
+
+title = "Level 1 calibration files for testing this package"
+
+darkcurrentfolder = "calibration_data/MATS_CCD_DC_calibration_FINAL/"
+flatfieldfolder = "calibration_data/20200330_flatfields_0C/"

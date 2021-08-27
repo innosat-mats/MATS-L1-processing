@@ -8,12 +8,12 @@ __license__ = "MIT"
 
 
 def test_calibrate():
-    main("testdata/RacFiles_out/")
+    main("testdata/RacFiles_out/", "tests/calibration_data_test.toml")
 
 
 def test_plot():
     main(
-        "testdata/RacFiles_out/",
+        "testdata/RacFiles_out/", "tests/calibration_data_test.toml",
         calibrate=False,
         plot=True,
     )
@@ -21,7 +21,7 @@ def test_plot():
 
 def test_calibrate_and_plot():
     main(
-        "testdata/RacFiles_out/",
+        "testdata/RacFiles_out/", "tests/calibration_data_test.toml",
         calibrate=True,
         plot=True,
     )

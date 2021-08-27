@@ -24,7 +24,7 @@ import argparse
 from tqdm import tqdm
 
 
-def main(directory="data/", calibrate=True, plot=False):
+def main(directory, calibrationfile, calibrate=True, plot=False):
     """Run program.
 
     Keyword arguments:
@@ -44,7 +44,7 @@ def main(directory="data/", calibrate=True, plot=False):
                 image_desmeared,
                 image_dark_sub,
                 image_flatf_comp,
-            ) = L1_calibrate(CCDitem)
+            ) = L1_calibrate(CCDitem, calibrationfile)
 
             if plot:
                 fig, ax = plt.subplots(5, 1)

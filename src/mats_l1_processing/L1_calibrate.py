@@ -19,6 +19,8 @@ from mats_l1_processing.L1_calibration_functions import (
 #################################################
 #       L1 calibration routine                  #
 #################################################
+
+
 def calibrate_all_items(CCDitems, plot=False):
     import matplotlib.pyplot as plt
     from LindasCalibrationFunctions import plot_CCDimage
@@ -42,7 +44,7 @@ def calibrate_all_items(CCDitems, plot=False):
             fig.suptitle(CCDitem["channel"])
 
 
-def L1_calibrate(CCDitem):
+def L1_calibrate(CCDitem, calibrationfile):
     global CCDunits
 
     try:
@@ -57,7 +59,7 @@ def L1_calibrate(CCDitem):
         try:
             CCDunits[CCDitem["channel"]]
         except:
-            CCDunits[CCDitem["channel"]] = CCD(CCDitem["channel"])
+            CCDunits[CCDitem["channel"]] = CCD(CCDitem["channel"], calibrationfile)
         CCDitem["CCDunit"] = CCDunits[CCDitem["channel"]]
 
     #  Hack to have no compensation for bad colums at the time. TODO later.
