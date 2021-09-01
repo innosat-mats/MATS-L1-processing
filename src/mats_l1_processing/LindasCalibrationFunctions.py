@@ -58,7 +58,7 @@ def plot_CCDimage(image, fig, axis, title="", clim=999):
     import numpy as np
     import matplotlib.pyplot as plt
 
-    sp = axis.imshow(image, cmap=plt.cm.gray)
+    sp = axis.imshow(image, cmap='viridis')
     if clim == 999:
         mean = np.mean(image)
         std = np.std(image)
