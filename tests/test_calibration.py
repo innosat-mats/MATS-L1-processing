@@ -13,7 +13,8 @@ def test_calibrate():
 
 def test_plot():
     main(
-        "testdata/RacFiles_out/", "tests/calibration_data_test.toml",
+        "testdata/RacFiles_out/",
+        "tests/calibration_data_test.toml",
         calibrate=False,
         plot=True,
     )
@@ -21,7 +22,8 @@ def test_plot():
 
 def test_calibrate_and_plot():
     main(
-        "testdata/RacFiles_out/", "tests/calibration_data_test.toml",
+        "testdata/RacFiles_out/",
+        "tests/calibration_data_test.toml",
         calibrate=True,
         plot=True,
     )

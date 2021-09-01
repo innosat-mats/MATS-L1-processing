@@ -17,7 +17,9 @@ A longer description of your project goes here...
 Installation
 ==========
 
-1. pip install . (requirements.txt not perfect yet so some additional packets may be required)
+1. Install pip in your current envirnoment (e.g. $conda install pip )
+
+1. run $pip install . or $pip install -e . if you want to do development for the package
 
 2. Add calibration_data and testdata folder from box https://chalmersuniversity.box.com/s/d25rklkjtw9shsayff3g34sryru6piv8 to root folder
 
