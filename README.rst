@@ -8,10 +8,8 @@ Code for calibration of MATS images
 Description
 ===========
 
-A longer description of your project goes here...
-
-
-.. _pyscaffold-notes:
+This package contains two modules, one for level-1 calibration (mats_l1_processing) of MATS data and one for
+generating the database to use in this calibration (database_generation).
 
 
 Installation
@@ -21,7 +19,8 @@ Installation
 
 1. run $pip install . or $pip install -e . if you want to do development for the package
 
-2. Add calibration_data and testdata folder from box https://chalmersuniversity.box.com/s/d25rklkjtw9shsayff3g34sryru6piv8 to root folder
+2. Add calibration_data and testdata folder from box (Calibration/CalibrationSoftware/testdata) 
+to root folder. https://chalmersuniversity.box.com/s/d25rklkjtw9shsayff3g34sryru6piv8
 
 3. run pytest by typing "pytest" in root folder
 
