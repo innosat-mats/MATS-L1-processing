@@ -9,4 +9,4 @@ __license__ = "MIT"
 
 def test_generate_flatfield():
 
-    flatfield_morphed=make_flatfield('IR1', 'HSM', "calibration_data_test.toml",plot=False)
+    flatfield_morphed=make_flatfield('IR1', 'HSM', "tests/calibration_data_test.toml",plot=False)
