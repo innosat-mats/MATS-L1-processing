@@ -5,8 +5,8 @@ Created on Mon Apr 20 08:57:37 2020
 
 @author: lindamegner
 
-Functions used to read in MATS images and data in different ways: From KTH, from Immage viewer and from rac files. 
-
+Functions used to read in MATS images and data from rac files. 
+The other ways to read in (From KTH, from Immage viewer) is being moved to read_imgview_functions.py in database_generation. 
 The housekeepting data temperatures can also be read in using these functions.
 """
 

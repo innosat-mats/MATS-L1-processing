@@ -4,3 +4,4 @@ title = "Level 1 calibration files for testing this package"
 
 darkcurrentfolder = "calibration_data/MATS_CCD_DC_calibration_FINAL/"
 flatfieldfolder = "calibration_data/20200330_flatfields_0C/"
+baffle_flatfield = "calibration_data/Flatfield20210421/PayloadImages/"

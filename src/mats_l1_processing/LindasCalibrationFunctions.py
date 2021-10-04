@@ -54,14 +54,17 @@ def selectimage(df, shutter, imagedir, ExpTime, channel):
     return mylist[0]
 
 
-def plot_CCDimage(image, fig, axis, title="", clim=999):
-    import numpy as np
-    import matplotlib.pyplot as plt
+def plotCCDitem(CCDitem, fig, axis, title="", clim=999):
+    image = CCDitem["IMAGE"]
+    sp=plot_CCDimage(image, fig, axis, title, clim)    
+    return sp
 
-    sp = axis.imshow(image, cmap='viridis')
+def plot_CCDimage(image, fig, axis, title="", clim=999):
+    sp = axis.imshow(image, cmap='viridis', origin='lower', interpolation='none',aspect='auto')
+    #sp=axis.pcolormesh(image, , cmap='viridis')
     if clim == 999:
-        mean = np.mean(image)
-        std = np.std(image)
+        mean = image.mean()
+        std = image.std()
         sp.set_clim([mean - 2 * std, mean + 2 * std])
     else:
         sp.set_clim(clim)
@@ -69,6 +72,11 @@ def plot_CCDimage(image, fig, axis, title="", clim=999):
     axis.set_title(title)
     return sp
 
+def plot_CCDimage_hmean(fig, axis,image,title='', clim=999):    
+    yax=range(0,image.shape[0])
+    sp=axis.plot(image.mean(axis=1),yax)
+    axis.set_title(title)
+    return sp
 
 def plot_simple(filename, clim=999):
     import numpy as np
@@ -86,36 +94,9 @@ def plot_simple(filename, clim=999):
     plt.colorbar()
 
 
-def readandsubtractdark(dirname, imageID, dark1ID, dark2ID="999", multiplydark=1):
-    # Takes directory and PicID of image and dark picture(s) and subtracts them
-
-    image = read_CCDitem_from_imgview(dirname, imageID)
-    dark1 = read_CCDitem_from_imgview(dirname, dark1ID)
-    if dark2ID == "999":
-        imagenew = image["IMAGE"] - multiplydark * dark1["IMAGE"]
-    else:
-        dark2 = read_CCDitem_from_imgview(dirname, dark2ID)
-        imagenew = (
-            image["IMAGE"] - multiplydark * (dark1["IMAGE"] + dark2["IMAGE"]) / 2.0
-        )
-    return imagenew
 
 
-def plotCCDitem(CCDitem, fig, axis, title="", clim=999):
 
-    pic = CCDitem["IMAGE"]
-    sp = axis.pcolormesh(pic, cmap=plt.cm.jet)
-    axis.set_title(title)
-    if clim == 999:
-        mean = pic.mean()
-        std = pic.std()
-        sp.set_clim([mean - 2 * std, mean + 2 * std])
-    else:
-        sp.set_clim(clim)
-
-    fig.colorbar(sp, ax=axis)
-
-    return sp
 
 
 def diffplot(image1, image2, title1, title2, clim=999, climdiff=999):
@@ -134,6 +115,22 @@ def diffplot(image1, image2, title1, title2, clim=999, climdiff=999):
     else:
         plot_CCDimage(diffimg, fig, ax[2], title="pic 1-pic2", clim=climdiff)
     return fig
+
+
+# def readandsubtractdark(dirname, imageID, dark1ID, dark2ID="999", multiplydark=1):
+#     # Takes directory and PicID of image and dark picture(s) and subtracts them
+
+#     image = read_CCDitem_from_imgview(dirname, imageID)
+#     dark1 = read_CCDitem_from_imgview(dirname, dark1ID)
+#     if dark2ID == "999":
+#         imagenew = image["IMAGE"] - multiplydark * dark1["IMAGE"]
+#     else:
+#         dark2 = read_CCDitem_from_imgview(dirname, dark2ID)
+#         imagenew = (
+#             image["IMAGE"] - multiplydark * (dark1["IMAGE"] + dark2["IMAGE"]) / 2.0
+#         )
+#     return imagenew
+
 
 
 def UniqueValuesInKey(listofdicts, keystr):
