@@ -54,13 +54,13 @@ def selectimage(df, shutter, imagedir, ExpTime, channel):
     return mylist[0]
 
 
-def plotCCDitem(CCDitem, fig, axis, title="", clim=999):
+def plotCCDitem(CCDitem, fig, axis, title="", clim=999, aspect='auto'):
     image = CCDitem["IMAGE"]
-    sp=plot_CCDimage(image, fig, axis, title, clim)    
+    sp=plot_CCDimage(image, fig, axis, title, clim, aspect)    
     return sp
 
-def plot_CCDimage(image, fig, axis, title="", clim=999):
-    sp = axis.imshow(image, cmap='viridis', origin='lower', interpolation='none',aspect='auto')
+def plot_CCDimage(image, fig, axis, title="", clim=999, aspect='auto'):
+    sp = axis.imshow(image,cmap='viridis', origin='lower', interpolation='none')
     #sp=axis.pcolormesh(image, , cmap='viridis')
     if clim == 999:
         mean = image.mean()
@@ -70,6 +70,7 @@ def plot_CCDimage(image, fig, axis, title="", clim=999):
         sp.set_clim(clim)
     fig.colorbar(sp, ax=axis)
     axis.set_title(title)
+    axis.set_aspect(aspect)
     return sp
 
 def plot_CCDimage_hmean(fig, axis,image,title='', clim=999):    
