@@ -7,8 +7,7 @@ Created on Mon Mar 18 17:09:57 2019
 (Linda has removed some fuctions and added more . Original franzk script is L1_functions.py)
 
 
-Functions used for MATS L1 processing, based on corresponding MATLAB scripts provided by
-Georgi Olentsenko and Mykola Ivchenko
+Functions used for MATS L1 processing, based on corresponding MATLAB scripts provided by Georgi Olentsenko and Mykola Ivchenko
 The MATLAB script can be found here: https://github.com/OleMartinChristensen/MATS-image-analysis
 
 
@@ -55,7 +54,7 @@ class CCD:
         calibration_data = toml.load(calibration_file)
 
         filename = (
-            calibration_data['darkcurrentfolder']
+            calibration_data["darkcurrent"]["folder"]
             + "FM0"
             + str(CCDID)
             + "_CCD_DC_calibration.mat"
@@ -105,9 +104,11 @@ class CCD:
         # Read in flat fields
 
         self.flatfield_HSM = read_flatfield(
-            self, 0, calibration_data['flatfieldfolder'])
+            self, 0, calibration_data["flatfield"]["flatfieldfolder"]
+        )
         self.flatfield_LSM = read_flatfield(
-            self, 1, calibration_data['flatfieldfolder'])
+            self, 1, calibration_data["flatfield"]["flatfieldfolder"]
+        )
 
         #        self.hot_pix=np.where(self.image_HSM>=0.8*np.max(self.image_HSM))
 
@@ -171,19 +172,19 @@ def compensate_flatfield(CCDitem, image="No picture"):
         image = CCDitem["IMAGE"]
     image_flatf_fact = calculate_flatfield(CCDitem)
     mean = image_flatf_fact[
-        CCDitem["NRSKIP"]: CCDitem["NRSKIP"] + CCDitem["NROW"],
-        CCDitem["NCSKIP"]: CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
+        CCDitem["NRSKIP"] : CCDitem["NRSKIP"] + CCDitem["NROW"],
+        CCDitem["NCSKIP"] : CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
     ].mean()
     shape = image_flatf_fact[
-        CCDitem["NRSKIP"]: CCDitem["NRSKIP"] + CCDitem["NROW"],
-        CCDitem["NCSKIP"]: CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
+        CCDitem["NRSKIP"] : CCDitem["NRSKIP"] + CCDitem["NROW"],
+        CCDitem["NCSKIP"] : CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
     ].shape
 
     image_flatf_comp = (
         image
         / image_flatf_fact[
-            CCDitem["NRSKIP"]: CCDitem["NRSKIP"] + CCDitem["NROW"],
-            CCDitem["NCSKIP"]: CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
+            CCDitem["NRSKIP"] : CCDitem["NRSKIP"] + CCDitem["NROW"],
+            CCDitem["NCSKIP"] : CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
         ]
     )
     # rows,colums Note that nrow always seems to be implemented as +1 already, whereas NCOL does not, hence the missing '+1' in the column calculation /LM201204
@@ -224,8 +225,8 @@ def subtract_dark(CCDitem, image="No picture"):
     image_dark_sub = (
         image
         - dark_fullpic[
-            CCDitem["NRSKIP"]: CCDitem["NRSKIP"] + CCDitem["NROW"],
-            CCDitem["NCSKIP"]: CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
+            CCDitem["NRSKIP"] : CCDitem["NRSKIP"] + CCDitem["NROW"],
+            CCDitem["NCSKIP"] : CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
         ]
     )
     # rows,colums Note that nrow always seems to be implemented as +1 already, whereas NCOL does not, hence the missing '+1' in the column calculation /LM201204
@@ -664,15 +665,15 @@ def get_true_image(header, image="No picture"):
     # go through the columns
     for j_c in range(0, int(header["NCOL"] + 1)):  # LM201102 Big fix +1
         # remove blank values and readout offsets
-        true_image[0: int(header["NROW"]) + 1, j_c] = (
-            true_image[0: int(header["NROW"] + 1), j_c]
+        true_image[0 : int(header["NROW"]) + 1, j_c] = (
+            true_image[0 : int(header["NROW"] + 1), j_c]
             - n_read[j_c] * (header["TBLNK"] - 128)
             - 128
         )
 
         # compensate for bad columns
-        true_image[0: int(header["NROW"]) + 1, j_c] = true_image[
-            0: int(header["NROW"] + 1), j_c
+        true_image[0 : int(header["NROW"]) + 1, j_c] = true_image[
+            0 : int(header["NROW"] + 1), j_c
         ] * (2 ** int(header["NColBinFPGA"]) * ncolbinC / n_coadd[j_c])
 
     return true_image
@@ -701,13 +702,13 @@ def get_true_image_reverse(header, true_image="No picture"):
     # go through the columns
     for j_c in range(0, int(header["NCOL"]) + 1):
         # compensate for bad columns
-        true_image[0: int(header["NROW"]) + 1, j_c] = true_image[
-            0: int(header["NROW"] + 1), j_c
+        true_image[0 : int(header["NROW"]) + 1, j_c] = true_image[
+            0 : int(header["NROW"] + 1), j_c
         ] / (2 ** int(header["NColBinFPGA"]) * ncolbinC / n_coadd[j_c])
 
         # add blank values and readout offsets
-        true_image[0: int(header["NROW"]) + 1, j_c] = (
-            true_image[0: int(header["NROW"] + 1), j_c]
+        true_image[0 : int(header["NROW"]) + 1, j_c] = (
+            true_image[0 : int(header["NROW"] + 1), j_c]
             + n_read[j_c] * (header["TBLNK"] - 128)
             + 128
         )
@@ -729,8 +730,8 @@ def get_true_image_from_compensated(image, header):
     true_image = image * 2 ** (int(header["Gain"]) & 255)
 
     for j_c in range(0, int(header["NCol"]) + 1):  # LM201102 Big fix +1 added
-        true_image[0: header["NRow"], j_c] = (
-            true_image[0: header["NRow"], j_c]
+        true_image[0 : header["NRow"], j_c] = (
+            true_image[0 : header["NRow"], j_c]
             - 2 ** header["NColBinFPGA"] * (header["BlankTrailingValue"] - 128)
             - 128
         )
@@ -955,8 +956,8 @@ def compare_image(image1, image2, header):
     if ncolskip + ncolbinC * ncolbinF * ncol > 2047:
         nrow = np.floor((2047 - ncolskip) / (ncolbinC * ncolbinF))
     print(nrow, image1.shape)
-    image1 = image1[0: nrow - 1, 0: ncol - 1]
-    image2 = image2[0: nrow - 1, 0: ncol - 1]
+    image1 = image1[0 : nrow - 1, 0 : ncol - 1]
+    image2 = image2[0 : nrow - 1, 0 : ncol - 1]
 
     r_scl = np.zeros(nrow)
     r_off = np.zeros(nrow)
@@ -1109,25 +1110,25 @@ def compensate_bad_columns(header, image="No picture"):
         for j_c in range(0, ncol):
             if ncolbinC * ncolbinF != n_coadd[j_c]:
                 # remove gain adjustment
-                image[0: nrow - 1, j_c] = image[0: nrow - 1, j_c] * gain
+                image[0 : nrow - 1, j_c] = image[0 : nrow - 1, j_c] * gain
 
                 # remove added superpixel value due to bad columns and read out offset
-                image[0: nrow - 1, j_c] = (
-                    image[0: nrow - 1, j_c] - n_read[j_c] * (blank - 128) - 128
+                image[0 : nrow - 1, j_c] = (
+                    image[0 : nrow - 1, j_c] - n_read[j_c] * (blank - 128) - 128
                 )
 
                 # multiply by number of binned column to actual number readout ratio
-                image[0: nrow - 1, j_c] = image[0: nrow - 1, j_c] * (
+                image[0 : nrow - 1, j_c] = image[0 : nrow - 1, j_c] * (
                     (ncolbinC * ncolbinF) / n_coadd[j_c]
                 )
 
                 # add number of FPGA binned
-                image[0: nrow - 1, j_c] = (
-                    image[0: nrow - 1, j_c] + ncolbinF * (blank - 128) + 128
+                image[0 : nrow - 1, j_c] = (
+                    image[0 : nrow - 1, j_c] + ncolbinF * (blank - 128) + 128
                 )
 
                 # add gain adjustment back
-                image[0: nrow - 1, j_c] = image[0: nrow - 1, j_c] / gain
+                image[0 : nrow - 1, j_c] = image[0 : nrow - 1, j_c] / gain
 
                 # print('Col: ',j_c,', n_read: ',n_read[j_c],', n_coadd: ',n_coadd[j_c],', binned pixels: ',ncolbinC*ncolbinF)
 
@@ -1252,7 +1253,7 @@ def readimg(filename):
     else:
         img_flag = 1
         image = np.reshape(
-            np.double(data_arr[11 + 1: NRow * (NCol + 1) + 12]), (NRow, NCol + 1)
+            np.double(data_arr[11 + 1 : NRow * (NCol + 1) + 12]), (NRow, NCol + 1)
         )  # LM201102 Corrected bug where4 NCol and NRow were switched
         # image = np.matrix(image).getH()
 

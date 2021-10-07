@@ -12,7 +12,7 @@ import numpy as np
 
 import scipy.interpolate
 
-
+# FIXME: Move to utils/LindasCalibrationFunctions?
 def read_MATS_packets(filename):
     json_file = open(filename, "r")
     packet_data = json.load(json_file)
@@ -20,6 +20,7 @@ def read_MATS_packets(filename):
     return packet_data
 
 
+# FIXME: Move to utils/LindasCalibrationFunctions?
 def get_time(relativetime, endtime):
     epoch = datetime.datetime(1984, 10, 1) - datetime.timedelta(0, endtime)
     timestamp = epoch + datetime.timedelta(0, relativetime)
@@ -55,7 +56,7 @@ def add_temperature_info(CCDitem, temperaturedata, relativetimedata, temperature
             CCDitem["temperature"] = HTR8A
         else:
             raise Exception("the CCD lacks defined temperature")
-        
+
         CCDitem["temperature_HTR"] = HTR8A
         ADC_temp_in_mV = int(CCDitem["TEMP"]) / 32768 * 2048
         ADC_temp_in_degreeC = 1.0 / 0.85 * ADC_temp_in_mV - 296
@@ -156,4 +157,3 @@ def create_temperature_info_array(filename):
     #     HTRtemp[:,i]=y_interp(HTRdata[:,i])
 
     return HTRdata, relativetimedata
-

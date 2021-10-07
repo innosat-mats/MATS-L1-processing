@@ -54,14 +54,15 @@ def selectimage(df, shutter, imagedir, ExpTime, channel):
     return mylist[0]
 
 
-def plotCCDitem(CCDitem, fig, axis, title="", clim=999, aspect='auto'):
+def plotCCDitem(CCDitem, fig, axis, title="", clim=999, aspect="auto"):
     image = CCDitem["IMAGE"]
-    sp=plot_CCDimage(image, fig, axis, title, clim, aspect)    
+    sp = plot_CCDimage(image, fig, axis, title, clim, aspect)
     return sp
 
-def plot_CCDimage(image, fig, axis, title="", clim=999, aspect='auto'):
-    sp = axis.imshow(image,cmap='viridis', origin='lower', interpolation='none')
-    #sp=axis.pcolormesh(image, , cmap='viridis')
+
+def plot_CCDimage(image, fig, axis, title="", clim=999, aspect="auto"):
+    sp = axis.imshow(image, cmap="viridis", origin="lower", interpolation="none")
+    # sp=axis.pcolormesh(image, , cmap='viridis')
     if clim == 999:
         mean = image.mean()
         std = image.std()
@@ -73,11 +74,13 @@ def plot_CCDimage(image, fig, axis, title="", clim=999, aspect='auto'):
     axis.set_aspect(aspect)
     return sp
 
-def plot_CCDimage_hmean(fig, axis,image,title='', clim=999):    
-    yax=range(0,image.shape[0])
-    sp=axis.plot(image.mean(axis=1),yax)
+
+def plot_CCDimage_hmean(fig, axis, image, title="", clim=999):
+    yax = range(0, image.shape[0])
+    sp = axis.plot(image.mean(axis=1), yax)
     axis.set_title(title)
     return sp
+
 
 def plot_simple(filename, clim=999):
     import numpy as np
@@ -93,11 +96,6 @@ def plot_simple(filename, clim=999):
     else:
         plt.clim(clim)
     plt.colorbar()
-
-
-
-
-
 
 
 def diffplot(image1, image2, title1, title2, clim=999, climdiff=999):
@@ -131,7 +129,6 @@ def diffplot(image1, image2, title1, title2, clim=999, climdiff=999):
 #             image["IMAGE"] - multiplydark * (dark1["IMAGE"] + dark2["IMAGE"]) / 2.0
 #         )
 #     return imagenew
-
 
 
 def UniqueValuesInKey(listofdicts, keystr):
@@ -305,16 +302,16 @@ class ItemsUnitCreateFromRac:
 
         return sp
 
+
 def read_all_files_in_protocol(df, read_from, directory):
     if read_from == "rac":
         CCDitems = []
         for PicID in list(df["PicID"]):
-            CCDitem = read_CCDitem(
-                directory + "RacFiles_out/", PicID, labtemp=999)
+            CCDitem = read_CCDitem(directory + "RacFiles_out/", PicID, labtemp=999)
             CCDitem["DarkBright"] = df.DarkBright[df.PicID == PicID].iloc[0]
             CCDitem["Shutter"] = df.Shutter[df.PicID == PicID].iloc[0]
             CCDitem["Comment"] = df.Comment[df.PicID == PicID].iloc[0]
-             
+
             CCDitems.append(CCDitem)
     elif read_from == "imgview":
         CCDitems = readselectedimageviewpics(
@@ -324,3 +321,24 @@ def read_all_files_in_protocol(df, read_from, directory):
         raise Exception("read_from must be rac or imgview")
     return CCDitems
 
+
+def filter_on_time(CCDitems, starttime=None, stoptime=None):
+    I = []
+    for i in range(len(CCDitems)):
+        image_time = pd.to_datetime(
+            CCDitems[i]["EXP Date"], format="%Y-%m-%dT%H:%M:%S.%fZ"
+        )
+        if (starttime != None) and (stoptime != None):
+            if (image_time > starttime) and (image_time < endtime):
+                I.append(i)
+        elif (starttime != None) and (stoptime == None):
+            if image_time > starttime:
+                I.append(i)
+        elif (starttime == None) and (stoptime != None):
+            if image_time < starttime:
+                I.append(i)
+        else:
+            Warning("Start or end time invalid")
+
+    CCDitems = [CCDitems[i] for i in I]
+    return CCDitems
