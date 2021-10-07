@@ -17,4 +17,4 @@ def test_generate_flatfield():
 
 
 def test_get_linearity():
-    make_linearity(1, calibration_file, plot=False)
+    make_linearity([1], calibration_file, plot=False)

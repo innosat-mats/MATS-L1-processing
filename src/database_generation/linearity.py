@@ -115,9 +115,9 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit"):
     return p_low, bin_center, low_measured_mean
 
 
-def get_linearity(CCDitems, testtype, plot=True, fittype="polyfit"):
-    testtype = "col"
-    channels = [1, 2, 3, 4, 5, 6]
+def get_linearity(
+    CCDitems, testtype="col", plot=True, fittype="polyfit", channels=[1, 2, 3, 4, 5, 6]
+):
     plotting_factor = 1
     threshold = 30e3
 
@@ -199,8 +199,13 @@ def make_linearity(channel, calibration_file, plot=True):
     if (starttime != None) or (endtime != None):
         CCDitems = filter_on_time(CCDitems, starttime, endtime)
 
+    # Main function
     poly_or_spline = get_linearity(
-        CCDitems, "col", plot, calibration_data["linearity"]["fittype"]
+        CCDitems,
+        "col",
+        plot,
+        calibration_data["linearity"]["fittype"],
+        channels=channel,
     )
 
     return poly_or_spline
