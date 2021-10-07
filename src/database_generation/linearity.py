@@ -15,6 +15,7 @@ from matplotlib.pyplot import cm
 from scipy.optimize import curve_fit
 from scipy.interpolate import UnivariateSpline
 import toml
+from mats_l1_processing.LindasCalibrationFunctions import filter_on_time
 
 
 def fit_with_polyfit(x, y, deg):
@@ -182,14 +183,21 @@ def make_linearity(channel, calibration_file, plot=True):
 
     print(len(CCDitems))
 
-    starttime = pd.to_datetime(
-        calibration_data["linearity"]["starttime"], format="%Y-%m-%dT%H:%MZ"
-    )
-    endtime = pd.to_datetime(
-        calibration_data["linearity"]["endtime"], format="%Y-%m-%dT%H:%MZ"
-    )
+    starttime = None
+    endtime = None
 
-    # CCDitems = filter_on_time(CCDitems, starttime, endtime)
+    if calibration_data["linearity"]["starttime"] != "":
+        starttime = pd.to_datetime(
+            calibration_data["linearity"]["starttime"], format="%Y-%m-%dT%H:%MZ"
+        )
+
+    if calibration_data["linearity"]["endtime"] != "":
+        endtime = pd.to_datetime(
+            calibration_data["linearity"]["endtime"], format="%Y-%m-%dT%H:%MZ"
+        )
+
+    if (starttime != None) or (endtime != None):
+        CCDitems = filter_on_time(CCDitems, starttime, endtime)
 
     poly_or_spline = get_linearity(
         CCDitems, "col", plot, calibration_data["linearity"]["fittype"]

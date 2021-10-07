@@ -12,6 +12,6 @@ title = "Level 1 calibration files for testing this package"
         baffle_flatfield = "calibration_data/Flatfield20210421/PayloadImages/"
     [linearity]
         folder = "calibration_data/binning_test_20200812/RacFiles_out/"
-        starttime = "2020-08-10T12:42Z"
-        endtime = "2020-08-16T13:42Z"
+        starttime = ""
+        endtime = ""
         fittype = 'curvefit2'
