@@ -6,3 +6,6 @@ testdata
 .spyproject
 data
 src/mats_l1_processing.egg-info/
+calibration_data/
+htmlcov/
+scripts/
