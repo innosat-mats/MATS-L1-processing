@@ -14,6 +14,8 @@ from scipy.stats import binned_statistic
 from matplotlib.pyplot import cm
 from scipy.optimize import curve_fit
 from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import CubicSpline
+import pwlf
 import toml
 from mats_l1_processing.LindasCalibrationFunctions import filter_on_time
 
@@ -60,13 +62,15 @@ def fit_with_curvefit(x, y, deg):
 
 
 def fit_with_spline(x, y, deg):
-    spl = UnivariateSpline(x, y, k=1, s=0.01)
-    return spl
+    my_pwlf = pwlf.PiecewiseLinFit(x, y)
+    breaks = my_pwlf.fit(6)
+    return my_pwlf
 
 
-def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit"):
+def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1"):
     """Bins the data into evenly spaced bins and performs a fit. Valid fittypes are:
-    'polyfit'
+    'polyfit1'
+    'polyfit2'
     'curvefit1'
     'curvefit2'
     'spline1'
@@ -85,11 +89,17 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit"):
 
     bin_center = (bin_edges[1:] + bin_edges[0:-1]) / 2
 
-    if fittype == "polyfit":
+    if fittype == "polyfit1":
         p_low = fit_with_polyfit(
             bin_center[~np.isnan(low_measured_mean)],
             low_measured_mean[~np.isnan(low_measured_mean)],
             1,
+        )
+    if fittype == "polyfit2":
+        p_low = fit_with_polyfit(
+            bin_center[~np.isnan(low_measured_mean)],
+            low_measured_mean[~np.isnan(low_measured_mean)],
+            2,
         )
     elif fittype == "curvefit1":
         p_low = fit_with_curvefit(
@@ -116,10 +126,14 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit"):
 
 
 def get_linearity(
-    CCDitems, testtype="col", plot=True, fittype="polyfit", channels=[1, 2, 3, 4, 5, 6]
+    CCDitems,
+    testtype="col",
+    plot=True,
+    fittype="polyfit1",
+    channels=[1, 2, 3, 4, 5, 6],
+    threshold=30e3,
 ):
-    plotting_factor = 1
-    threshold = 30e3
+    plotting_factor = 5
 
     color = cm.rainbow(np.linspace(0, 1, 7))
 
@@ -130,7 +144,7 @@ def get_linearity(
             channel,
             test_type,
         ) = bf.get_binning_test_data_from_CCD_item(
-            CCDitems, test_type_filter=testtype, channels=[channels[i]]
+            CCDitems, test_type_filter=testtype, channels=[channels[i]], add_bias=True
         )
 
         poly_or_spline, bin_center, low_measured_mean = fit_curve(
@@ -155,7 +169,7 @@ def get_linearity(
             if fittype == "spline1":
                 plt.plot(
                     np.arange(0, 40000),
-                    poly_or_spline(np.arange(0, 40000)),
+                    poly_or_spline.predict(np.arange(0, 40000)),
                     "-",
                     c=color[channels[i]],
                 )
@@ -170,6 +184,7 @@ def get_linearity(
         print(poly_or_spline)
     if plot:
         # plt.savefig("linearity_fit_channel_" + str(channels[i]) + ".png")
+        plt.grid(True)
         plt.show()
 
     return poly_or_spline

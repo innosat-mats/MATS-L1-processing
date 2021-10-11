@@ -641,14 +641,17 @@ def get_true_image_opposite_order(image, header):
 def get_true_image(header, image="No picture"):
     # calculate true image by removing readout offset (pixel blank value) and
     # compensate for bad colums
+
+    # #FIXME: can send in image for backward compatibility (most times this if statement is true)
     if type(image) is str:
         image = header["IMAGE"]
 
+    # Both 0 and 1 means that no binning has been done on CCD (depricated)
     ncolbinC = int(header["NColBinCCD"])
     if ncolbinC == 0:
         ncolbinC = 1
 
-    # remove gain
+    # correct for digital gain from FPGA binning
     true_image = image * 2 ** (
         int(header["DigGain"])
     )  # TODO I dont think htis should be DigGain . Says Gain in original coding.  Check with Nickolay LM 201215

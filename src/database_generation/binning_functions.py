@@ -161,7 +161,7 @@ def get_binning_test_data(
 
 
 def get_binning_test_data_from_CCD_item(
-    CCDitems, channels=[1, 2, 3, 4, 5, 6, 7], test_type_filter="all"
+    CCDitems, channels=[1, 2, 3, 4, 5, 6, 7], test_type_filter="all", add_bias=False
 ):
 
     CCDitems_use = []
@@ -201,7 +201,7 @@ def get_binning_test_data_from_CCD_item(
     test_type = np.array([])  # store test type
     for i in range(0, len(CCDs_list)):
 
-        # ASSIGN TEST TYPE
+        # ASSIGN TEST TYPE, FPGA IS NOT IMPLEMENTED! -olem
         if CCDl_list[i]["TEXPMS"] != CCDr_list[0]["TEXPMS"]:
             test_type = np.append(test_type, "exp")
         elif CCDl_list[i]["NCBIN CCDColumns"] != CCDr_list[0]["NCBIN CCDColumns"]:
@@ -236,7 +236,13 @@ def get_binning_test_data_from_CCD_item(
         ref["IMAGE"] = CCDr_sub_img[i].copy()
 
         # bin reference image according to bin_input settings
-        binned.append(bin_ref(copy.deepcopy(ref), bin_input[i].copy()))
+        binned_reference = bin_ref(copy.deepcopy(ref), bin_input[i].copy())
+
+        # adding bias to get the correct values for non-linearity
+        if add_bias:
+            binned_reference = binned_reference + CCDs_list[i]["IMAGE"]
+
+        binned.append(binned_reference)
 
     man_tot = np.array([])
     inst_tot = np.array([])
@@ -248,10 +254,15 @@ def get_binning_test_data_from_CCD_item(
         if test_type[i] == test_type_filter or (
             test_type_filter == "all" and test_type[i] != "ref"
         ):
+            # adding bias to get the correct values for non-linearity
+            if add_bias:
+                inst_bin = CCDl_list[i]["IMAGE"].copy()
+            else:
+                inst_bin = CCDl_sub_img[i].copy()
 
-            inst_bin = CCDl_sub_img[i].copy()
-            man_tot = np.append(man_tot, binned[i].flatten())
             inst_tot = np.append(inst_tot, inst_bin.flatten())
+
+            man_tot = np.append(man_tot, binned[i].flatten())
             test_type_tot = np.append(
                 test_type_tot,
                 [test_type[i]] * len(inst_bin.flatten()),
