@@ -580,7 +580,7 @@ def bin_image_using_predict(header, reference_image="999"):
                     image[j_r, j_c] = (
                         image[j_r, j_c] + n_read[j_c] * blank_off
                     )  # here we add the blank value, only once per binned row
-                    # (LM201025 n_read is the number a superbin has been devided into to be read. Why n_read when we are doing row binning. Shouldnt n_read always be one here? No, not if that supercolumn had a BC and was read out in two bits.
+                    # (LM201025 n_read is the number a superbin has been devided into to be read. So if no badcolums or fpga binning then n_read=1.
                 for j_bc in range(0, ncolbintotal):  # account for column binning
                     # LM201030: Go through all unbinned columns(both from FPGA and onchip) that belongs to one superpixel(j_r,j_c) and if the column is not Bad, add the signal of that unbinned pixel to the superpixel (j_r,j_c)
                     # out of reference image range
@@ -607,7 +607,6 @@ def bin_image_using_predict(header, reference_image="999"):
                                 (j_r) * nrowbin + j_br + nrowskip,
                                 (j_c) * ncolbinC * ncolbinF + j_bc + ncolskip,
                             ]  # row and column value evaluation
-                            * 1  # scaling factor
                         )
 
     binned_image = image / gain
@@ -653,9 +652,9 @@ def get_true_image(header, image="No picture"):
     # correct for digital gain from FPGA binning
     true_image = image * 2 ** (
         int(header["DigGain"])
-    )  # TODO I dont think htis should be DigGain . Says Gain in original coding.  Check with Nickolay LM 201215
+    )  # Says Gain in original coding.  Check with Nickolay LM 201215
 
-    # bad column analysis #LM201025 nread appears to be number of bins or (super)columns binned in FPGA, coadd is numer of total columns in a supersupercolumn (FPGA and onchip binned)
+    # bad column analysis #LM201025 nread appears to be number of bins or (super)columns binned in FPGA (and bad columns), coadd is numer of total columns in a supersupercolumn (FPGA and onchip binned)
     n_read, n_coadd = binning_bc(
         int(header["NCOL"]) + 1,
         int(header["NCSKIP"]),
