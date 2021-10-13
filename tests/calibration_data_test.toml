@@ -8,7 +8,8 @@ title = "Level 1 calibration files for testing this package"
 [darkcurrent]
 folder = "calibration_data/MATS_CCD_DC_calibration_FINAL/"
 [flatfield]
-flatfieldfolder = "calibration_data/20200330_flatfields_0C/"
+flatfieldfolder = "calibration_data/flatfields/"
+flatfieldfolder_cold_unprocessed = "calibration_data/20200330_flatfields_0C/"
 baffle_flatfield = "calibration_data/Flatfield20210421/PayloadImages/"
 [linearity]
 folder = "calibration_data/binning_test_20200812/RacFiles_out/"

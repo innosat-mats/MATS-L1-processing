@@ -212,7 +212,7 @@ def make_flatfield(channel, signalmode, calibration_file, plot=True):
         #    myax.set_xlim((1000,1100))
         #    myax.set_aspect('auto')
 
-        fig.suptitle(channel)
-        fig.savefig("MorphedFlatfield_" + channel + ".jpg")
+        fig.suptitle(channel+' '+signalmode)
+        fig.savefig("../output/figures/MorphedFlatfield_" + channel + ".jpg")
 
     return flatfield_morphed
