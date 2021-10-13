@@ -547,9 +547,8 @@ def bin_image_using_predict(header, reference_image="999"):
 
     blank_off = blank - 128
 
-    # gain=2**(int(header['Gain']) & 255)
-    gain = 2.0 ** 0  # TODO htis should be read in! LM201211
-
+    # gain=2**(int(header['Gain']) & 255) #use for old data format
+    gain = 2.0 ** header["DigGain"]
     bad_columns = header["BC"]
 
     if nrowbin == 0:  # no binning means beaning of one
