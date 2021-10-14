@@ -13,6 +13,7 @@ from mats_l1_processing.L1_calibration_functions import (
     CCD,
     subtract_dark,
     compensate_flatfield,
+    get_linearized_image,
 )
 
 # from L1_calibration_functions import get_true_image_old, desmear_true_image_old
@@ -89,8 +90,11 @@ def L1_calibrate(CCDitem, calibrationfile):
     image_bias_sub = get_true_image(CCDitem, image_lsb)
     #    image_bias_sub = get_true_image(CCDitem)
 
+    # step 3: correct for non-linearity
+    image_linear = get_linearized_image(CCDitem, image_bias_sub)
+
     # Step 4: Desmear
-    image_desmeared = desmear_true_image(CCDitem, image_bias_sub.copy())
+    image_desmeared = desmear_true_image(CCDitem, image_linear)
     #    image_desmeared = desmear_true_image(CCDitem)
 
     # Step 5 Remove dark current

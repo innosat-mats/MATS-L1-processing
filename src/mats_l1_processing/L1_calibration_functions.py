@@ -740,6 +740,11 @@ def get_true_image_from_compensated(image, header):
     return true_image
 
 
+def get_linearized_image(header, image):
+
+    return image
+
+
 def binning_bc(Ncol, Ncolskip, NcolbinFPGA, NcolbinCCD, BadColumns):
 
     # a routine to estimate the correction factors for column binning with bad columns
