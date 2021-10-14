@@ -103,13 +103,19 @@ class CCD:
 
         # Read in flat fields
 
-        self.flatfield_HSM = read_flatfield(
-            self, 0, calibration_data["flatfield"]["flatfieldfolder"]
-        )
-        self.flatfield_LSM = read_flatfield(
-            self, 1, calibration_data["flatfield"]["flatfieldfolder"]
-        )
+        self.flatfield_HSM = np.load(calibration_data["flatfield"]["flatfieldfolder"]+'flatfield_'+channel+'_HSM.npy')
+        self.flatfield_LSM = np.load(calibration_data["flatfield"]["flatfieldfolder"]+'flatfield_'+channel+'_LSM.npy')
 
+# =============================================================================
+#         Old stuff to be removed
+#         #read_flatfield(
+#             self, 0, calibration_data["flatfield"]["flatfieldfolder"]
+#         )
+#         self.flatfield_LSM = read_flatfield(
+#             self, 1, calibration_data["flatfield"]["flatfieldfolder"]
+#         )
+# 
+# =============================================================================
         #        self.hot_pix=np.where(self.image_HSM>=0.8*np.max(self.image_HSM))
 
         if self.channel == "UV1" or self.channel == "UV2":

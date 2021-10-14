@@ -25,11 +25,11 @@ def make_flatfield(channel, signalmode, calibration_file, plot=True):
 
     if signalmode == "HSM":
         flatfield_wo_baffle = read_flatfield(
-            CCDunit, 0, calibration_data["flatfield"]["flatfieldfolder"]
+            CCDunit, 0, calibration_data["flatfield"]["flatfieldfolder_cold_unprocessed"]
         )
     elif signalmode == "LSM":
         flatfield_wo_baffle = read_flatfield(
-            CCDunit, 1, calibration_data["flatfield"]["flatfieldfolder"]
+            CCDunit, 1, calibration_data["flatfield"]["flatfieldfolder_cold_unprocessed"]
         )
 
     directory = calibration_data["flatfield"][
