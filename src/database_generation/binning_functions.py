@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import kde
 from mats_l1_processing.LindasCalibrationFunctions import plotCCDitem
 from mats_l1_processing.LindasCalibrationFunctions import plot_simple
-from mats_l1_processing.L1_calibration_functions import desmear_true_image
+from mats_l1_processing.L1_calibration_functions import desmear_true_image, get_true_image
 import copy
 from mats_l1_processing import read_in_functions
 
@@ -161,7 +161,11 @@ def get_binning_test_data(
 
 
 def get_binning_test_data_from_CCD_item(
-    CCDitems, channels=[1, 2, 3, 4, 5, 6, 7], test_type_filter="all", add_bias=False
+    CCDitems,
+    channels=[1, 2, 3, 4, 5, 6, 7],
+    test_type_filter="all",
+    add_bias=False,
+    remove_blanks=True,
 ):
 
     CCDitems_use = []
@@ -190,6 +194,10 @@ def get_binning_test_data_from_CCD_item(
         else:
             [CCDitems_use.append(CCDitems[i]) for i in I]
     CCDitems = CCDitems_use
+
+    if remove_blanks:
+        for i in range(0, len(CCDitems)):
+            CCDitems[i]["IMAGE"] = get_true_image(CCDitems[i])
 
     # stack data into 4 arrays one for each measurement type
     CCDl_list = np.copy(CCDitems[0::4])  # long exposure

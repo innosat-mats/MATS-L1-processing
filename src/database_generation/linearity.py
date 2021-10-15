@@ -132,6 +132,7 @@ def get_linearity(
     fittype="polyfit1",
     channels=[1, 2, 3, 4, 5, 6],
     threshold=30e3,
+    remove_blanks=True,
 ):
     plotting_factor = 5
 
@@ -144,7 +145,11 @@ def get_linearity(
             channel,
             test_type,
         ) = bf.get_binning_test_data_from_CCD_item(
-            CCDitems, test_type_filter=testtype, channels=[channels[i]], add_bias=True
+            CCDitems,
+            test_type_filter=testtype,
+            channels=[channels[i]],
+            add_bias=True,
+            remove_blanks=remove_blanks,
         )
 
         poly_or_spline, bin_center, low_measured_mean = fit_curve(
@@ -152,6 +157,8 @@ def get_linearity(
         )
 
         if plot:
+            plt.plot([0, 40000], [0, 40000], "k--")
+
             plt.plot(
                 man_tot.flatten()[::plotting_factor],
                 inst_tot[::plotting_factor],
@@ -183,7 +190,7 @@ def get_linearity(
 
         print(poly_or_spline)
     if plot:
-        # plt.savefig("linearity_fit_channel_" + str(channels[i]) + ".png")
+        plt.savefig("linearity_fit_channel_" + str(channels[i]) + ".png")
         plt.grid(True)
         plt.show()
 
@@ -221,6 +228,7 @@ def make_linearity(channel, calibration_file, plot=True):
         plot,
         calibration_data["linearity"]["fittype"],
         channels=channel,
+        remove_blanks=calibration_data["linearity"]["remove_blanks"],
     )
 
     return poly_or_spline

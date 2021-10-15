@@ -103,19 +103,32 @@ class CCD:
 
         # Read in flat fields
 
-        self.flatfield_HSM = np.load(calibration_data["flatfield"]["flatfieldfolder"]+'flatfield_'+channel+'_HSM.npy')
-        self.flatfield_LSM = np.load(calibration_data["flatfield"]["flatfieldfolder"]+'flatfield_'+channel+'_LSM.npy')
+        self.flatfield_HSM = np.load(
+            calibration_data["flatfield"]["flatfieldfolder"]
+            + "flatfield_"
+            + channel
+            + "_HSM.npy"
+        )
+        self.flatfield_LSM = np.load(
+            calibration_data["flatfield"]["flatfieldfolder"]
+            + "flatfield_"
+            + channel
+            + "_LSM.npy"
+        )
 
-# =============================================================================
-#         Old stuff to be removed
-#         #read_flatfield(
-#             self, 0, calibration_data["flatfield"]["flatfieldfolder"]
-#         )
-#         self.flatfield_LSM = read_flatfield(
-#             self, 1, calibration_data["flatfield"]["flatfieldfolder"]
-#         )
-# 
-# =============================================================================
+        # Read in non linearity coefficients (channel stuff not added)
+        self.non_linearity = np.load(calibration_data["linearity"]["polynomial"])
+
+        # =============================================================================
+        #         Old stuff to be removed
+        #         #read_flatfield(
+        #             self, 0, calibration_data["flatfield"]["flatfieldfolder"]
+        #         )
+        #         self.flatfield_LSM = read_flatfield(
+        #             self, 1, calibration_data["flatfield"]["flatfieldfolder"]
+        #         )
+        #
+        # =============================================================================
         #        self.hot_pix=np.where(self.image_HSM>=0.8*np.max(self.image_HSM))
 
         if self.channel == "UV1" or self.channel == "UV2":
@@ -171,6 +184,25 @@ class CCD:
             print("Undefined mode")
 
         return flatfield
+
+    def linearity(self, mode):
+        return self.non_linearity
+
+
+def get_linearized_image(CCDitem, image="No picture"):
+    try:
+        CCDunit = CCDitem["CCDunit"]
+    except:
+        raise Exception("No CCDunit defined for the CCDitem")
+
+    if type(image) is str:
+        image = CCDitem["IMAGE"]
+
+    polynomial = CCDunit.linearity(int(CCDitem["SigMode"]))
+
+    image_linear_comp = np.polyval(p1, polynomial)
+
+    return image_linear_comp
 
 
 def compensate_flatfield(CCDitem, image="No picture"):
@@ -744,11 +776,6 @@ def get_true_image_from_compensated(image, header):
         )
 
     return true_image
-
-
-def get_linearized_image(header, image):
-
-    return image
 
 
 def binning_bc(Ncol, Ncolskip, NcolbinFPGA, NcolbinCCD, BadColumns):
