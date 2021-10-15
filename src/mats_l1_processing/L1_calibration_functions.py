@@ -200,7 +200,7 @@ def get_linearized_image(CCDitem, image="No picture"):
 
     polynomial = CCDunit.linearity(int(CCDitem["SigMode"]))
 
-    image_linear_comp = np.polyval(p1, polynomial)
+    image_linear_comp = np.polyval(polynomial, image)
 
     return image_linear_comp
 
