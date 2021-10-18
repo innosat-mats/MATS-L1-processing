@@ -137,6 +137,8 @@ def get_linearity(
     plotting_factor = 5
 
     color = cm.rainbow(np.linspace(0, 1, 7))
+    if not isinstance(channels, (list, tuple, np.ndarray)):
+        channels = [channels]
 
     for i in range(len(channels)):
         (

@@ -17,4 +17,4 @@ starttime = ""
 endtime = ""
 fittype = 'curvefit2'
 remove_blanks = 'true'
-polynomial = 'calibration_data/linearity/linearity.npy'
+polynomial = 'calibration_data/linearity/'

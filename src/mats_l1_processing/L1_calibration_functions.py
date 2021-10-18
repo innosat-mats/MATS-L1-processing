@@ -36,20 +36,67 @@ class CCD:
         self.channel = channel
         if channel == "IR1":
             CCDID = 16
+            channelnumber = 1
+            CPRU_Port = "A0"
+            KTH_name = "FM2"
+            OHB_naming = "CCD_2"
+            OHB_marker_tag = 14
         elif channel == "IR2":
             CCDID = 17
+            channelnumber = 4
+            CPRU_Port = "A3"
+            KTH_name = "FM3"
+            OHB_naming = "CCD_3"
+            OHB_marker_tag = 15
         elif channel == "IR3":
             CCDID = 18
+            channelnumber = 3
+            CPRU_Port = "A2"
+            KTH_name = "FM4"
+            OHB_naming = ""
+            OHB_marker_tag = ""
         elif channel == "IR4":
             CCDID = 19
+            channelnumber = 2
+            CPRU_Port = "A1"
+            KTH_name = "FM8"
+            OHB_naming = ""
+            OHB_marker_tag = ""
         elif channel == "NADIR":
             CCDID = 20
+            channelnumber = 7
+            CPRU_Port = "B2"
+            KTH_name = "FM7"
+            OHB_naming = 50
+            OHB_marker_tag = "NADIR_CAM"
         elif channel == "UV1":
             CCDID = 21
+            channelnumber = 5
+            CPRU_Port = "B0"
+            KTH_name = "FM5"
+            OHB_naming = "CCD_5"
+            OHB_marker_tag = 32
         elif channel == "UV2":
             CCDID = 22
+            channelnumber = 6
+            CPRU_Port = "B1"
+            KTH_name = "FM6"
+            OHB_naming = "CCD_4"
+            OHB_marker_tag = 49
         elif channel == "KTH test channel":
             CCDID = 16
+            channelnumber = None
+            CPRU_Port = None
+            KTH_name = None
+            OHB_naming = None
+            OHB_marker_tag = None
+
+        self.CCDID = CCDID
+        self.channelnumber = channelnumber
+        self.CPRU_Port = CPRU_Port
+        self.KTH_name = KTH_name
+        self.OHB_naming = OHB_naming
+        self.OHB_marker_tag = OHB_marker_tag
 
         calibration_data = toml.load(calibration_file)
 
@@ -117,7 +164,12 @@ class CCD:
         )
 
         # Read in non linearity coefficients (channel stuff not added)
-        self.non_linearity = np.load(calibration_data["linearity"]["polynomial"])
+        self.non_linearity = np.load(
+            calibration_data["linearity"]["polynomial"]
+            + "linearity_"
+            + str(self.channelnumber)
+            + ".npy"
+        )
 
         # =============================================================================
         #         Old stuff to be removed
