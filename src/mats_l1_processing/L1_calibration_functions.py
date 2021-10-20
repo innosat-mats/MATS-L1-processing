@@ -163,7 +163,7 @@ class CCD:
             + "_LSM.npy"
         )
 
-        # Read in non linearity coefficients (channel stuff not added)
+        # Read in non linearity coefficients (only colbin so far)
         self.non_linearity = np.load(
             calibration_data["linearity"]["polynomial"]
             + "linearity_"
