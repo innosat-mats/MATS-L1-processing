@@ -467,123 +467,122 @@ def read_CCDitems(directory):
     return CCDitems
 
 
-def read_CCDitems_old(rac_dir, labtemp=999): #This fuction should become (or is already) obsolete. LM201021 
-    from math import log
-    from math import isnan
-    from .get_temperature import create_temperature_info_array, add_temperature_info
-    
-    raise Exception('This routine is obsolete. Read in using read_CCDitem_image followed by add_and_rename_CCDitem_info. See read_all_files_in_root_directory or read_all_files_in_protocol.')
+# Old function, kept to make it easier to debug.  Delete 1st of jan 2022.  
+#def read_CCDitems_old(rac_dir, labtemp=999): #This fuction should become (or is already) obsolete. LM201021 
+#     from math import log
+#     from math import isnan
+#     from .get_temperature import create_temperature_info_array, add_temperature_info
 
 
-    CCD_image_data = read_MATS_image(rac_dir)
+#     CCD_image_data = read_MATS_image(rac_dir)
 
-    # Throw out items that have not been properly read:
-    for CCDitem in CCD_image_data:
-        if isnan(CCDitem["CCDSEL"]):
-            CCD_image_data.remove(CCDitem)
+#     # Throw out items that have not been properly read:
+#     for CCDitem in CCD_image_data:
+#         if isnan(CCDitem["CCDSEL"]):
+#             CCD_image_data.remove(CCDitem)
 
-    for CCDitem in CCD_image_data:
+#     for CCDitem in CCD_image_data:
 
-        # CCDitem=CCD_image_data[itemnumber]
+#         # CCDitem=CCD_image_data[itemnumber]
 
-        # The variables below are remain question marks
-        #    CCDitem['Noverflow'] = Noverflow # FBINOV?
-        #   CCDitem['Ending'] = Ending       #not found in rac
+#         # The variables below are remain question marks
+#         #    CCDitem['Noverflow'] = Noverflow # FBINOV?
+#         #   CCDitem['Ending'] = Ending       #not found in rac
 
-        #        CCDitem['TIMING1']=CCDitem['TIMING1'][0] # Named Reserved1 in Georgis code /LM 20191115
-        #        CCDitem['TIMING2']=CCDitem['TIMING2'][0] # Named Reserved2 in Georgis code /LM 20191115
-        #        CCDitem['TIMING3']=CCDitem['TIMING3'][0] # Named VersionDate in Georgis code /LM 20191115
+#         #        CCDitem['TIMING1']=CCDitem['TIMING1'][0] # Named Reserved1 in Georgis code /LM 20191115
+#         #        CCDitem['TIMING2']=CCDitem['TIMING2'][0] # Named Reserved2 in Georgis code /LM 20191115
+#         #        CCDitem['TIMING3']=CCDitem['TIMING3'][0] # Named VersionDate in Georgis code /LM 20191115
 
-        # # The parameters below are missing in the new version of the rac files /LM 200603
-        # CCDitem['SID_mnemonic']=CCDitem['SID_mnemonic'][0]
-        # CCDitem['DigGain']=CCDitem['DigGain'][0]
-        # CCDitem['TimingFlag']=CCDitem['TimingFlag'][0]
-        # CCDitem['SigMode']=CCDitem['SigMode'][0]
-        # CCDitem['WinModeFlag']=CCDitem['WinModeFlag'][0]
-        # CCDitem['WinMode']=CCDitem['WinMode'][0]
+#         # # The parameters below are missing in the new version of the rac files /LM 200603
+#         # CCDitem['SID_mnemonic']=CCDitem['SID_mnemonic'][0]
+#         # CCDitem['DigGain']=CCDitem['DigGain'][0]
+#         # CCDitem['TimingFlag']=CCDitem['TimingFlag'][0]
+#         # CCDitem['SigMode']=CCDitem['SigMode'][0]
+#         # CCDitem['WinModeFlag']=CCDitem['WinModeFlag'][0]
+#         # CCDitem['WinMode']=CCDitem['WinMode'][0]
 
-        if int(CCDitem["CCDSEL"]) == 1:  # input CCDSEL=1
-            channel = "IR1"
-        elif int(CCDitem["CCDSEL"]) == 4:  # input CCDSEL=8
-            channel = "IR2"
-        elif int(CCDitem["CCDSEL"]) == 3:  # input CCDSEL=4
-            channel = "IR3"
-        elif int(CCDitem["CCDSEL"]) == 2:  # input CCDSEL=2
-            channel = "IR4"
-        elif int(CCDitem["CCDSEL"]) == 5:  # input CCDSEL=16
-            channel = "UV1"
-        elif int(CCDitem["CCDSEL"]) == 6:  # input CCDSEL=32
-            channel = "UV2"
-        elif int(CCDitem["CCDSEL"]) == 7:  # input CCDSEL=64
-            channel = "NADIR"
-        else:
-            print("Error in CCDSEL, CCDSEL=", int(CCDitem["CCDSEL"]))
+#         if int(CCDitem["CCDSEL"]) == 1:  # input CCDSEL=1
+#             channel = "IR1"
+#         elif int(CCDitem["CCDSEL"]) == 4:  # input CCDSEL=8
+#             channel = "IR2"
+#         elif int(CCDitem["CCDSEL"]) == 3:  # input CCDSEL=4
+#             channel = "IR3"
+#         elif int(CCDitem["CCDSEL"]) == 2:  # input CCDSEL=2
+#             channel = "IR4"
+#         elif int(CCDitem["CCDSEL"]) == 5:  # input CCDSEL=16
+#             channel = "UV1"
+#         elif int(CCDitem["CCDSEL"]) == 6:  # input CCDSEL=32
+#             channel = "UV2"
+#         elif int(CCDitem["CCDSEL"]) == 7:  # input CCDSEL=64
+#             channel = "NADIR"
+#         else:
+#             print("Error in CCDSEL, CCDSEL=", int(CCDitem["CCDSEL"]))
 
-        CCDitem["channel"] = channel
-        #       Renaming of stuff. The names in the code here is based on the old rac extract file (prior to May 2020) rac_extract file works
-        CCDitem["id"] = str(CCDitem["EXP Nanoseconds"]) + "_" + str(CCDitem["CCDSEL"])
+#         CCDitem["channel"] = channel
+#         #       Renaming of stuff. The names in the code here is based on the old rac extract file (prior to May 2020) rac_extract file works
+#         CCDitem["id"] = str(CCDitem["EXP Nanoseconds"]) + "_" + str(CCDitem["CCDSEL"])
 
-        # TODO LM June 2020: Change  all code so that the new names, i. CCDitem['NCBIN CCDColumns'] and CCDitem['NCBIN FPGAColumns'] are used instead of the old.
-        try:
-            CCDitem["NColBinCCD"]
-        except:
-            CCDitem["NColBinCCD"] = CCDitem["NCBIN CCDColumns"]
+#         # TODO LM June 2020: Change  all code so that the new names, i. CCDitem['NCBIN CCDColumns'] and CCDitem['NCBIN FPGAColumns'] are used instead of the old.
+#         try:
+#             CCDitem["NColBinCCD"]
+#         except:
+#             CCDitem["NColBinCCD"] = CCDitem["NCBIN CCDColumns"]
 
-        # CCDitem['NColBinFPGA']=CCDitem['NCBIN FPGAColumns']
-        try:
-            CCDitem["NColBinFPGA"]
-        except:
-            CCDitem["NColBinFPGA"] = log(CCDitem["NCBIN FPGAColumns"]) / log(2)
+#         # CCDitem['NColBinFPGA']=CCDitem['NCBIN FPGAColumns']
+#         try:
+#             CCDitem["NColBinFPGA"]
+#         except:
+#             CCDitem["NColBinFPGA"] = log(CCDitem["NCBIN FPGAColumns"]) / log(2)
 
-        # del CCDitem['NCBIN FPGAColumns']
-        if CCDitem["GAIN Mode"] == "High":
-            CCDitem["DigGain"] = 0
-        elif CCDitem["GAIN Mode"] == "Low":
-            CCDitem["DigGain"] = 1
-        else:
-            raise Exception("GAIN mode set to strange value")
+#         # del CCDitem['NCBIN FPGAColumns']
+#         if CCDitem["GAIN Mode"] == "High":
+#             CCDitem["DigGain"] = 0
+#         elif CCDitem["GAIN Mode"] == "Low":
+#             CCDitem["DigGain"] = 1
+#         else:
+#             raise Exception("GAIN mode set to strange value")
 
-        CCDitem["SigMode"] = 0
-        # This should be read in, 0 should be high in output LM 200604
-        #       CCDitem['']=CCDitem['']
-        CCDitem["read_from"] = "rac"
-        try:
-            CCDitem["reltime"] = 1.0e-9 * CCDitem["EXP Nanoseconds"]
-        except:
-            try:
-                CCDitem["reltime"] = (
-                    int(CCDitem["EXPTS"]) + int(CCDitem["EXPTSS"]) / 2 ** 16
-                )
-            except:
-                raise Exception("No info on the relative time")
+#         CCDitem["SigMode"] = 0
+#         # This should be read in, 0 should be high in output LM 200604
+#         #       CCDitem['']=CCDitem['']
+#         CCDitem["read_from"] = "rac"
+#         try:
+#             CCDitem["reltime"] = 1.0e-9 * CCDitem["EXP Nanoseconds"]
+#         except:
+#             try:
+#                 CCDitem["reltime"] = (
+#                     int(CCDitem["EXPTS"]) + int(CCDitem["EXPTSS"]) / 2 ** 16
+#                 )
+#             except:
+#                 raise Exception("No info on the relative time")
 
-        # Convert BC to list of integer instead of str
-        if CCDitem["BC"] == "[]":
-            CCDitem["BC"] = np.array([])
-        else:
-            strlist = CCDitem["BC"][1:-1].split(" ")
-            CCDitem["BC"] = np.array([int(i) for i in strlist])
+#         # Convert BC to list of integer instead of str
+#         if CCDitem["BC"] == "[]":
+#             CCDitem["BC"] = np.array([])
+#         else:
+#             strlist = CCDitem["BC"][1:-1].split(" ")
+#             CCDitem["BC"] = np.array([int(i) for i in strlist])
 
-        # Added temperature read in
+#         # Added temperature read in
 
-    if CCDitem["read_from"] == "rac":
-        temperaturedata, relativetimedata = create_temperature_info_array(
-            rac_dir + "HTR.csv"
-        )
-    elif CCDitem["read_from"] != "rac":
-        temperaturedata = 999
-        relativetimedata = 999
+#     if CCDitem["read_from"] == "rac":
+#         temperaturedata, relativetimedata = create_temperature_info_array(
+#             rac_dir + "HTR.csv"
+#         )
+#     elif CCDitem["read_from"] != "rac":
+#         temperaturedata = 999
+#         relativetimedata = 999
 
-    # plot_full_temperature_info(temperaturedata,relativetimedata)
+#     # plot_full_temperature_info(temperaturedata,relativetimedata)
 
-    for CCDitem in CCD_image_data:
+#     for CCDitem in CCD_image_data:
 
-        CCDitem = add_temperature_info(
-            CCDitem, temperaturedata, relativetimedata, labtemp
-        )
-    #        timestamp=epoch+datetime.timedelta(0,CCDitem['reltime'])
+#         CCDitem = add_temperature_info(
+#             CCDitem, temperaturedata, relativetimedata, labtemp
+#         )
+#     #        timestamp=epoch+datetime.timedelta(0,CCDitem['reltime'])
 
-    return CCD_image_data
+#     return CCD_image_data
 
 
 def ismember(a, b):
