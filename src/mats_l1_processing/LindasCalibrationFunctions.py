@@ -24,19 +24,30 @@ def read_files_in_protocol_as_ItemsUnits(df, imagedir, numberofimagesinunit, rea
     protocolline = list(range(0, len(df), numberofimagesinunit))
     ItemsUnitsList = []
     for ind, line in enumerate(protocolline):
-        #   ItemsUnit=ItemsUnitCreate(df[line:line+2],directory+'PayloadImages/')
-        if read_from == "imgview":
-            ItemsUnit = ItemsUnitCreate(
-                df[line : line + numberofimagesinunit], imagedir + "PayloadImages/"
-            )
-        elif read_from == "rac":
-            ItemsUnit = ItemsUnitCreateFromRac(
-                df[line : line + numberofimagesinunit], imagedir + "RacFiles_out/"
-            )
-        else:
-            raise Exception("where should it be read from, imgview or rac?")
+        ItemsUnit = ItemsUnitCreate(
+            df[line : line + numberofimagesinunit], imagedir , read_from)
         ItemsUnitsList.append(ItemsUnit)
     return ItemsUnitsList
+
+# def read_files_in_protocol_as_ItemsUnits_old(df, imagedir, numberofimagesinunit, read_from):
+#     # reads files in a protocol as ItemsUnits
+#     protocolline = list(range(0, len(df), numberofimagesinunit))
+#     ItemsUnitsList = []
+#     for ind, line in enumerate(protocolline):
+#         #   ItemsUnit=ItemsUnitCreate(df[line:line+2],directory+'PayloadImages/')
+#         if read_from == "imgview":
+#             ItemsUnit = ItemsUnitCreate(
+#                 df[line : line + numberofimagesinunit], imagedir + "PayloadImages/"
+#             )
+#         elif read_from == "rac":
+#             ItemsUnit = ItemsUnitCreateFromRac(
+#                 df[line : line + numberofimagesinunit], imagedir + "RacFiles_out/"
+#             )
+#         else:
+#             raise Exception("where should it be read from, imgview or rac?")
+#         ItemsUnitsList.append(ItemsUnit)
+#     return ItemsUnitsList
+
 
 
 def selectimage(df, shutter, imagedir, ExpTime, channel):
@@ -152,14 +163,16 @@ def matrixmean(mat1, mat2, mat3="none", mat4="none"):
 
 
 class ItemsUnitCreate:
-    def __init__(self, df, dirname):
-        import numpy as np
 
+    def __init__(self, df, dirname, read_from):
+        from mats_l1_processing.read_in_functions import read_CCDitem_rac_or_imgview
         self.df = df
+        
+
         df_B = df[df.DarkBright == "B"]
         df_D = df[df.DarkBright == "D"]
 
-        self.imageItem = read_CCDitem_from_imgview(dirname, df_B.PicID.iloc[0])
+        self.imageItem = read_CCDitem_rac_or_imgview(dirname, df_B.PicID.iloc[0], read_from)
 
         # =============================================================================
         #         # imageitems=[]
@@ -174,23 +187,23 @@ class ItemsUnitCreate:
         if len(df_B) == 1:
             self.image = self.imageItem["IMAGE"]
         elif len(df_B) == 2:
-            self.image1Item = read_CCDitem_from_imgview(dirname, df_B.PicID.iloc[0])
-            self.image2Item = read_CCDitem_from_imgview(dirname, df_B.PicID.iloc[1])
+            self.image1Item = read_CCDitem_rac_or_imgview(dirname, df_B.PicID.iloc[0], read_from)
+            self.image2Item = read_CCDitem_rac_or_imgview(dirname, df_B.PicID.iloc[1], read_from)
             self.image = matrixmean(self.image1Item["IMAGE"], self.image2Item["IMAGE"])
         else:
             raise Exception(str(len(df_B)) + " brightimage(s) in dataframe")
 
         if len(df_D) == 1:
-            self.darkItem = read_CCDitem_from_imgview(dirname, df_D.PicID.iloc[0])
+            self.darkItem = read_CCDitem_rac_or_imgview(dirname, df_D.PicID.iloc[0], read_from)
             self.dark = self.darkItem["IMAGE"]
         elif len(df_D) == 2:
-            self.dark1Item = read_CCDitem_from_imgview(dirname, df_D.PicID.iloc[0])
-            self.dark2Item = read_CCDitem_from_imgview(dirname, df_D.PicID.iloc[1])
+            self.dark1Item = read_CCDitem_rac_or_imgview(dirname, df_D.PicID.iloc[0], read_from)
+            self.dark2Item = read_CCDitem_rac_or_imgview(dirname, df_D.PicID.iloc[1], read_from)
             self.dark = matrixmean(self.dark1Item["IMAGE"], self.dark2Item["IMAGE"])
         elif len(df_D) == 3:
-            self.dark1Item = read_CCDitem_from_imgview(dirname, df_D.PicID.iloc[0])
-            self.dark2Item = read_CCDitem_from_imgview(dirname, df_D.PicID.iloc[1])
-            self.dark3Item = read_CCDitem_from_imgview(dirname, df_D.PicID.iloc[2])
+            self.dark1Item = read_CCDitem_rac_or_imgview(dirname, df_D.PicID.iloc[0], read_from)
+            self.dark2Item = read_CCDitem_rac_or_imgview(dirname, df_D.PicID.iloc[1], read_from)
+            self.dark3Item = read_CCDitem_rac_or_imgview(dirname, df_D.PicID.iloc[2], read_from)
             self.dark = matrixmean(
                 self.dark1Item["IMAGE"],
                 self.dark2Item["IMAGE"],
@@ -227,54 +240,54 @@ class ItemsUnitCreate:
         return sp
 
 
-class ItemsUnitCreateFromRac:
-    def __init__(self, df, dirname):
-        import numpy as np
+# class ItemsUnitCreateFromRac:
+#     def __init__(self, df, dirname):
+#         import numpy as np
 
-        self.df = df
-        df_B = df[df.DarkBright == "B"]
-        df_D = df[df.DarkBright == "D"]
+#         self.df = df
+#         df_B = df[df.DarkBright == "B"]
+#         df_D = df[df.DarkBright == "D"]
 
-        self.imageItem = read_CCDitem(dirname, df_B.PicID.iloc[0])
+#         self.imageItem = read_CCDitem(dirname, df_B.PicID.iloc[0])
 
-        # =============================================================================
-        #         # imageitems=[]
-        #         # for i, dfitem in enumerate(df_B):
-        #         #     imageitems.append(read_CCDitem_from_imgview(dirname,dfitem))
-        #         # darkitems=[]
-        #         # for i, dfitem in enumerate(df_D):
-        #         #     darkitems.append(read_CCDitem_from_imgview(dirname,dfitem))
-        #         # self.image=meanimage(imageitems)
-        #         # self.dark=meanimage(darkitems)
-        # =============================================================================
-        if len(df_B) == 1:
-            self.image = self.imageItem["IMAGE"]
-        elif len(df_B) == 2:
-            self.image1Item = read_CCDitem(dirname, df_B.PicID.iloc[0])
-            self.image2Item = read_CCDitem(dirname, df_B.PicID.iloc[1])
-            self.image = matrixmean(self.image1Item["IMAGE"], self.image2Item["IMAGE"])
-        else:
-            raise Exception(str(len(df_B)) + " brightimage(s) in dataframe")
+#         # =============================================================================
+#         #         # imageitems=[]
+#         #         # for i, dfitem in enumerate(df_B):
+#         #         #     imageitems.append(read_CCDitem_from_imgview(dirname,dfitem))
+#         #         # darkitems=[]
+#         #         # for i, dfitem in enumerate(df_D):
+#         #         #     darkitems.append(read_CCDitem_from_imgview(dirname,dfitem))
+#         #         # self.image=meanimage(imageitems)
+#         #         # self.dark=meanimage(darkitems)
+#         # =============================================================================
+#         if len(df_B) == 1:
+#             self.image = self.imageItem["IMAGE"]
+#         elif len(df_B) == 2:
+#             self.image1Item = read_CCDitem(dirname, df_B.PicID.iloc[0])
+#             self.image2Item = read_CCDitem(dirname, df_B.PicID.iloc[1])
+#             self.image = matrixmean(self.image1Item["IMAGE"], self.image2Item["IMAGE"])
+#         else:
+#             raise Exception(str(len(df_B)) + " brightimage(s) in dataframe")
 
-        if len(df_D) == 1:
-            self.darkItem = read_CCDitem(dirname, df_D.PicID.iloc[0])
-            self.dark = self.darkItem["IMAGE"]
-        elif len(df_D) == 2:
-            self.dark1Item = read_CCDitem(dirname, df_D.PicID.iloc[0])
-            self.dark2Item = read_CCDitem(dirname, df_D.PicID.iloc[1])
-            self.dark = matrixmean(self.dark1Item["IMAGE"], self.dark2Item["IMAGE"])
-        elif len(df_D) == 3:
-            self.dark1Item = read_CCDitem(dirname, df_D.PicID.iloc[0])
-            self.dark2Item = read_CCDitem(dirname, df_D.PicID.iloc[1])
-            self.dark3Item = read_CCDitem(dirname, df_D.PicID.iloc[2])
-            self.dark = matrixmean(
-                self.dark1Item["IMAGE"],
-                self.dark2Item["IMAGE"],
-                self.dark3Item["IMAGE"],
-            )
-        else:
-            raise Exception(str(len(df_D)) + " dark pictures in dataframe")
-        self.subpic = self.image - self.dark
+#         if len(df_D) == 1:
+#             self.darkItem = read_CCDitem(dirname, df_D.PicID.iloc[0])
+#             self.dark = self.darkItem["IMAGE"]
+#         elif len(df_D) == 2:
+#             self.dark1Item = read_CCDitem(dirname, df_D.PicID.iloc[0])
+#             self.dark2Item = read_CCDitem(dirname, df_D.PicID.iloc[1])
+#             self.dark = matrixmean(self.dark1Item["IMAGE"], self.dark2Item["IMAGE"])
+#         elif len(df_D) == 3:
+#             self.dark1Item = read_CCDitem(dirname, df_D.PicID.iloc[0])
+#             self.dark2Item = read_CCDitem(dirname, df_D.PicID.iloc[1])
+#             self.dark3Item = read_CCDitem(dirname, df_D.PicID.iloc[2])
+#             self.dark = matrixmean(
+#                 self.dark1Item["IMAGE"],
+#                 self.dark2Item["IMAGE"],
+#                 self.dark3Item["IMAGE"],
+#             )
+#         else:
+#             raise Exception(str(len(df_D)) + " dark pictures in dataframe")
+#         self.subpic = self.image - self.dark
 
     def plot(self, fig, axis, whichpic=2, title="", clim=999):
         # whichpic 0 is image, whichpic 1 is dark  whichpic 2 is subpic
@@ -303,23 +316,43 @@ class ItemsUnitCreateFromRac:
         return sp
 
 
-def read_all_files_in_protocol(df, read_from, directory):
-    if read_from == "rac":
-        CCDitems = []
-        for PicID in list(df["PicID"]):
-            CCDitem = read_CCDitem(directory + "RacFiles_out/", PicID, labtemp=999)
+def read_all_files_in_protocol(df, read_from, root_directory):
+    from database_generation.read_in_imgview_functions import read_CCDitem_from_imgview
+    from mats_l1_processing.read_in_functions import read_CCDitem_image, find_CCDitem_matching_protocol_entry, add_and_rename_CCDitem_info
+    from .get_temperature import add_rac_temp_data
+    import pandas as pd 
+    CCDitems = []
+    for PicID in list(df["PicID"]):
+        if read_from == "rac":
+            racdf = pd.read_csv(root_directory + "RacFiles_out/CCD.csv", skiprows=[0])
+            CCD_image_data = racdf.to_dict("records")
+            CCDitem=find_CCDitem_matching_protocol_entry(CCD_image_data, PicID)
+            errorflag=read_CCDitem_image(CCDitem, root_directory + "RacFiles_out/") 
+            if errorflag:
+                raise Exception("Image"+CCDitem['Image File Name'] +"not found") 
+
+                
+        elif read_from == "imgview":    
+            CCDitem = read_CCDitem_from_imgview(root_directory + "PayloadImages/", PicID)
+        else:
+            raise Exception("read_from must be rac or imgview")    
+        if CCDitem != -999:
+            CCDitems.append(CCDitem)
+            
+    for CCDitem in CCDitems:        
+            add_and_rename_CCDitem_info(CCDitem)
             CCDitem["DarkBright"] = df.DarkBright[df.PicID == PicID].iloc[0]
             CCDitem["Shutter"] = df.Shutter[df.PicID == PicID].iloc[0]
             CCDitem["Comment"] = df.Comment[df.PicID == PicID].iloc[0]
+            
+            #Add temperature data from rac files   
+            add_rac_temp_data(root_directory + "RacFiles_out/HTR.csv", CCDitem, labtemp=999)
 
-            CCDitems.append(CCDitem)
-    elif read_from == "imgview":
-        CCDitems = readselectedimageviewpics(
-            directory + "PayloadImages/", list(df["PicID"])
-        )
-    else:
-        raise Exception("read_from must be rac or imgview")
     return CCDitems
+
+
+
+
 
 
 def filter_on_time(CCDitems, starttime=None, stoptime=None):

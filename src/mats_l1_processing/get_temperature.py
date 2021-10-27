@@ -26,6 +26,12 @@ def get_time(relativetime, endtime):
     timestamp = epoch + datetime.timedelta(0, relativetime)
     return timestamp
 
+def add_rac_temp_data(HTRfilepath, CCDitem, labtemp=999):
+    
+    temperaturedata, relativetimedata = create_temperature_info_array(HTRfilepath)
+    # plot_full_temperature_info(temperaturedata,relativetimedata)
+    CCDitem = add_temperature_info(CCDitem, temperaturedata, relativetimedata, labtemp)
+
 
 def add_temperature_info(CCDitem, temperaturedata, relativetimedata, temperature=-999):
     # Find the temperature of the CCDs. If not read from rac set the temperature.

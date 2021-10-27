@@ -40,9 +40,10 @@ def readimageviewpic(dirname, picnr, rawflag):
     return CCDitem
 
 
+
+
 def read_CCDitem_from_imgview(dirname, IDstring):
-    # This function used to be called readimageviewpic2
-    # Almost equivalent to the fucntion read_pnm_image_and_txt but kept since differnt files need different input.
+    from  mats_l1_processing.read_in_functions import add_and_rename_CCDitem_info
     imagefile = dirname + IDstring + ".pnm"
     txtfile = dirname + IDstring + "_output.txt"
     try:
@@ -55,25 +56,10 @@ def read_CCDitem_from_imgview(dirname, IDstring):
         raise Exception("There is something wrong with image file ", imagefile)
 
     CCDitem["read_from"] = "imgview"
-    try:
-        CCDitem["reltime"] = 1.0e-9 * CCDitem["EXP Nanoseconds"]
-    except:
-        try:
-            CCDitem["reltime"] = (
-                int(CCDitem["EXPTS"]) + int(CCDitem["EXPTSS"]) / 2 ** 16
-            )
-        except:
-            raise Exception("No info on the relative time")
-
-    # Add and convert temperature from sensor in OBC
-    ADC_temp_in_mV = int(CCDitem["TEMP"]) / 32768 * 2048
-    ADC_temp_in_degreeC = 1.0 / 0.85 * ADC_temp_in_mV - 296
-    temperature = (
-        ADC_temp_in_degreeC  # Change this to read temperature sensors from rac file
-    )
-    CCDitem["temperature"] = temperature
+    add_and_rename_CCDitem_info(CCDitem)
 
     return CCDitem
+
 
 
 def read_pnm_image_and_txt(dirname, picid):
@@ -497,23 +483,7 @@ def read_txtfile_create_CCDitem(filepath):
     print(
         "The following values may be incorrect:  NColBinFPGA, NColBinCCD DigGain TimingFlag SigMode inModeFlag WinMode"
     )
-    if int(CCDitem["CCDSEL"]) == 1:
-        channel = "IR1"
-    elif int(CCDitem["CCDSEL"]) == 4:
-        channel = "IR2"
-    elif int(CCDitem["CCDSEL"]) == 3:
-        channel = "IR3"
-    elif int(CCDitem["CCDSEL"]) == 2:
-        channel = "IR4"
-    elif int(CCDitem["CCDSEL"]) == 5:
-        channel = "UV1"
-    elif int(CCDitem["CCDSEL"]) == 6:
-        channel = "UV2"
-    elif int(CCDitem["CCDSEL"]) == 7:
-        channel = "NADIR"
-    else:
-        print("Error in CCDSEL, CCDSEL=", int(CCDitem["CCDSEL"]))
-    CCDitem["channel"] = channel
+
 
     return CCDitem
 

@@ -32,7 +32,7 @@ def main(directory, calibrationfile, calibrate=True, plot=False):
     """
 
     read_from = "rac"  # read from extracted rac file
-
+    
     CCDitems = read_all_files_in_directory(read_from, directory)  # read in data
 
     # calibrate and/or plot the images
