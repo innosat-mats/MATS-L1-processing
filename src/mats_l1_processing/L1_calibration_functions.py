@@ -756,16 +756,12 @@ def get_true_image(header, image="No picture"):
     # go through the columns
     for j_c in range(0, int(header["NCOL"] + 1)):  # LM201102 Big fix +1
         # remove blank values and readout offsets
+        bc_comp_fact=(2 ** int(header["NColBinFPGA"]) * ncolbinC / n_coadd[j_c])
         true_image[0 : int(header["NROW"]) + 1, j_c] = (
             true_image[0 : int(header["NROW"] + 1), j_c]
-            - n_read[j_c] * (header["TBLNK"] - 128)
-            - 128
+            - (n_read[j_c] * (header["TBLNK"] - 128)
+            + 128)*  bc_comp_fact
         )
-
-        # compensate for bad columns
-        true_image[0 : int(header["NROW"]) + 1, j_c] = true_image[
-            0 : int(header["NROW"] + 1), j_c
-        ] * (2 ** int(header["NColBinFPGA"]) * ncolbinC / n_coadd[j_c])
 
     return true_image
 
