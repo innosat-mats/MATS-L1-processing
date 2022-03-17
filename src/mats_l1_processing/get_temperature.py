@@ -38,12 +38,12 @@ def add_temperature_info(CCDitem, temperaturedata, relativetimedata, temperature
     if CCDitem["read_from"] == "rac":
         # find the closest time when heater settings have been recorded. Could be changed to interpolate.
         ind = (np.abs(relativetimedata - CCDitem["reltime"])).argmin()
-        HTR1A = temperaturedata[ind, 0]
-        HTR1B = temperaturedata[ind, 1]
-        HTR2A = temperaturedata[ind, 2]
-        HTR2B = temperaturedata[ind, 3]
-        HTR8A = temperaturedata[ind, 4]  # UV2
-        HTR8B = temperaturedata[ind, 5]  # UV1
+        HTR1A = temperaturedata[ind, 0] #Splitter plate heater (paoHTR1A/B)
+        HTR1B = temperaturedata[ind, 1] #Splitter plate heater(paoHTR1A/B)
+        HTR2A = temperaturedata[ind, 2] #Limb house heater (paoHTR2A/B)
+        HTR2B = temperaturedata[ind, 3] #Limb house heater (paoHTR2A/B)
+        HTR8A = temperaturedata[ind, 4]  # UV2 (paoHTR8A)
+        HTR8B = temperaturedata[ind, 5]  # UV1 (paoHTR8B)
 
         # Add shift to the temperature These temperatures are relative to UV2 CCD , ie. HTR8A
         if CCDitem["channel"] == "IR1":
