@@ -15,6 +15,7 @@ from matplotlib.pyplot import cm
 from scipy.optimize import curve_fit
 from scipy.interpolate import UnivariateSpline
 from scipy.interpolate import CubicSpline
+import scipy.optimize as opt
 import pwlf
 import toml
 from mats_l1_processing.LindasCalibrationFunctions import filter_on_time
@@ -199,7 +200,56 @@ def get_linearity(
     return poly_or_spline
 
 
-def make_linearity(channel, calibration_file, plot=True):
+def optimize_function(x,CCDitems,test_type_filter,channel,remove_blanks,threshold,add_bias=True):
+
+    x_appended = np.append(x,[1,0,1,0])
+
+    (
+        y_iter_array,
+        y_true_array,
+        _,
+        _,
+    ) = bf.get_binning_test_data_from_CCD_item(
+        CCDitems,
+        test_type_filter=test_type_filter,
+        channels=channel,
+        add_bias=add_bias,
+        remove_blanks=remove_blanks,
+        non_linarity_constants=x_appended,
+    )
+
+    # fit linear part
+    y_true = y_true_array.flatten()
+    y_iter = y_iter_array.flatten()
+
+    low_simulated = y_iter[y_iter < threshold]
+    low_measured = y_true[y_iter < threshold]
+    
+    return np.linalg.norm(low_measured.flatten()-low_simulated.flatten())
+
+def get_linearity_from_model(
+    CCDitems,
+    testtype="all",
+    plot=True,
+    channels=[1, 2, 3, 4, 5, 6],
+    threshold=4e3,
+    remove_blanks=True,
+):
+    if not isinstance(channels, (list, tuple, np.ndarray)):
+        channels = [channels]
+
+    for i in range(len(channels)):
+        
+        
+        x0 = np.array([0,1,0])
+        x_hat = opt.minimize(optimize_function, x0,args=(CCDitems,testtype,[channels[i]],remove_blanks,threshold),method='Nelder-Mead')
+
+        return x_hat
+
+
+
+
+def make_linearity(channel, calibration_file, plot=True, method='regression'):
 
     calibration_data = toml.load(calibration_file)
 
@@ -224,13 +274,32 @@ def make_linearity(channel, calibration_file, plot=True):
         CCDitems = filter_on_time(CCDitems, starttime, endtime)
 
     # Main function
-    poly_or_spline = get_linearity(
-        CCDitems,
-        "col",
-        plot,
-        calibration_data["linearity"]["fittype"],
-        channels=channel,
-        remove_blanks=calibration_data["linearity"]["remove_blanks"],
-    )
+    if method=='regression':
+        poly_or_spline = get_linearity(
+            CCDitems,
+            "col",
+            plot,
+            calibration_data["linearity"]["fittype"],
+            channels=channel,
+            remove_blanks=calibration_data["linearity"]["remove_blanks"],
+        )
 
-    return poly_or_spline
+        return poly_or_spline
+
+    elif method=='model':
+
+        x_hat = get_linearity_from_model(
+            CCDitems,
+            "exp",
+            plot,
+            channels=channel,
+            remove_blanks=calibration_data["linearity"]["remove_blanks"],
+        )
+         
+        
+        return x_hat
+
+    else:
+        raise ValueError('method must be regression or model')
+    
+    return None

@@ -27,9 +27,24 @@ from mats_l1_processing import read_in_functions
 # BOTH FPGA AND ON-CHIP & ROW SETTINGS;
 
 
-def bin_ref(ref, ccd):
+def bin_ref(ref, ccd,x=np.array([])):
 
     # simple code for binning
+
+    if x == np.array([]):
+        x = np.array([0,1,0,1,0,1,0])
+
+    binned = bin_ref_non_linear(ref,ccd,x)
+
+    return binned
+
+def transfer_function(value_in,a,b):
+    return a*value_in+b
+
+def transfer_function_2(value_in,a,b,c):
+    return a*value_in**2+b*value_in+c
+
+def bin_ref_non_linear(ref,ccd,x):
 
     nrow, ncol, nrskip, ncskip, nrbin, ncbin, exptime = (
         ccd["NROW"],
@@ -53,7 +68,7 @@ def bin_ref(ref, ccd):
 
     exptimefactor = int((exptime - 2000) / (exptimer - 2000))
     # reference image that will be binned according to 'ccd' settings
-    imgref = ref["IMAGE"]
+    imgref = transfer_function_2(ref["IMAGE"]* exptimefactor,x[0],x[1],x[2])
 
     # in case reference image is already a binned image
     ncbin, nrbin = int(ncbin / ncbinr), int(nrbin / nrbinr)
@@ -64,15 +79,15 @@ def bin_ref(ref, ccd):
         colbin = np.zeros([nrowr, ncol])
 
         for j in range(0, ncol):
-            colbin[:, j] = imgref[:, j * ncbin : (j + 1) * ncbin].sum(axis=1)
+            colbin[:, j] = transfer_function(imgref[:, j * ncbin : (j + 1) * ncbin].sum(axis=1),x[3],x[4])
 
         # declare zero array for row binning
         binned = np.zeros([nrow, ncol])
 
         for j in range(0, nrow):
-            binned[j, :] = colbin[j * nrbin : (j + 1) * nrbin, :].sum(axis=0)
+            binned[j, :] = transfer_function(colbin[j * nrbin : (j + 1) * nrbin, :].sum(axis=0),x[5],x[6])
 
-        binned = binned * exptimefactor
+        binned = binned 
         return binned
 
     else:
@@ -166,6 +181,7 @@ def get_binning_test_data_from_CCD_item(
     test_type_filter="all",
     add_bias=False,
     remove_blanks=True,
+    non_linarity_constants=None
 ):
 
     CCDitems_use = []
@@ -244,7 +260,7 @@ def get_binning_test_data_from_CCD_item(
         ref["IMAGE"] = CCDr_sub_img[i].copy()
 
         # bin reference image according to bin_input settings
-        binned_reference = bin_ref(copy.deepcopy(ref), bin_input[i].copy())
+        binned_reference = bin_ref(copy.deepcopy(ref), bin_input[i].copy(),non_linarity_constants)
 
         # adding bias to get the correct values for non-linearity
         if add_bias:

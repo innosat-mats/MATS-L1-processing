@@ -22,7 +22,7 @@ def col_sum(CCD,ncolbin):
     
     return np.mean(CCD_binned,axis=0) 
 
-def row_sum_v2(CCD,nrowbin):
+def row_sum_v1(CCD,nrowbin):
     return CCD.reshape(-1,nrowbin,CCD.shape[-1]).sum(1)
 
 def col_sum_v1(CCD,ncolbin):
