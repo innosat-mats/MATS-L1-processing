@@ -68,7 +68,7 @@ def fit_with_spline(x, y, deg):
     return my_pwlf
 
 
-def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1"):
+def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1",inverse=False):
     """Bins the data into evenly spaced bins and performs a fit. Valid fittypes are:
     'polyfit1'
     'polyfit2'
@@ -90,34 +90,41 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1"):
 
     bin_center = (bin_edges[1:] + bin_edges[0:-1]) / 2
 
+    if not inverse:
+        x = bin_center[~np.isnan(low_measured_mean)]
+        y = low_measured_mean[~np.isnan(low_measured_mean)]
+    elif inverse:
+        x = low_measured_mean[~np.isnan(low_measured_mean)]
+        y = bin_center[~np.isnan(low_measured_mean)]
+
     if fittype == "polyfit1":
         p_low = fit_with_polyfit(
-            bin_center[~np.isnan(low_measured_mean)],
-            low_measured_mean[~np.isnan(low_measured_mean)],
+            x,
+            y,
             1,
         )
     if fittype == "polyfit2":
         p_low = fit_with_polyfit(
-            bin_center[~np.isnan(low_measured_mean)],
-            low_measured_mean[~np.isnan(low_measured_mean)],
+            x,
+            y,
             2,
         )
     elif fittype == "curvefit1":
         p_low = fit_with_curvefit(
-            bin_center[~np.isnan(low_measured_mean)],
-            low_measured_mean[~np.isnan(low_measured_mean)],
+            x,
+            y,
             1,
         )
     elif fittype == "curvefit2":
         p_low = fit_with_curvefit(
-            bin_center[~np.isnan(low_measured_mean)],
-            low_measured_mean[~np.isnan(low_measured_mean)],
+            x,
+            y,
             2,
         )
     elif fittype == "spline1":
         p_low = fit_with_spline(
-            bin_center[~np.isnan(low_measured_mean)],
-            low_measured_mean[~np.isnan(low_measured_mean)],
+            x,
+            y,
             1,
         )
     else:
@@ -134,6 +141,7 @@ def get_linearity(
     channels=[1, 2, 3, 4, 5, 6],
     threshold=30e3,
     remove_blanks=True,
+    inverse=False,
 ):
     plotting_factor = 5
 
@@ -156,42 +164,69 @@ def get_linearity(
         )
 
         poly_or_spline, bin_center, low_measured_mean = fit_curve(
-            man_tot, inst_tot, threshold, fittype
+            man_tot, inst_tot, threshold, fittype,inverse
         )
 
         if plot:
-            plt.plot([0, 40000], [0, 40000], "k--")
+            plt.plot([0, threshold*1.3], [0, threshold*1.3], "k--")
+            
+            if inverse:
+                plt.xlabel('measured')
+                plt.xlabel('simulated')
 
-            plt.plot(
-                man_tot.flatten()[::plotting_factor],
-                inst_tot[::plotting_factor],
-                ".",
-                alpha=0.1,
-                markeredgecolor="none",
-                c=color[channels[i]],
-            )
-            plt.plot(
-                bin_center,
-                low_measured_mean,
-                "+",
-                c=color[channels[i]],
-            )
+                plt.plot(
+                    inst_tot[::plotting_factor],
+                    man_tot.flatten()[::plotting_factor],
+                    ".",
+                    alpha=0.1,
+                    markeredgecolor="none",
+                    c=color[channels[i]],
+                )
+                plt.plot(
+                    low_measured_mean,
+                    bin_center,
+                    "+",
+                    c=color[channels[i]],
+                )
+            else:
+                plt.xlabel('simulated')
+                plt.xlabel('measured')
+
+                plt.plot(
+                    man_tot.flatten()[::plotting_factor],
+                    inst_tot[::plotting_factor],
+                    ".",
+                    alpha=0.1,
+                    markeredgecolor="none",
+                    c=color[channels[i]],
+                )
+                plt.plot(
+                    bin_center,
+                    low_measured_mean,
+                    "+",
+                    c=color[channels[i]],
+                )
             if fittype == "spline1":
                 plt.plot(
-                    np.arange(0, 40000),
-                    poly_or_spline.predict(np.arange(0, 40000)),
+                    np.arange(0, threshold*1.3),
+                    poly_or_spline.predict(np.arange(0, threshold*1.3)),
                     "-",
                     c=color[channels[i]],
                 )
             else:
                 plt.plot(
-                    np.arange(0, 40000),
-                    np.polyval(poly_or_spline, np.arange(0, 40000)),
+                    np.arange(0, threshold*1.3),
+                    np.polyval(poly_or_spline, np.arange(0, threshold*1.3)),
                     "-",
                     c=color[channels[i]],
                 )
 
-        print(poly_or_spline)
+            plt.plot([0, threshold], [threshold, threshold], "k:")
+            plt.xlim([0, threshold*1.3])
+            plt.ylim([0, threshold*1.3])
+
+        np.save(('linearity_' + str(channels[i]) + '_' + testtype),poly_or_spline)
+
     if plot:
         plt.savefig("linearity_fit_channel_" + str(channels[i]) + ".png")
         plt.grid(True)
@@ -199,57 +234,7 @@ def get_linearity(
 
     return poly_or_spline
 
-
-def optimize_function(x,CCDitems,test_type_filter,channel,remove_blanks,threshold,add_bias=True):
-
-    x_appended = np.append(x,[1,0,1,0])
-
-    (
-        y_iter_array,
-        y_true_array,
-        _,
-        _,
-    ) = bf.get_binning_test_data_from_CCD_item(
-        CCDitems,
-        test_type_filter=test_type_filter,
-        channels=channel,
-        add_bias=add_bias,
-        remove_blanks=remove_blanks,
-        non_linarity_constants=x_appended,
-    )
-
-    # fit linear part
-    y_true = y_true_array.flatten()
-    y_iter = y_iter_array.flatten()
-
-    low_simulated = y_iter[y_iter < threshold]
-    low_measured = y_true[y_iter < threshold]
-    
-    return np.linalg.norm(low_measured.flatten()-low_simulated.flatten())
-
-def get_linearity_from_model(
-    CCDitems,
-    testtype="all",
-    plot=True,
-    channels=[1, 2, 3, 4, 5, 6],
-    threshold=4e3,
-    remove_blanks=True,
-):
-    if not isinstance(channels, (list, tuple, np.ndarray)):
-        channels = [channels]
-
-    for i in range(len(channels)):
-        
-        
-        x0 = np.array([0,1,0])
-        x_hat = opt.minimize(optimize_function, x0,args=(CCDitems,testtype,[channels[i]],remove_blanks,threshold),method='Nelder-Mead')
-
-        return x_hat
-
-
-
-
-def make_linearity(channel, calibration_file, plot=True, method='regression'):
+def make_linearity(channel, calibration_file, plot=True, exp_type='col',inverse=False):
 
     calibration_data = toml.load(calibration_file)
 
@@ -273,33 +258,23 @@ def make_linearity(channel, calibration_file, plot=True, method='regression'):
     if (starttime != None) or (endtime != None):
         CCDitems = filter_on_time(CCDitems, starttime, endtime)
 
+    if exp_type == 'exp':
+        threshold=4e3
+    elif exp_type == 'row':
+        threshold=15e3
+    elif exp_type == 'col':
+        threshold=30e3
+
     # Main function
-    if method=='regression':
-        poly_or_spline = get_linearity(
-            CCDitems,
-            "col",
-            plot,
-            calibration_data["linearity"]["fittype"],
-            channels=channel,
-            remove_blanks=calibration_data["linearity"]["remove_blanks"],
-        )
+    poly_or_spline = get_linearity(
+        CCDitems,
+        exp_type,
+        plot,
+        calibration_data["linearity"]["fittype"],
+        channels=channel,
+        remove_blanks=calibration_data["linearity"]["remove_blanks"],
+        inverse=inverse,
+        threshold=threshold,
+    )
 
-        return poly_or_spline
-
-    elif method=='model':
-
-        x_hat = get_linearity_from_model(
-            CCDitems,
-            "exp",
-            plot,
-            channels=channel,
-            remove_blanks=calibration_data["linearity"]["remove_blanks"],
-        )
-         
-        
-        return x_hat
-
-    else:
-        raise ValueError('method must be regression or model')
-    
-    return None
+    return poly_or_spline

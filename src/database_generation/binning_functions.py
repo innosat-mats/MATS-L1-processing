@@ -27,11 +27,11 @@ from mats_l1_processing import read_in_functions
 # BOTH FPGA AND ON-CHIP & ROW SETTINGS;
 
 
-def bin_ref(ref, ccd,x=np.array([])):
+def bin_ref(ref, ccd,x=None):
 
     # simple code for binning
 
-    if x == np.array([]):
+    if x == None:
         x = np.array([0,1,0,1,0,1,0])
 
     binned = bin_ref_non_linear(ref,ccd,x)
@@ -69,7 +69,8 @@ def bin_ref_non_linear(ref,ccd,x):
     exptimefactor = int((exptime - 2000) / (exptimer - 2000))
     # reference image that will be binned according to 'ccd' settings
     imgref = transfer_function_2(ref["IMAGE"]* exptimefactor,x[0],x[1],x[2])
-
+    print(exptimefactor)
+    
     # in case reference image is already a binned image
     ncbin, nrbin = int(ncbin / ncbinr), int(nrbin / nrbinr)
 
@@ -181,7 +182,8 @@ def get_binning_test_data_from_CCD_item(
     test_type_filter="all",
     add_bias=False,
     remove_blanks=True,
-    non_linarity_constants=None
+    non_linarity_constants=None,
+    n_pixels_to_use=0
 ):
 
     CCDitems_use = []
@@ -284,15 +286,21 @@ def get_binning_test_data_from_CCD_item(
             else:
                 inst_bin = CCDl_sub_img[i].copy()
 
-            inst_tot = np.append(inst_tot, inst_bin.flatten())
+            if n_pixels_to_use>0:
+                indexes_to_use = np.random.rand(n_pixels_to_use)*len(inst_bin.flatten())
+                
+            else:
+                indexes_to_use = np.arange(len(inst_bin.flatten()))
 
-            man_tot = np.append(man_tot, binned[i].flatten())
+            inst_tot = np.append(inst_tot, inst_bin.flatten()[indexes_to_use])
+            man_tot = np.append(man_tot, binned[i].flatten()[indexes_to_use])
+
             test_type_tot = np.append(
                 test_type_tot,
-                [test_type[i]] * len(inst_bin.flatten()),
+                [test_type[i]] * len(inst_bin.flatten()[indexes_to_use]),
             )
             channel_tot = np.append(
-                channel_tot, CCDs_list[i]["CCDSEL"] * np.ones(len(inst_bin.flatten()))
+                channel_tot, CCDs_list[i]["CCDSEL"] * np.ones(len(inst_bin.flatten()[indexes_to_use]))
             )
 
         else:
