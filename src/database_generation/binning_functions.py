@@ -27,24 +27,21 @@ from mats_l1_processing import read_in_functions
 # BOTH FPGA AND ON-CHIP & ROW SETTINGS;
 
 
-def bin_ref(ref, ccd,x=None):
+def bin_ref(ref, ccd,calib_constants=None):
 
     # simple code for binning
 
-    if x == None:
-        x = np.array([0,1,0,1,0,1,0])
+    if calib_constants == None:
+        calib_constants = np.array([[1,0],[1,0],[1,0]])
 
-    binned = bin_ref_non_linear(ref,ccd,x)
+    binned = bin_ref_non_linear(ref,ccd,calib_constants)
 
     return binned
 
-def transfer_function(value_in,a,b):
-    return a*value_in+b
+def transfer_function(value_in,poly):
+    return np.polyval(poly,value_in)
 
-def transfer_function_2(value_in,a,b,c):
-    return a*value_in**2+b*value_in+c
-
-def bin_ref_non_linear(ref,ccd,x):
+def bin_ref_non_linear(ref,ccd,calib_constants):
 
     nrow, ncol, nrskip, ncskip, nrbin, ncbin, exptime = (
         ccd["NROW"],
@@ -68,7 +65,7 @@ def bin_ref_non_linear(ref,ccd,x):
 
     exptimefactor = int((exptime - 2000) / (exptimer - 2000))
     # reference image that will be binned according to 'ccd' settings
-    imgref = transfer_function_2(ref["IMAGE"]* exptimefactor,x[0],x[1],x[2])
+    imgref = transfer_function(ref["IMAGE"]*exptimefactor,calib_constants[0])
     print(exptimefactor)
     
     # in case reference image is already a binned image
@@ -80,13 +77,13 @@ def bin_ref_non_linear(ref,ccd,x):
         colbin = np.zeros([nrowr, ncol])
 
         for j in range(0, ncol):
-            colbin[:, j] = transfer_function(imgref[:, j * ncbin : (j + 1) * ncbin].sum(axis=1),x[3],x[4])
+            colbin[:, j] = transfer_function(imgref[:, j * ncbin : (j + 1) * ncbin].sum(axis=1),calib_constants[1])
 
         # declare zero array for row binning
         binned = np.zeros([nrow, ncol])
 
         for j in range(0, nrow):
-            binned[j, :] = transfer_function(colbin[j * nrbin : (j + 1) * nrbin, :].sum(axis=0),x[5],x[6])
+            binned[j, :] = transfer_function(colbin[j * nrbin : (j + 1) * nrbin, :].sum(axis=0),calib_constants[2])
 
         binned = binned 
         return binned

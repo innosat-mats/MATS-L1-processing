@@ -5,6 +5,7 @@ Created on Thu Oct 07 09:47 2021
 
 Functions are used to estimate the linearity of the MATS channels from binning tests
 """
+from multiprocessing.sharedctypes import Value
 from database_generation import binning_functions as bf
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -143,13 +144,52 @@ def get_linearity(
     remove_blanks=True,
     inverse=False,
 ):
+    
+    #Some ploitting options
     plotting_factor = 5
-
     color = cm.rainbow(np.linspace(0, 1, 7))
+    
+    #if channels are not list, then make into list
     if not isinstance(channels, (list, tuple, np.ndarray)):
         channels = [channels]
 
+
     for i in range(len(channels)):
+        
+        #Add previously estimated non-linearity (i.e. add non linerity from pixels 
+        # when estimating row and row non-linearity when estimating col)
+        
+        if testtype == 'exp':
+            non_linarity_constants=None
+        elif testtype == 'row':
+            non_linarity_constants = []
+            non_linarity_constants.append(np.load(
+                'calibration_data/linearity/'
+                + "linearity_"
+                + str(channels[i])
+                + "_exp"
+                + ".npy"))
+            non_linarity_constants.append(np.array([0, 1, 0]))
+            non_linarity_constants.append(np.array([0, 1, 0]))
+        elif testtype == 'col':
+            non_linarity_constants = []
+            non_linarity_constants.append(np.load(
+                'calibration_data/linearity/'
+                + "linearity_"
+                + str(channels[i])
+                + "_exp"
+                + ".npy"))
+            non_linarity_constants.append(np.load(
+                'calibration_data/linearity/'
+                + "linearity_"
+                + str(channels[i])
+                + "_row"
+                + ".npy"))
+            non_linarity_constants.append(np.array([0, 1, 0]))
+        else:
+            raise ValueError('invalid test type')
+
+
         (
             man_tot,
             inst_tot,
@@ -160,6 +200,7 @@ def get_linearity(
             test_type_filter=testtype,
             channels=[channels[i]],
             add_bias=True,
+            non_linarity_constants=None,
             remove_blanks=remove_blanks,
         )
 
@@ -228,7 +269,7 @@ def get_linearity(
         np.save(('linearity_' + str(channels[i]) + '_' + testtype),poly_or_spline)
 
     if plot:
-        plt.savefig("linearity_fit_channel_" + str(channels[i]) + ".png")
+        plt.savefig("linearity_fit_channel_" + str(channels[i]) + "_" + testtype + ".png")
         plt.grid(True)
         plt.show()
 
@@ -262,6 +303,7 @@ def make_linearity(channel, calibration_file, plot=True, exp_type='col',inverse=
         threshold=4e3
     elif exp_type == 'row':
         threshold=15e3
+
     elif exp_type == 'col':
         threshold=30e3
 

@@ -241,6 +241,68 @@ class CCD:
         return self.non_linearity
 
 
+#%% 
+## non-linearity-stuff ##
+
+def row_sum(CCD,nrowbin):
+    
+    nrows = int(np.floor(CCD.shape[0]/nrowbin)) 
+    CCD_binned = np.zeros((nrows,CCD.shape[1]))
+    for i in range(nrows):
+        CCD_binned[i,:] = np.sum(CCD[i*nrowbin:i*nrowbin+nrowbin,:],axis=0)
+
+    return np.mean(CCD_binned,axis=0)
+
+def col_sum(CCD,ncolbin):
+    
+    ncols = int(np.floor(CCD.shape[0]/ncolbin)) 
+    CCD_binned = np.zeros((ncols,1))
+    for i in range(ncols):
+        CCD_binned[i,:] = np.sum(CCD[i*ncolbin:i*ncolbin+ncolbin],axis=0)
+    
+    return np.mean(CCD_binned,axis=0) 
+
+def transfer_function(value_in,poly):
+    return np.polyval(poly,value_in)
+
+def sum_well(CCD,ncolbin,poly):
+    return transfer_function(col_sum(CCD,ncolbin),poly)
+
+def shift_register(CCD,nrowbin,poly):
+    return transfer_function(row_sum(CCD,nrowbin),poly)
+
+def single_pixel(CCD,texp,poly):
+    return transfer_function(CCD*texp,poly)
+
+def total_model(CCD,nrowbin,ncolbin,texp,p):
+    return sum_well(shift_register(single_pixel(CCD,texp,p[0]),nrowbin,p[1]),ncolbin,p[2])
+
+def total_model_scalar(x,nrowbin,ncolbin,texp):
+    cal_consts = []
+    cal_consts.append(np.load(
+       '../calibration_data/linearity/'
+       + "linearity_"
+       + "1_exp"
+       + ".npy"))
+    # cal_consts.append(np.array([0, 1, 0]))
+    cal_consts.append(np.array([0, 1, 0]))
+    cal_consts.append(np.array([0, 1, 0]))
+
+    CCD = np.ones((nrowbin,ncolbin))*x
+    return total_model(CCD,nrowbin,ncolbin,texp,cal_consts)
+
+def optimize_function_scalar(x,nrowbin,ncolbin,texp,value):
+    #x is true value, y is measured value
+    y_model = total_model_scalar(x,nrowbin,ncolbin,texp)
+    
+    return np.abs(y_model-value)
+
+def find_non_linearity(nrowbin,ncolbin,texp,value):
+
+    x = opt.minimize_scalar(optimize_function_scalar,args=(nrowbin,ncolbin,texp,value))
+
+    return x
+
 def get_linearized_image(CCDitem, image="No picture"):
     try:
         CCDunit = CCDitem["CCDunit"]
@@ -256,6 +318,8 @@ def get_linearized_image(CCDitem, image="No picture"):
 
     return image_linear_comp
 
+
+## Flatfield ##
 
 def compensate_flatfield(CCDitem, image="No picture"):
     if type(image) is str:
