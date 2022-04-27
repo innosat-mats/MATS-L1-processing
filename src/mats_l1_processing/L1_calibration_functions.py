@@ -17,6 +17,8 @@ The MATLAB script can be found here: https://github.com/OleMartinChristensen/MAT
 import numpy as np
 import scipy.io
 import toml
+import scipy.optimize as opt
+
 
 # some_file.py
 # import sys
@@ -164,10 +166,25 @@ class CCD:
         )
 
         # Read in non linearity coefficients (only colbin so far)
-        self.non_linearity = np.load(
+        self.non_linearity_pixel = np.load(
             calibration_data["linearity"]["polynomial"]
             + "linearity_"
             + str(self.channelnumber)
+            + "_exp"
+            + ".npy"
+        )
+        self.non_linearity_sumrow =self.non_linearity = np.load(
+            calibration_data["linearity"]["polynomial"]
+            + "linearity_"
+            + str(self.channelnumber)
+            + "_row"
+            + ".npy"
+        )
+        self.non_linearity_sumwell = self.non_linearity = np.load(
+            calibration_data["linearity"]["polynomial"]
+            + "linearity_"
+            + str(self.channelnumber)
+            + "_col"
             + ".npy"
         )
 
@@ -238,86 +255,76 @@ class CCD:
         return flatfield
 
     def linearity(self, mode):
+
+        inverse_model_real(self,nrowbin,ncolbin,texp,value)
+
         return self.non_linearity
 
 
 #%% 
 ## non-linearity-stuff ##
 
-def row_sum(CCD,nrowbin):
+#%%
+def row_sum(true_value_mapped_to_pixels):
     
-    nrows = int(np.floor(CCD.shape[0]/nrowbin)) 
-    CCD_binned = np.zeros((nrows,CCD.shape[1]))
-    for i in range(nrows):
-        CCD_binned[i,:] = np.sum(CCD[i*nrowbin:i*nrowbin+nrowbin,:],axis=0)
+    CCD_binned = np.sum(true_value_mapped_to_pixels,axis=0)
 
-    return np.mean(CCD_binned,axis=0)
+    return CCD_binned
 
-def col_sum(CCD,ncolbin):
+def col_sum(true_value_mapped_to_pixels):
     
-    ncols = int(np.floor(CCD.shape[0]/ncolbin)) 
-    CCD_binned = np.zeros((ncols,1))
-    for i in range(ncols):
-        CCD_binned[i,:] = np.sum(CCD[i*ncolbin:i*ncolbin+ncolbin],axis=0)
+    CCD_binned = np.sum(true_value_mapped_to_pixels,axis=0)
     
-    return np.mean(CCD_binned,axis=0) 
+    return CCD_binned
 
 def transfer_function(value_in,poly):
     return np.polyval(poly,value_in)
 
-def sum_well(CCD,ncolbin,poly):
-    return transfer_function(col_sum(CCD,ncolbin),poly)
+def sum_well(true_value_mapped_to_pixels,poly):
+    return transfer_function(col_sum(true_value_mapped_to_pixels),poly)
 
-def shift_register(CCD,nrowbin,poly):
-    return transfer_function(row_sum(CCD,nrowbin),poly)
+def shift_register(true_value_mapped_to_pixels,poly):
+    return transfer_function(row_sum(true_value_mapped_to_pixels),poly)
 
-def single_pixel(CCD,texp,poly):
-    return transfer_function(CCD*texp,poly)
+def single_pixel(true_value_mapped_to_pixels,poly):
+    return transfer_function(true_value_mapped_to_pixels,poly)
 
-def total_model(CCD,nrowbin,ncolbin,texp,p):
-    return sum_well(shift_register(single_pixel(CCD,texp,p[0]),nrowbin,p[1]),ncolbin,p[2])
+def total_model(true_value_mapped_to_pixels,p):
+    return sum_well(shift_register(single_pixel(true_value_mapped_to_pixels,p[0]),p[1]),p[2])
 
-def total_model_scalar(x,nrowbin,ncolbin,texp):
+def total_model_scalar(x,CCD,nrowbin,ncolbin):
     cal_consts = []
-    cal_consts.append(np.load(
-       '../calibration_data/linearity/'
-       + "linearity_"
-       + "1_exp"
-       + ".npy"))
-    # cal_consts.append(np.array([0, 1, 0]))
-    cal_consts.append(np.array([0, 1, 0]))
-    cal_consts.append(np.array([0, 1, 0]))
+    cal_consts.append(CCD.non_linearity_pixel)
+    cal_consts.append(CCD.non_linearity_sumrow)
+    cal_consts.append(CCD.non_linearity_sumwell)
 
-    CCD = np.ones((nrowbin,ncolbin))*x
-    return total_model(CCD,nrowbin,ncolbin,texp,cal_consts)
+    true_value_mapped_to_pixels = np.ones((nrowbin,ncolbin))*x/(nrowbin*ncolbin) #expand binned image to pixel values 
+    return total_model(true_value_mapped_to_pixels,cal_consts) #return modelled value with non-linearity taken into account
 
-def optimize_function_scalar(x,nrowbin,ncolbin,texp,value):
+def optimize_function_scalar(x,CCD,nrowbin,ncolbin,value):
     #x is true value, y is measured value
-    y_model = total_model_scalar(x,nrowbin,ncolbin,texp)
+    y_model = total_model_scalar(x,CCD,nrowbin,ncolbin)
     
     return np.abs(y_model-value)
 
-def find_non_linearity(nrowbin,ncolbin,texp,value):
+def inverse_model_real(CCDitem,value):
 
-    x = opt.minimize_scalar(optimize_function_scalar,args=(nrowbin,ncolbin,texp,value))
-
-    return x
-
-def get_linearized_image(CCDitem, image="No picture"):
     try:
         CCDunit = CCDitem["CCDunit"]
     except:
         raise Exception("No CCDunit defined for the CCDitem")
 
-    if type(image) is str:
-        image = CCDitem["IMAGE"]
+    x = opt.minimize_scalar(optimize_function_scalar,args=(CCDunit,CCDitem["NRBIN"],CCDitem["NColBinCCD"],value))
+    return x
 
-    polynomial = CCDunit.linearity(int(CCDitem["SigMode"]))
+def get_linearized_image(CCDitem, image_bias_sub):
 
-    image_linear_comp = np.polyval(polynomial, image)
+    image_linear = np.zeros(image_bias_sub.shape)
+    for i in range(image_bias_sub.shape[0]):
+        for j in range(image_bias_sub.shape[1]): 
+            image_linear[i,j] = inverse_model_real(CCDitem,image_bias_sub[i,j]).x
 
-    return image_linear_comp
-
+    return image_linear
 
 ## Flatfield ##
 

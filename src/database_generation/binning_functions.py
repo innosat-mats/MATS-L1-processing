@@ -28,7 +28,6 @@ from mats_l1_processing import read_in_functions
 
 
 def bin_ref(ref, ccd,calib_constants=None):
-
     # simple code for binning
 
     if calib_constants == None:
@@ -64,12 +63,8 @@ def bin_ref_non_linear(ref,ccd,calib_constants):
     )
 
     exptimefactor = int((exptime - 2000) / (exptimer - 2000))
-    # reference image that will be binned according to 'ccd' settings
-    imgref = transfer_function(ref["IMAGE"]*exptimefactor,calib_constants[0])
-    print(exptimefactor)
-    
-    # in case reference image is already a binned image
-    ncbin, nrbin = int(ncbin / ncbinr), int(nrbin / nrbinr)
+    # reference image mapped to each pixel and scaled with exptimefactor that will be binned according to 'ccd' settings
+    imgref = transfer_function(ref["IMAGE"]*exptimefactor/ncbinr/nrbinr,calib_constants[0])
 
     # images must cover the same ccd section
     if ncskip == ncskipr and nrskip == nrskipr:

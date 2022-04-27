@@ -21,12 +21,6 @@ from PIL import Image
 
 
 
-
-
-
-
-
-
 def readimageviewpic(dirname, picnr, rawflag):
     # This function should not be needed anymore.
     if rawflag == 1:
