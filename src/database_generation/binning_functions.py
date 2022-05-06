@@ -27,9 +27,20 @@ from mats_l1_processing import read_in_functions
 # BOTH FPGA AND ON-CHIP & ROW SETTINGS;
 
 
-def bin_ref(ref, ccd):
-
+def bin_ref(ref, ccd,calib_constants=None):
     # simple code for binning
+
+    if calib_constants == None:
+        calib_constants = np.array([[1,0],[1,0],[1,0]])
+
+    binned = bin_ref_non_linear(ref,ccd,calib_constants)
+
+    return binned
+
+def transfer_function(value_in,poly):
+    return np.polyval(poly,value_in)
+
+def bin_ref_non_linear(ref,ccd,calib_constants):
 
     nrow, ncol, nrskip, ncskip, nrbin, ncbin, exptime = (
         ccd["NROW"],
@@ -52,11 +63,8 @@ def bin_ref(ref, ccd):
     )
 
     exptimefactor = int((exptime - 2000) / (exptimer - 2000))
-    # reference image that will be binned according to 'ccd' settings
-    imgref = ref["IMAGE"]
-
-    # in case reference image is already a binned image
-    ncbin, nrbin = int(ncbin / ncbinr), int(nrbin / nrbinr)
+    # reference image mapped to each pixel and scaled with exptimefactor that will be binned according to 'ccd' settings
+    imgref = transfer_function(ref["IMAGE"]*exptimefactor/ncbinr/nrbinr,calib_constants[0])
 
     # images must cover the same ccd section
     if ncskip == ncskipr and nrskip == nrskipr:
@@ -64,15 +72,15 @@ def bin_ref(ref, ccd):
         colbin = np.zeros([nrowr, ncol])
 
         for j in range(0, ncol):
-            colbin[:, j] = imgref[:, j * ncbin : (j + 1) * ncbin].sum(axis=1)
+            colbin[:, j] = transfer_function(imgref[:, j * ncbin : (j + 1) * ncbin].sum(axis=1),calib_constants[1])
 
         # declare zero array for row binning
         binned = np.zeros([nrow, ncol])
 
         for j in range(0, nrow):
-            binned[j, :] = colbin[j * nrbin : (j + 1) * nrbin, :].sum(axis=0)
+            binned[j, :] = transfer_function(colbin[j * nrbin : (j + 1) * nrbin, :].sum(axis=0),calib_constants[2])
 
-        binned = binned * exptimefactor
+        binned = binned 
         return binned
 
     else:
@@ -166,6 +174,8 @@ def get_binning_test_data_from_CCD_item(
     test_type_filter="all",
     add_bias=False,
     remove_blanks=True,
+    non_linarity_constants=None,
+    n_pixels_to_use=0
 ):
 
     CCDitems_use = []
@@ -244,7 +254,7 @@ def get_binning_test_data_from_CCD_item(
         ref["IMAGE"] = CCDr_sub_img[i].copy()
 
         # bin reference image according to bin_input settings
-        binned_reference = bin_ref(copy.deepcopy(ref), bin_input[i].copy())
+        binned_reference = bin_ref(copy.deepcopy(ref), bin_input[i].copy(),non_linarity_constants)
 
         # adding bias to get the correct values for non-linearity
         if add_bias:
@@ -268,15 +278,21 @@ def get_binning_test_data_from_CCD_item(
             else:
                 inst_bin = CCDl_sub_img[i].copy()
 
-            inst_tot = np.append(inst_tot, inst_bin.flatten())
+            if n_pixels_to_use>0:
+                indexes_to_use = np.random.rand(n_pixels_to_use)*len(inst_bin.flatten())
+                
+            else:
+                indexes_to_use = np.arange(len(inst_bin.flatten()))
 
-            man_tot = np.append(man_tot, binned[i].flatten())
+            inst_tot = np.append(inst_tot, inst_bin.flatten()[indexes_to_use])
+            man_tot = np.append(man_tot, binned[i].flatten()[indexes_to_use])
+
             test_type_tot = np.append(
                 test_type_tot,
-                [test_type[i]] * len(inst_bin.flatten()),
+                [test_type[i]] * len(inst_bin.flatten()[indexes_to_use]),
             )
             channel_tot = np.append(
-                channel_tot, CCDs_list[i]["CCDSEL"] * np.ones(len(inst_bin.flatten()))
+                channel_tot, CCDs_list[i]["CCDSEL"] * np.ones(len(inst_bin.flatten()[indexes_to_use]))
             )
 
         else:
