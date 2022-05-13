@@ -5,7 +5,6 @@ Created on Thu Oct 07 09:47 2021
 
 Functions are used to estimate the linearity of the MATS channels from binning tests
 """
-from multiprocessing.sharedctypes import Value
 from database_generation import binning_functions as bf
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -46,17 +45,51 @@ def quadratic_fit(x, a, b):
     # Curve fitting function
     return a * x ** 2 + b * x  # c=0 is implied
 
+def threshold_fit(x, a, b, c):
+    # Curve fitting function y=a*x, x<=c. y=b*(x-c) + a*c x>c
+    y = np.zeros(len(x))
+    for i in range(len(x)):
+        if x[i]<=c:
+            y[i] = a * x[i]
+        elif x[i]>c:   
+            y[i] = b * (x[i]-c) + a*c
+        else:
+            raise ValueError
+    return y
 
-def fit_with_curvefit(x, y, deg):
+def threshold_fit_2(x, a, b, c):
+    # Curve fitting function y=a*x, x<=c. y=bx**2 + (a-2bc)*x + b*c**2 +  x>c
+    y = np.zeros(len(x))
+    for i in range(len(x)):
+        if x[i]<=c:
+            y[i] = a * x[i]
+        elif x[i]>c:   
+            y[i] = (a-2*b*c)*x[i]+b*x[i]**2+b*c**2
+        else:
+            raise ValueError
+    return y
 
-    if deg == 1:
+def fit_with_curvefit(x, y, deg,fun='polynomial'):
+
+    if deg == 1 and fun=='polynomial':
         params = curve_fit(linear_fit, x, y)
         [a] = params[0]
         p = [a, 0]
-    elif deg == 2:
+    elif deg == 2 and fun=='polynomial':
         params = curve_fit(quadratic_fit, x, y)
         [a, b] = params[0]
         p = [a, b, 0]
+    elif deg == 1 and fun=='threshold':
+        params = curve_fit(threshold_fit, x, y,p0=np.array([1,0.5,max(x)/3*2]))
+        [a, b, c] = params[0]
+        p = [a, b, c]
+
+    elif deg == 2 and fun=='threshold':
+        params = curve_fit(threshold_fit_2, x, y,p0=np.array([1,0.5,max(x)/3*2]))
+        [a, b, c] = params[0]
+        p = [a, b, c]
+
+
     else:
         ValueError("only deg 1 and 2 are accepted")
 
@@ -76,6 +109,7 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1",inverse=Fa
     'curvefit1'
     'curvefit2'
     'spline1'
+    'threshold'
     """
 
     all_simulated = man_tot.flatten()
@@ -86,7 +120,7 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1",inverse=Fa
     low_measured = all_measured[all_simulated < threshold]
 
     low_measured_mean, bin_edges = binned_statistic(
-        low_simulated, low_measured, "median", bins=2000
+        low_simulated, low_measured, "median", bins=1000
     )[0:2]
 
     bin_center = (bin_edges[1:] + bin_edges[0:-1]) / 2
@@ -128,6 +162,14 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1",inverse=Fa
             y,
             1,
         )
+    elif fittype == "threshold":
+        p_low = fit_with_curvefit(
+            x,
+            y,
+            1,
+            'threshold',
+        )
+        print(p_low)
     else:
         ValueError("Invalid fittype")
 
@@ -157,35 +199,37 @@ def get_linearity(
     for i in range(len(channels)):
         
         #Add previously estimated non-linearity (i.e. add non linerity from pixels 
-        # when estimating row and row non-linearity when estimating col)
+        # when estimating row and row non-linearity when estimating col) (This is not done! OMC 2022-05-09)
         
         if testtype == 'exp':
             non_linarity_constants=None
         elif testtype == 'row':
-            non_linarity_constants = []
-            non_linarity_constants.append(np.load(
-                'calibration_data/linearity/'
-                + "linearity_"
-                + str(channels[i])
-                + "_exp"
-                + ".npy"))
-            non_linarity_constants.append(np.array([0, 1, 0]))
-            non_linarity_constants.append(np.array([0, 1, 0]))
+            non_linarity_constants=None
+            # non_linarity_constants = []
+            # non_linarity_constants.append(np.load(
+            #     'calibration_data/linearity/'
+            #     + "linearity_"
+            #     + str(channels[i])
+            #     + "_exp"
+            #     + ".npy"))
+            # non_linarity_constants.append(np.array([0, 1, 0]))
+            # non_linarity_constants.append(np.array([0, 1, 0]))
         elif testtype == 'col':
-            non_linarity_constants = []
-            non_linarity_constants.append(np.load(
-                'calibration_data/linearity/'
-                + "linearity_"
-                + str(channels[i])
-                + "_exp"
-                + ".npy"))
-            non_linarity_constants.append(np.load(
-                'calibration_data/linearity/'
-                + "linearity_"
-                + str(channels[i])
-                + "_row"
-                + ".npy"))
-            non_linarity_constants.append(np.array([0, 1, 0]))
+            non_linarity_constants=None
+            # non_linarity_constants = []
+            # non_linarity_constants.append(np.load(
+            #     'calibration_data/linearity/'
+            #     + "linearity_"
+            #     + str(channels[i])
+            #     + "_exp"
+            #     + ".npy"))
+            # non_linarity_constants.append(np.load(
+            #     'calibration_data/linearity/'
+            #     + "linearity_"
+            #     + str(channels[i])
+            #     + "_row"
+            #     + ".npy"))
+            # non_linarity_constants.append(np.array([0, 1, 0]))
         else:
             raise ValueError('invalid test type')
 
@@ -254,6 +298,16 @@ def get_linearity(
                     "-",
                     c=color[channels[i]],
                 )
+            if fittype == "threshold":
+                    x = np.arange(0, threshold*1.3)
+                    y = threshold_fit(x,poly_or_spline[0],poly_or_spline[1],poly_or_spline[2])
+                    plt.plot(
+                    x,
+                    y,
+                    "-",
+                    c=color[channels[i]],
+                )
+
             else:
                 plt.plot(
                     np.arange(0, threshold*1.3),
@@ -300,12 +354,12 @@ def make_linearity(channel, calibration_file, plot=True, exp_type='col',inverse=
         CCDitems = filter_on_time(CCDitems, starttime, endtime)
 
     if exp_type == 'exp':
-        threshold=4e3
+        threshold=5e3
     elif exp_type == 'row':
-        threshold=15e3
+        threshold=20e3
 
     elif exp_type == 'col':
-        threshold=30e3
+        threshold=40e3
 
     # Main function
     poly_or_spline = get_linearity(

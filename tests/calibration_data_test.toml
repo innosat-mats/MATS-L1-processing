@@ -15,6 +15,6 @@ baffle_flatfield = "calibration_data/Flatfield20210421/PayloadImages/"
 folder = "calibration_data/binning_test_20200812/RacFiles_out/"
 starttime = ""
 endtime = ""
-fittype = 'curvefit2'
+fittype = 'threshold'
 remove_blanks = 'true'
 polynomial = 'calibration_data/linearity/'
