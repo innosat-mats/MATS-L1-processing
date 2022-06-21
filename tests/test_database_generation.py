@@ -2,7 +2,7 @@ import pytest
 
 from database_generation.flatfield import make_flatfield
 from database_generation.linearity import make_linearity
-from database_generation.linearity import get_threshold
+from database_generation.linearity import get_non_lin_important
 import numpy as np
 
 __author__ = "Ole Martin Christensen"
@@ -23,4 +23,4 @@ def test_get_linearity():
 
 def test_get_threshold():
     p=np.array([0.98,-0.0000047, 6916])
-    assert np.abs((get_threshold(p,0.8, fittype='threshold2')-30597.91319148936)) < 0.1 
+    assert np.abs((get_non_lin_important(p,0.8, fittype='threshold2')-30597.91319148936)) < 0.1 

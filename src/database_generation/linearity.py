@@ -20,8 +20,8 @@ import scipy.optimize as opt
 import pwlf
 import toml
 from mats_l1_processing.LindasCalibrationFunctions import filter_on_time
-
-
+import pickle
+import database_generation.non_linearity as NL
 
 def fit_with_polyfit(x, y, deg):
 
@@ -184,9 +184,9 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1",inverse=Fa
 
     return p_low, bin_center, low_measured_mean
 
-def get_threshold(p,beta = 0.8, fittype='threshold2'):
+def get_non_lin_important(p,beta = 0.8, fittype='threshold2'):
     if fittype != 'threshold2':
-        raise NotImplementedError
+        return np.nan
     a = p[0]
     b = p[1]
     e = p[2]
@@ -223,34 +223,10 @@ def get_linearity(
             non_linarity_constants=None
         elif testtype == 'row':
             non_linarity_constants=None
-            # non_linarity_constants = []
-            # non_linarity_constants.append(np.load(
-            #     'calibration_data/linearity/'
-            #     + "linearity_"
-            #     + str(channels[i])
-            #     + "_exp"
-            #     + ".npy"))
-            # non_linarity_constants.append(np.array([0, 1, 0]))
-            # non_linarity_constants.append(np.array([0, 1, 0]))
         elif testtype == 'col':
             non_linarity_constants=None
-            # non_linarity_constants = []
-            # non_linarity_constants.append(np.load(
-            #     'calibration_data/linearity/'
-            #     + "linearity_"
-            #     + str(channels[i])
-            #     + "_exp"
-            #     + ".npy"))
-            # non_linarity_constants.append(np.load(
-            #     'calibration_data/linearity/'
-            #     + "linearity_"
-            #     + str(channels[i])
-            #     + "_row"
-            #     + ".npy"))
-            # non_linarity_constants.append(np.array([0, 1, 0]))
         else:
             raise ValueError('invalid test type')
-
 
         (
             man_tot,
@@ -338,15 +314,13 @@ def get_linearity(
             plt.xlim([0, threshold*1.3])
             plt.ylim([0, threshold*1.3])
 
-        threshold = get_threshold(poly_or_spline) #Get threshold where non-linearity becomes important 
-        savedict = {
-            "fittype": fittype,
-            "channel": channels[i],
-            "threshold": threshold,
-            "poly_or_spline": poly_or_spline
-            }
-            
-        np.save(('linearity_' + str(channels[i]) + '_' + testtype),savedict)
+        non_lin_important = get_non_lin_important(poly_or_spline) #Get threshold where non-linearity becomes important 
+
+        non_linearity = NL.nonLinearity(fittype, threshold,non_lin_important,channels[i],poly_or_spline)
+
+        filename = 'linearity_' + str(channels[i]) + '_' + testtype + '.pkl'    
+        with open(filename, 'wb') as f:
+            pickle.dump(non_linearity, f)
 
     if plot:
         plt.savefig("linearity_fit_channel_" + str(channels[i]) + "_" + testtype + ".png")

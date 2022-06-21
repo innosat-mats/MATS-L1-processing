@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
 Created on Mon Mar 18 17:09:57 2019
@@ -18,7 +17,10 @@ import numpy as np
 import scipy.io
 import toml
 import scipy.optimize as opt
-
+import pickle
+import database_generation.non_linearity as NL
+from joblib import Parallel, delayed
+import time 
 
 # some_file.py
 # import sys
@@ -166,27 +168,29 @@ class CCD:
         )
 
         # Read in non linearity coefficients (only colbin so far)
-        self.non_linearity_pixel = np.load(
-            calibration_data["linearity"]["polynomial"]
+        with open(calibration_data["linearity"]["polynomial"]
             + "linearity_"
             + str(self.channelnumber)
             + "_exp"
-            + ".npy"
-        )
-        self.non_linearity_sumrow =self.non_linearity = np.load(
-            calibration_data["linearity"]["polynomial"]
+            + ".pkl", 'rb') as fp:
+
+            self.non_linearity_pixel = pickle.load(fp)
+
+        with open(calibration_data["linearity"]["polynomial"]
             + "linearity_"
             + str(self.channelnumber)
             + "_row"
-            + ".npy"
-        )
-        self.non_linearity_sumwell = self.non_linearity = np.load(
-            calibration_data["linearity"]["polynomial"]
+            + ".pkl", 'rb') as fp:
+
+            self.non_linearity_sumrow = pickle.load(fp)
+
+        with open(calibration_data["linearity"]["polynomial"]
             + "linearity_"
             + str(self.channelnumber)
             + "_col"
-            + ".npy"
-        )
+            + ".pkl", 'rb') as fp:
+
+            self.non_linearity_sumwell = pickle.load(fp)
 
         # =============================================================================
         #         Old stuff to be removed
@@ -254,40 +258,29 @@ class CCD:
 
         return flatfield
 
-    def linearity(self, mode):
-
-        inverse_model_real(self,nrowbin,ncolbin,texp,value)
-
-        return self.non_linearity
-
-
 #%% 
 ## non-linearity-stuff ##
 
 #%%
 def row_sum(true_value_mapped_to_pixels):
-    
     CCD_binned = np.sum(true_value_mapped_to_pixels,axis=0)
-
     return CCD_binned
 
 def col_sum(true_value_mapped_to_pixels):
-    
-    CCD_binned = np.sum(true_value_mapped_to_pixels,axis=0)
-    
+    CCD_binned = np.sum(true_value_mapped_to_pixels,axis=0)   
     return CCD_binned
 
-def transfer_function(value_in,poly):
-    return np.polyval(poly,value_in)
+def transfer_function(value_in,non_linearity):
+    return non_linearity.get_measured_value(value_in)
 
-def sum_well(true_value_mapped_to_pixels,poly):
-    return transfer_function(col_sum(true_value_mapped_to_pixels),poly)
+def sum_well(true_value_mapped_to_pixels,non_linearity):
+    return transfer_function(col_sum(true_value_mapped_to_pixels),non_linearity)
 
-def shift_register(true_value_mapped_to_pixels,poly):
-    return transfer_function(row_sum(true_value_mapped_to_pixels),poly)
+def shift_register(true_value_mapped_to_pixels,non_linearity):
+    return transfer_function(row_sum(true_value_mapped_to_pixels),non_linearity)
 
-def single_pixel(true_value_mapped_to_pixels,poly):
-    return transfer_function(true_value_mapped_to_pixels,poly)
+def single_pixel(true_value_mapped_to_pixels,non_linearity):
+    return transfer_function(true_value_mapped_to_pixels,non_linearity)
 
 def total_model(true_value_mapped_to_pixels,p):
     return sum_well(shift_register(single_pixel(true_value_mapped_to_pixels,p[0]),p[1]),p[2])
@@ -307,6 +300,12 @@ def optimize_function_scalar(x,CCD,nrowbin,ncolbin,value):
     
     return np.abs(y_model-value)
 
+def optimize_function(x,CCD,nrowbin,ncolbin,value):
+    #x is true value, y is measured value
+    y_model = total_model_scalar(x,CCD,nrowbin,ncolbin)
+    
+    return np.abs(y_model-value)
+
 def inverse_model_real(CCDitem,value):
 
     try:
@@ -314,11 +313,11 @@ def inverse_model_real(CCDitem,value):
     except:
         raise Exception("No CCDunit defined for the CCDitem")
 
-    x = opt.minimize_scalar(optimize_function_scalar,args=(CCDunit,CCDitem["NRBIN"],CCDitem["NColBinCCD"],value))
+    x = opt.minimize_scalar(optimize_function_scalar,args=(CCDunit,CCDitem["NRBIN"],CCDitem["NColBinCCD"],value),tol=1e-3)
+    #x = opt.minimize(optimize_function,x0=value,args=(CCDunit,CCDitem["NRBIN"],CCDitem["NColBinCCD"],value))
     return x
 
 def get_linearized_image(CCDitem, image_bias_sub):
-
     image_linear = np.zeros(image_bias_sub.shape)
     for i in range(image_bias_sub.shape[0]):
         for j in range(image_bias_sub.shape[1]): 
@@ -326,10 +325,24 @@ def get_linearized_image(CCDitem, image_bias_sub):
 
     return image_linear
 
+def loop_over_rows(CCDitem,image_bias_sub):
+    image_linear = np.zeros(image_bias_sub.shape)
+    for j in range(image_bias_sub.shape[0]): 
+            image_linear[j] = inverse_model_real(CCDitem,image_bias_sub[j]).x
+
+    return image_linear
+
+def get_linearized_image_parallelized(CCDitem, image_bias_sub):
+    start = time.time()
+    image_linear_list = Parallel(n_jobs=4)(delayed( loop_over_rows)(CCDitem,image_bias_sub[i]) for i in range(image_bias_sub.shape[0]))
+    end = time.time()
+    print(end - start)
+    return np.array(image_linear_list)
+
 ## Flatfield ##
 
 def compensate_flatfield(CCDitem, image="No picture"):
-    if type(image) is str:
+    if type(image) is str:  
         image = CCDitem["IMAGE"]
     image_flatf_fact = calculate_flatfield(CCDitem)
     mean = image_flatf_fact[

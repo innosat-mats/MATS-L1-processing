@@ -14,6 +14,7 @@ from mats_l1_processing.L1_calibration_functions import (
     subtract_dark,
     compensate_flatfield,
     get_linearized_image,
+    get_linearized_image_parallelized,
 )
 
 # from L1_calibration_functions import get_true_image_old, desmear_true_image_old
@@ -91,7 +92,7 @@ def L1_calibrate(CCDitem, calibrationfile):
     #    image_bias_sub = get_true_image(CCDitem)
 
     # step 3: correct for non-linearity
-    image_linear = get_linearized_image(CCDitem, image_bias_sub)
+    image_linear = get_linearized_image_parallelized(CCDitem, image_bias_sub)
 
     # Step 4: Desmear
     image_desmeared = desmear_true_image(CCDitem, image_linear)
