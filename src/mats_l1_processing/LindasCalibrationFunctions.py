@@ -314,7 +314,7 @@ class ItemsUnitCreate:
         fig.colorbar(sp, ax=axis)
 
         return sp
-
+    
 
 def read_all_files_in_protocol(df, read_from, root_directory):
     from database_generation.read_in_imgview_functions import read_CCDitem_from_imgview
@@ -324,10 +324,10 @@ def read_all_files_in_protocol(df, read_from, root_directory):
     CCDitems = []
     for PicID in list(df["PicID"]):
         if read_from == "rac":
-            racdf = pd.read_csv(root_directory + "RacFiles_out/CCD.csv", skiprows=[0])
-            CCD_image_data = racdf.to_dict("records")
-            CCDitem=find_CCDitem_matching_protocol_entry(CCD_image_data, PicID)
-            errorflag=read_CCDitem_image(CCDitem, root_directory + "RacFiles_out/") 
+            racdf = pd.read_csv(root_directory + "RacFiles_out/CCD.csv", skiprows=[0]) #Read in full CCD.csv to panda data frame
+            CCD_image_data = racdf.to_dict("records") #Comvert full data frame to list of dicts
+            CCDitem=find_CCDitem_matching_protocol_entry(CCD_image_data, PicID) #select the dict that corresponds to the wanted PiCID (as given by protocol) and name that dict CCDitem 
+            errorflag=read_CCDitem_image(CCDitem, root_directory + "RacFiles_out/") # read in the image that corresponds to the PicID and add that to the CCDitem
             if errorflag:
                 raise Exception("Image"+CCDitem['Image File Name'] +"not found") 
 

@@ -53,7 +53,8 @@ def L1_calibrate(CCDitem, calibrationfile):
     except:
         CCDunits = {}
 
-    # Check  if the CCDunit has been created. It takes time to create it so it should not be created if not needed
+    # Check  if the CCDunit has been created. It takes time to create it so it should not be created if not needed. 
+    # In running calibration code the 7 CCDunits (IR1-4, UV1-2 and NADIR) should be created at the start so that this check will not be necessary.
     try:
         CCDitem["CCDunit"]
     except:
