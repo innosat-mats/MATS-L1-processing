@@ -1,6 +1,7 @@
 import pytest
 
 from mats_l1_processing.read_and_calibrate_all_files import main
+from mats_l1_processing.intrument import Instrument
 
 __author__ = "Ole Martin Christensen"
 __copyright__ = "Ole Martin Christensen"
@@ -48,3 +49,6 @@ def test_readfunctions():
     read_from="imgview" 
     CCDitems=read_all_files_in_root_directory(read_from,directory)
     
+def test_CCDunit():
+    intrument = Instrument("tests/calibration_data_test.toml")
+    intrument.get_CCD("IR1")
