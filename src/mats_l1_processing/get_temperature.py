@@ -55,7 +55,7 @@ def add_temperature_info(CCDitem, temperaturedata, relativetimedata, temperature
         elif CCDitem["channel"] == "IR4":
             CCDitem["temperature"] = HTR8A  # +1
         elif CCDitem["channel"] == "UV1":
-            CCDitem["temperature"] = HTR8B  # +0
+            CCDitem["temperature"] = HTR8A  # +0
         elif CCDitem["channel"] == "UV2":
             CCDitem["temperature"] = HTR8A  # -0.5   # + 0.4 for Lindas measurements
         elif CCDitem["channel"] == "NADIR":
