@@ -186,11 +186,16 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1",inverse=Fa
 
 def get_non_lin_important(p,beta = 0.8, fittype='threshold2'):
     if fittype != 'threshold2':
-        return np.nan
+        raise NotImplementedError
+    
     a = p[0]
     b = p[1]
     e = p[2]
-    threshold = b*((beta+2*b*e-a)/(2*b)-e)**2 + a*((beta+2*b*e-a)/(2*b)) +a*e
+    #threshold = b*((beta+2*b*e-a)/(2*b)-e)**2 + a*((beta+2*b*e-a)/(2*b)) +a*e
+    threshold = (beta+2*b*e-a)/(2*b)
+    if threshold<0:
+        beta = 1-beta
+        threshold = (beta+2*b*e-a)/(2*b)
 
     return threshold
 
@@ -241,11 +246,22 @@ def get_linearity(
             non_linarity_constants=None,
             remove_blanks=remove_blanks,
         )
-
+        
         poly_or_spline, bin_center, low_measured_mean = fit_curve(
             man_tot, inst_tot, threshold, fittype,inverse
         )
+        
+        if fittype=='threshold2':
+            non_lin_important = get_non_lin_important(poly_or_spline,0.1) #Get threshold where non-linearity becomes important 
+        else:
+            non_lin_important = threshold
 
+        non_linearity = NL.nonLinearity(fittype, threshold,non_lin_important,channels[i],poly_or_spline)
+
+        filename = 'linearity_' + str(channels[i]) + '_' + testtype + '.pkl'    
+        with open(filename, 'wb') as f:
+            pickle.dump(non_linearity, f)
+        
         if plot:
             plt.plot([0, threshold*1.3], [0, threshold*1.3], "k--")
             
@@ -314,14 +330,6 @@ def get_linearity(
             plt.xlim([0, threshold*1.3])
             plt.ylim([0, threshold*1.3])
 
-        non_lin_important = get_non_lin_important(poly_or_spline) #Get threshold where non-linearity becomes important 
-
-        non_linearity = NL.nonLinearity(fittype, threshold,non_lin_important,channels[i],poly_or_spline)
-
-        filename = 'linearity_' + str(channels[i]) + '_' + testtype + '.pkl'    
-        with open(filename, 'wb') as f:
-            pickle.dump(non_linearity, f)
-
     if plot:
         plt.savefig("linearity_fit_channel_" + str(channels[i]) + "_" + testtype + ".png")
         plt.grid(True)
@@ -361,7 +369,6 @@ def make_linearity(channel, calibration_file, plot=True, exp_type='col',inverse=
         threshold=6e3
     elif exp_type == 'row':
         threshold=20e3
-
     elif exp_type == 'col':
         threshold=40e3
 

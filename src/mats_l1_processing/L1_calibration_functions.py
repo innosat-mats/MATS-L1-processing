@@ -167,7 +167,7 @@ class CCD:
             + "_LSM.npy"
         )
 
-        # Read in non linearity coefficients (only colbin so far)
+        # Read in non linearity objects
         with open(calibration_data["linearity"]["polynomial"]
             + "linearity_"
             + str(self.channelnumber)
@@ -292,13 +292,8 @@ def total_model_scalar(x,CCD,nrowbin,ncolbin):
     cal_consts.append(CCD.non_linearity_sumwell)
 
     true_value_mapped_to_pixels = np.ones((nrowbin,ncolbin))*x/(nrowbin*ncolbin) #expand binned image to pixel values 
-    return total_model(true_value_mapped_to_pixels,cal_consts) #return modelled value with non-linearity taken into account
-
-def optimize_function_scalar(x,CCD,nrowbin,ncolbin,value):
-    #x is true value, y is measured value
-    y_model = total_model_scalar(x,CCD,nrowbin,ncolbin)
     
-    return np.abs(y_model-value)
+    return total_model(true_value_mapped_to_pixels,cal_consts) #return modelled value with non-linearity taken into account
 
 def optimize_function(x,CCD,nrowbin,ncolbin,value):
     #x is true value, y is measured value
@@ -313,8 +308,22 @@ def inverse_model_real(CCDitem,value):
     except:
         raise Exception("No CCDunit defined for the CCDitem")
 
-    x = opt.minimize_scalar(optimize_function_scalar,args=(CCDunit,CCDitem["NRBIN"],CCDitem["NColBinCCD"],value),tol=1e-3)
-    #x = opt.minimize(optimize_function,x0=value,args=(CCDunit,CCDitem["NRBIN"],CCDitem["NColBinCCD"],value))
+    nrowbin = CCDitem["NRBIN"]
+    ncolbin = CCDitem["NColBinCCD"]
+
+    value_mapped_to_pixels = value/(nrowbin*ncolbin)
+    value_mapped_to_shift_register = value/(nrowbin)
+    value_mapped_to_summation_well = value
+
+    if value_mapped_to_pixels>CCDunit.non_linearity_pixel.get_measured_value(CCDunit.non_linearity_pixel.non_lin_important):
+        x = CCDunit.non_linearity_pixel.non_lin_important
+    elif value_mapped_to_shift_register>CCDunit.non_linearity_sumrow.get_measured_value(CCDunit.non_linearity_sumrow.non_lin_important):
+        x = CCDunit.non_linearity_sumrow.non_lin_important
+    elif value_mapped_to_summation_well>CCDunit.non_linearity_sumwell.get_measured_value(CCDunit.non_linearity_sumwell.non_lin_important):
+        x = CCDunit.non_linearity_sumwell.non_lin_important
+    else:
+        x = opt.minimize(optimize_function,x0=value,args=(CCDunit,nrowbin,ncolbin,value)).x
+
     return x
 
 def get_linearized_image(CCDitem, image_bias_sub):
@@ -333,10 +342,7 @@ def loop_over_rows(CCDitem,image_bias_sub):
     return image_linear
 
 def get_linearized_image_parallelized(CCDitem, image_bias_sub):
-    start = time.time()
     image_linear_list = Parallel(n_jobs=4)(delayed( loop_over_rows)(CCDitem,image_bias_sub[i]) for i in range(image_bias_sub.shape[0]))
-    end = time.time()
-    print(end - start)
     return np.array(image_linear_list)
 
 ## Flatfield ##
