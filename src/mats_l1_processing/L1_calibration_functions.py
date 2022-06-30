@@ -833,6 +833,8 @@ def get_true_image(header, image="No picture"):
     true_image = image * 2 ** (
         int(header["DigGain"])
     )  # Says Gain in original coding.  Check with Nickolay LM 201215
+    # Check if this is same as "GAIN Truckation". Check with Molflow if this is corrected for already in  Level 0. 
+     
 
     # bad column analysis #LM201025 nread appears to be number of bins or (super)columns binned in FPGA (and bad columns), coadd is numer of total columns in a supersupercolumn (FPGA and onchip binned)
     n_read, n_coadd = binning_bc(
@@ -894,7 +896,7 @@ def get_true_image_reverse(header, true_image="No picture"):
     image = true_image / 2 ** (
         int(header["DigGain"])
     )  # TODO I dont think htis should be DigGain . Says Gain in original coding.  Check with Nickolay LM 201215
-
+# Check if this is same as "GAIN Truckation". Check with Molflow if this is corrected for already in  Level 0. 
     return image
 
 

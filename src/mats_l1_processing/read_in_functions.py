@@ -162,12 +162,10 @@ def add_and_rename_CCDitem_info(CCDitem):
     
     if  CCDitem["read_from"] == "rac":
             # del CCDitem['NCBIN FPGAColumns']
-        if CCDitem["GAIN Mode"] == "High":
-            CCDitem["DigGain"] = 0
-        elif CCDitem["GAIN Mode"] == "Low":
-            CCDitem["DigGain"] = 1
-        else:
-            raise Exception("GAIN mode set to strange value")
+        try:
+            CCDitem["DigGain"] = CCDitem["GAIN Truncation"]
+        except:
+            raise Exception("GAIN Truncation nonexisting")
         
         
         try: 
@@ -179,6 +177,11 @@ def add_and_rename_CCDitem_info(CCDitem):
                 CCDitem["SigMode"] = 0 
             elif CCDitem["GAIN Mode"]=='Low':
                 CCDitem["SigMode"] =1 
+
+    #TODO rename. See teble 2 in Paylaod internal ICD.Row 11 in table.  High gain mode= signal mode 0. Low gain mode= sig mode 1. 
+    #Gain timing= full/fast timing  
+    #Gain truncation = gain (bit truncated in FPGA)=Dig gain
+
 
             
         # Convert BC to list of integer instead of str
