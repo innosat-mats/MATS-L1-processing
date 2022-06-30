@@ -12,9 +12,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from read_in_functions import readprotocol, read_all_files_in_protocol
-from L1_calibration_functions import get_true_image, desmear_true_image, subtract_dark, compensate_flatfield, CCD
+from L1_calibration_functions import get_true_image, desmear_true_image, subtract_dark, compensate_flatfield
 from L1_calibration_functions import calculate_flatfield, calculate_dark, desmear_true_image_reverse, get_true_image_reverse, bin_image_using_predict_and_get_true_image, bin_image_with_BC 
-
+from mats_l1_processing.intrument import CCD
 #from LindasCalibrationFunctions import plot_CCDimage 
 
 

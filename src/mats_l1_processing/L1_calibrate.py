@@ -93,7 +93,8 @@ def L1_calibrate(CCDitem, calibrationfile):
     #    image_bias_sub = get_true_image(CCDitem)
 
     # step 3: correct for non-linearity
-    image_linear = get_linearized_image_parallelized(CCDitem, image_bias_sub)
+    #image_linear = get_linearized_image_parallelized(CCDitem, image_bias_sub)
+    image_linear = image_bias_sub
 
     # Step 4: Desmear
     image_desmeared = desmear_true_image(CCDitem, image_linear)

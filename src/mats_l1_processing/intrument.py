@@ -9,7 +9,6 @@ is included.
 """
 
 import toml
-from mats_l1_processing. L1_calibration_functions import read_flatfield
 import numpy as np
 import scipy
 import pickle

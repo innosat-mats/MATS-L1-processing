@@ -1,6 +1,6 @@
 import pytest
 
-from mats_l1_processing.read_and_calibrate_all_files import main
+from mats_l1_processing.read_and_calibrate_all_files_parallel import main
 from mats_l1_processing.intrument import Instrument
 
 __author__ = "Ole Martin Christensen"
@@ -12,22 +12,13 @@ def test_calibrate():
     main("testdata/RacFiles_out/", "tests/calibration_data_test.toml")
 
 
-def test_plot():
-    main(
-        "testdata/RacFiles_out/",
-        "tests/calibration_data_test.toml",
-        calibrate=False,
-        plot=True,
-    )
-
-
-def test_calibrate_and_plot():
-    main(
-        "testdata/RacFiles_out/",
-        "tests/calibration_data_test.toml",
-        calibrate=True,
-        plot=True,
-    )
+# def test_plot():
+#     main(
+#         "testdata/RacFiles_out/",
+#         "tests/calibration_data_test.toml",
+#         calibrate=False,
+#         plot=True,
+#     )
 
 def test_readfunctions():
     from mats_l1_processing.read_in_functions import readprotocol, read_all_files_in_root_directory
