@@ -25,20 +25,20 @@ from mats_l1_processing import read_in_functions
 # BOTH FPGA AND ON-CHIP & ROW SETTINGS;
 
 
-def bin_ref(ref, ccd,calib_constants=None):
+def bin_ref(ref, ccd,non_linearity_other=None):
     # simple code for binning
 
-    if calib_constants == None:
-        calib_constants = np.array([[1,0],[1,0],[1,0]])
+    if non_linearity_other == None:
+        non_linearity_other = 
 
-    binned = bin_ref_non_linear(ref,ccd,calib_constants)
+    binned = bin_ref_non_linear(ref,ccd,non_linearity_other)
 
     return binned
 
 def transfer_function(value_in,poly):
     return np.polyval(poly,value_in)
 
-def bin_ref_non_linear(ref,ccd,calib_constants):
+def bin_ref_non_linear(ref,ccd,non_linearity_other):
 
     nrow, ncol, nrskip, ncskip, nrbin, ncbin, exptime = (
         ccd["NROW"],
@@ -172,9 +172,10 @@ def get_binning_test_data_from_CCD_item(
     test_type_filter="all",
     add_bias=False,
     remove_blanks=True,
-    non_linarity_constants=None,
+    non_linearity_other=None,
     n_pixels_to_use=0
 ):
+
 
     CCDitems_use = []
     IDstrings = []
@@ -252,7 +253,7 @@ def get_binning_test_data_from_CCD_item(
         ref["IMAGE"] = CCDr_sub_img[i].copy()
 
         # bin reference image according to bin_input settings
-        binned_reference = bin_ref(copy.deepcopy(ref), bin_input[i].copy(),non_linarity_constants)
+        binned_reference = bin_ref(copy.deepcopy(ref), bin_input[i].copy(),non_linearity_other)
 
         # adding bias to get the correct values for non-linearity
         if add_bias:

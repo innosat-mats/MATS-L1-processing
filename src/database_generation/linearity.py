@@ -225,11 +225,11 @@ def get_linearity(
         # when estimating row and row non-linearity when estimating col) (This is not done! OMC 2022-05-09)
         
         if testtype == 'exp':
-            non_linarity_constants=None
+            non_linearity_other=None
         elif testtype == 'row':
-            non_linarity_constants=None
+            non_linearity_other=None
         elif testtype == 'col':
-            non_linarity_constants=None
+            non_linearity_other=None
         else:
             raise ValueError('invalid test type')
 
@@ -243,7 +243,7 @@ def get_linearity(
             test_type_filter=testtype,
             channels=[channels[i]],
             add_bias=True,
-            non_linarity_constants=None,
+            non_linearity_other=non_linearity_other,
             remove_blanks=remove_blanks,
         )
         
