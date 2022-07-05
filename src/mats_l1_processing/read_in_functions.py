@@ -192,26 +192,7 @@ def add_and_rename_CCDitem_info(CCDitem):
             CCDitem["BC"] = np.array([int(i) for i in strlist])
 
 
-#Assign string names to all channels
-    if int(CCDitem["CCDSEL"]) == 1:
-        channel = "IR1"
-    elif int(CCDitem["CCDSEL"]) == 4:
-        channel = "IR2"
-    elif int(CCDitem["CCDSEL"]) == 3:
-        channel = "IR3"
-    elif int(CCDitem["CCDSEL"]) == 2:
-        channel = "IR4"
-    elif int(CCDitem["CCDSEL"]) == 5:
-        channel = "UV1"
-    elif int(CCDitem["CCDSEL"]) == 6:
-        channel = "UV2"
-    elif int(CCDitem["CCDSEL"]) == 7:
-        channel = "NADIR"
-    else:
-        print("Error in CCDSEL, CCDSEL=", int(CCDitem["CCDSEL"]))
-    CCDitem["channel"] = channel
-
-
+    CCDitem["channel"] = channel_num_to_str(CCDitem["CCDSEL"])
 
     #Add temperature info fom OBC, the temperature info from the rac files are better since they are based on the thermistos on hte UV channels
     ADC_temp_in_mV = int(CCDitem["TEMP"]) / 32768 * 2048
@@ -328,7 +309,7 @@ def read_CCDitem(rac_dir, PicID, labtemp=999):
               
 
            
-    add_and_rename_CCDitem_info(CCDitem)
+    add_and_rename_CCDitem_info(CCDitem["CCDSEL"])
 
 
     #Add temperature data from rac files   
@@ -349,3 +330,24 @@ def ismember(a, b):
     return [
         bind.get(itm, None) for itm in a
     ]  # None can be replaced by any other "not in b" value
+
+def channel_num_to_str(ccdsel):
+    #Assign string names to all channels
+    if ccdsel == 1:
+        channel = "IR1"
+    elif ccdsel == 4:
+        channel = "IR2"
+    elif ccdsel == 3:
+        channel = "IR3"
+    elif ccdsel == 2:
+        channel = "IR4"
+    elif ccdsel == 5:
+        channel = "UV1"
+    elif ccdsel == 6:
+        channel = "UV2"
+    elif ccdsel == 7:
+        channel = "NADIR"
+    else:
+        print("Error in CCDSEL, CCDSEL=", ccdsel)
+    
+    return channel

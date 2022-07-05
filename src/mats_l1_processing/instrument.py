@@ -219,26 +219,20 @@ class CCD:
         )
 
         # Non-linearity
-        with open(calibration_data["linearity"]["polynomial"]
-            + "linearity_"
-            + str(self.channelnumber)
-            + "_exp"
+        with open(calibration_data["linearity"]["pixel"]
+            + "_" + str(self.channelnumber)
             + ".pkl", 'rb') as fp:
 
             self.non_linearity_pixel = pickle.load(fp)
 
-        with open(calibration_data["linearity"]["polynomial"]
-            + "linearity_"
-            + str(self.channelnumber)
-            + "_row"
+        with open(calibration_data["linearity"]["sumrow"]
+            + "_" + str(self.channelnumber)
             + ".pkl", 'rb') as fp:
 
             self.non_linearity_sumrow = pickle.load(fp)
 
-        with open(calibration_data["linearity"]["polynomial"]
-            + "linearity_"
-            + str(self.channelnumber)
-            + "_col"
+        with open(calibration_data["linearity"]["sumwell"]
+            + "_" + str(self.channelnumber)
             + ".pkl", 'rb') as fp:
 
             self.non_linearity_sumwell = pickle.load(fp)
@@ -364,15 +358,15 @@ class nonLinearity:
         fit_parameters (list, np.array or obj) = parmeter of object describing the non-linearity fit. 
 
     """
-    def __init__(self, fittype, fit_threshold,saturation,non_lin_important,channel,fit_parameters):
+    def __init__(self,channel, fittype, fit_parameters=None, fit_threshold=1e9,saturation=1e9,non_lin_important=1e9):
         """Init method for CCD class
 
         Args:
+            channel (str) = channel name 
             fittype (str): Type of fit the non-linearity is representing
-            fit_threshold (float) = max value of measured data used in fitting of the non-linearity
+            fit_threshold (optional) = max value of measured data used in fitting of the non-linearity
             saturation (float) = measured value where the CCD is considered saturated, all values above this are set to this value.
             non_lin_important (float) = non_lin_important the true value where non_linearity becomes important.
-            channel (str) = channel name 
             fit_parameters (list, np.array or obj) = parmeter of object describing the non-linearity fit.
             
         """
@@ -381,7 +375,33 @@ class nonLinearity:
         self.saturation = saturation
         self.non_lin_important = non_lin_important #the true value where non_linearity becomes important
         self.channel = channel
-        self.fit_parameters = fit_parameters
+        if fit_parameters == None:
+            if fittype=='polyfit1':
+                self.fit_parameters = np.array([1,0])
+            elif fittype=='polyfit2':
+                self.fit_parameters = np.array([0,1,0])
+            elif fittype=='threshold2':
+                a,b,e = (1,0,0)
+                self.fit_parameters = [a,b,e]
+            else:
+                raise NotImplementedError
+        else:
+            self.fit_parameters = fit_parameters
+
+    def get_measured_image(self, image_true):
+        """Method to get a measured value for a given true image (forward model)
+
+        Args:
+            x_true (np.array): True image of the signal
+
+        Returns:
+            (np.array) measured image taking into account non-linearity. 
+
+        """
+        image_measured = np.zeros(image_true.shape)
+        for i in range(image_measured.shape[0]):
+            for j in range(image_measured.shape[1]):
+                image_measured[i,j] = self.get_measured_value(image_true[i,j])
 
     def get_measured_value(self,x_true):
         """Method to get a measured value for a given true value (forward model)
@@ -401,12 +421,12 @@ class nonLinearity:
             if x_true > self.non_lin_important:
                 return self.threshold
             else:
-                return np.polyval(self.poly_or_spline,x_true)
+                return np.polyval(self.fit_parameters,x_true)
 
         elif self.fittype == 'threshold2':
-            a = self.poly_or_spline[0]
-            b = self.poly_or_spline[1]
-            e = self.poly_or_spline[2]
+            a = self.fit_parameters[0]
+            b = self.fit_parameters[1]
+            e = self.fit_parameters[2]
 
             if x_true < e:
                 return a*x_true             

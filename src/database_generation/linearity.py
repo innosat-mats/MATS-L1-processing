@@ -21,7 +21,8 @@ import pwlf
 import toml
 from mats_l1_processing.LindasCalibrationFunctions import filter_on_time
 import pickle
-import database_generation.non_linearity as NL
+import mats_l1_processing.instrument as instrument
+from mats_l1_processing.read_in_functions import channel_num_to_str
 
 def fit_with_polyfit(x, y, deg):
 
@@ -201,16 +202,16 @@ def get_non_lin_important(p,beta = 0.8, fittype='threshold2'):
 
 def get_linearity(
     CCDitems,
-    testtype="col",
-    plot=True,
-    fittype="polyfit1",
+    calibration_file,
     channels=[1, 2, 3, 4, 5, 6],
+    testtype="col",
+    fittype="polyfit1",
     threshold=30e3,
     remove_blanks=True,
-    inverse=False,
+    plot=True,
 ):
     
-    #Some ploitting options
+    #Some plotting options
     plotting_factor = 1000
     color = cm.rainbow(np.linspace(0, 1, 7))
     
@@ -220,19 +221,10 @@ def get_linearity(
 
 
     for i in range(len(channels)):
-        
-        #Add previously estimated non-linearity (i.e. add non linerity from pixels 
-        # when estimating row and row non-linearity when estimating col) (This is not done! OMC 2022-05-09)
-        
-        if testtype == 'exp':
-            non_linearity_other=None
-        elif testtype == 'row':
-            non_linearity_other=None
-        elif testtype == 'col':
-            non_linearity_other=None
-        else:
-            raise ValueError('invalid test type')
 
+        
+        CCDunit=instrument.CCD(channel_num_to_str(channels[i]),calibration_file)
+        
         (
             man_tot,
             inst_tot,
@@ -243,12 +235,12 @@ def get_linearity(
             test_type_filter=testtype,
             channels=[channels[i]],
             add_bias=True,
-            non_linearity_other=non_linearity_other,
+            CCD=CCDunit,
             remove_blanks=remove_blanks,
         )
         
         poly_or_spline, bin_center, low_measured_mean = fit_curve(
-            man_tot, inst_tot, threshold, fittype,inverse
+            man_tot, inst_tot, threshold, fittype
         )
         
         if fittype=='threshold2':
@@ -256,7 +248,7 @@ def get_linearity(
         else:
             non_lin_important = threshold
 
-        non_linearity = NL.nonLinearity(fittype, threshold,non_lin_important,channels[i],poly_or_spline)
+        non_linearity = instrument.nonLinearity(fittype, threshold,non_lin_important,channels[i],poly_or_spline)
 
         filename = 'linearity_' + str(channels[i]) + '_' + testtype + '.pkl'    
         with open(filename, 'wb') as f:
@@ -265,49 +257,26 @@ def get_linearity(
         if plot:
             plt.plot([0, threshold*1.3], [0, threshold*1.3], "k--")
             
-            if inverse:
-                plt.xlabel('measured')
-                plt.xlabel('simulated')
+            plt.xlabel('simulated')
+            plt.ylabel('measured')
 
-                plt.plot(
-                    inst_tot[::plotting_factor],
-                    man_tot.flatten()[::plotting_factor],
-                    ".",
-                    alpha=0.05,
-                    markeredgecolor="none",
-                    c=color[channels[i]],
-                )
-                plt.plot(
-                    low_measured_mean,
-                    bin_center,
-                    "+",
-                    c=color[channels[i]],
-                )
-            else:
-                plt.xlabel('simulated')
-                plt.ylabel('measured')
-
-                plt.plot(
-                    man_tot.flatten()[::plotting_factor],
-                    inst_tot[::plotting_factor],
-                    ".",
-                    alpha=0.1,
-                    markeredgecolor="none",
-                    c=color[channels[i]],
-                )
-                plt.plot(
-                    bin_center,
-                    low_measured_mean,
-                    "+",
-                    c=color[channels[i]],
-                )
+            plt.plot(
+                man_tot.flatten()[::plotting_factor],
+                inst_tot[::plotting_factor],
+                ".",
+                alpha=0.1,
+                markeredgecolor="none",
+                c=color[channels[i]],
+            )
+            plt.plot(
+                bin_center,
+                low_measured_mean,
+                "+",
+                c=color[channels[i]],
+            )
             if fittype == "spline1":
-                plt.plot(
-                    np.arange(0, threshold*1.3),
-                    poly_or_spline.predict(np.arange(0, threshold*1.3)),
-                    "-",
-                    c=color[channels[i]],
-                )
+                raise NotImplementedError('spline no longer supported')
+
             if fittype == "threshold2":
                     x = np.arange(0, threshold*1.3)
                     y = threshold_fit_2(x,poly_or_spline[0],poly_or_spline[1],poly_or_spline[2])
@@ -345,21 +314,19 @@ def make_linearity(channel, calibration_file, plot=True, exp_type='col',inverse=
 
     calibration_data = toml.load(calibration_file)
 
-    CCDitems = read_in_functions.read_CCDitems(calibration_data["linearity"]["folder"])
-
-    print(len(CCDitems))
-
+    CCDitems = read_in_functions.read_CCDitems(calibration_data["primary_data"]["linearity"]["folder"])
+    
     starttime = None
     endtime = None
 
-    if calibration_data["linearity"]["starttime"] != "":
+    if calibration_data["primary_data"]["linearity"]["starttime"] != "":
         starttime = pd.to_datetime(
-            calibration_data["linearity"]["starttime"], format="%Y-%m-%dT%H:%MZ"
+            calibration_data["primary_data"]["linearity"]["starttime"], format="%Y-%m-%dT%H:%MZ"
         )
 
-    if calibration_data["linearity"]["endtime"] != "":
+    if calibration_data["primary_data"]["linearity"]["endtime"] != "":
         endtime = pd.to_datetime(
-            calibration_data["linearity"]["endtime"], format="%Y-%m-%dT%H:%MZ"
+            calibration_data["primary_data"]["linearity"]["endtime"], format="%Y-%m-%dT%H:%MZ"
         )
 
     if (starttime != None) or (endtime != None):
@@ -375,13 +342,13 @@ def make_linearity(channel, calibration_file, plot=True, exp_type='col',inverse=
     # Main function
     poly_or_spline = get_linearity(
         CCDitems,
-        exp_type,
-        plot,
-        calibration_data["linearity"]["fittype"],
+        calibration_file,
         channels=channel,
-        remove_blanks=calibration_data["linearity"]["remove_blanks"],
-        inverse=inverse,
+        testtype=exp_type,
+        fittype=calibration_data["primary_data"]["linearity"]["fittype"],
         threshold=threshold,
+        remove_blanks=True,
+        plot=True
     )
 
     return poly_or_spline

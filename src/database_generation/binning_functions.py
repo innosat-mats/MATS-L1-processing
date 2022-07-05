@@ -17,7 +17,7 @@ from scipy.stats import kde
 from mats_l1_processing.L1_calibration_functions import  get_true_image
 import copy
 from mats_l1_processing import read_in_functions
-from mats_l1_processing.intrument import nonLinearity
+from mats_l1_processing.instrument import nonLinearity
 # fmt: on
 
 
@@ -25,58 +25,60 @@ from mats_l1_processing.intrument import nonLinearity
 # BOTH FPGA AND ON-CHIP & ROW SETTINGS;
 
 
-def bin_ref(ref, ccd,non_linearity_other=None):
+def bin_ref(ref, CCDItem,CCD=None):
     # simple code for binning
 
-    if non_linearity_other == None:
-        non_linearity_other = nonLinearity()
+    if CCD == None:
+        raise NotImplementedError('CCD unit needed')
 
-    binned = bin_ref_non_linear(ref,ccd,non_linearity_other)
+    binned = bin_ref_non_linear(ref,CCDItem,CCD)
 
     return binned
 
 def transfer_function(value_in,poly):
     return np.polyval(poly,value_in)
 
-def bin_ref_non_linear(ref,ccd,non_linearity_other):
+def bin_ref_non_linear(ref,CCDItem,CCD):
 
     nrow, ncol, nrskip, ncskip, nrbin, ncbin, exptime = (
-        ccd["NROW"],
-        ccd["NCOL"] + 1,
-        ccd["NRSKIP"],
-        ccd["NCSKIP"],
-        ccd["NRBIN"],
-        ccd["NColBinCCD"],
-        ccd["TEXPMS"],
+        CCDItem["NROW"],
+        CCDItem["NCOL"] + 1,
+        CCDItem["NRSKIP"],
+        CCDItem["NCSKIP"],
+        CCDItem["NRBIN"],
+        CCDItem["NColBinCCD"],
+        CCDItem["TEXPMS"],
     )
 
     nrowr, ncolr, nrskipr, ncskipr, nrbinr, ncbinr, exptimer = (
-        ref["NROW"],
-        ref["NCOL"] + 1,
-        ref["NRSKIP"],
-        ref["NCSKIP"],
-        ref["NRBIN"],
-        ref["NColBinCCD"],
-        ref["TEXPMS"],
+        CCDItem["NROW"],
+        CCDItem["NCOL"] + 1,
+        CCDItem["NRSKIP"],
+        CCDItem["NCSKIP"],
+        CCDItem["NRBIN"],
+        CCDItem["NColBinCCD"],
+        CCDItem["TEXPMS"],
     )
 
     exptimefactor = int((exptime - 2000) / (exptimer - 2000))
     # reference image mapped to each pixel and scaled with exptimefactor that will be binned according to 'ccd' settings
-    imgref = transfer_function(ref["IMAGE"]*exptimefactor/ncbinr/nrbinr,calib_constants[0])
+    imgref = CCD.non_linearity_pixel.get_measured_image(ref["IMAGE"]*exptimefactor/ncbinr/nrbinr)
 
     # images must cover the same ccd section
     if ncskip == ncskipr and nrskip == nrskipr:
 
-        colbin = np.zeros([nrowr, ncol])
-
-        for j in range(0, ncol):
-            colbin[:, j] = transfer_function(imgref[:, j * ncbin : (j + 1) * ncbin].sum(axis=1),calib_constants[1])
-
         # declare zero array for row binning
-        binned = np.zeros([nrow, ncol])
+        rowbin = np.zeros([nrow, ncol])
 
         for j in range(0, nrow):
-            binned[j, :] = transfer_function(colbin[j * nrbin : (j + 1) * nrbin, :].sum(axis=0),calib_constants[2])
+            rowbin[j, :] = CCD.non_linearity_pixel.get_measured_image(imgref[j * nrbin : (j + 1) * nrbin, :].sum(axis=0))
+
+
+        binned = np.zeros([nrowr, ncol])
+
+        for j in range(0, ncol):
+            binned[:, j] = CCD.non_linearity_pixel(rowbin[:, j * ncbin : (j + 1) * ncbin].sum(axis=1))
+
 
         binned = binned 
         return binned
@@ -172,7 +174,7 @@ def get_binning_test_data_from_CCD_item(
     test_type_filter="all",
     add_bias=False,
     remove_blanks=True,
-    non_linearity_other=None,
+    CCD=None,
     n_pixels_to_use=0
 ):
 
@@ -253,7 +255,7 @@ def get_binning_test_data_from_CCD_item(
         ref["IMAGE"] = CCDr_sub_img[i].copy()
 
         # bin reference image according to bin_input settings
-        binned_reference = bin_ref(copy.deepcopy(ref), bin_input[i].copy(),non_linearity_other)
+        binned_reference = bin_ref(copy.deepcopy(ref), bin_input[i].copy(),CCD)
 
         # adding bias to get the correct values for non-linearity
         if add_bias:

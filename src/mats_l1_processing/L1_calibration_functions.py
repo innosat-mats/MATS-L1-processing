@@ -18,10 +18,10 @@ import scipy.io
 import toml
 import scipy.optimize as opt
 import pickle
-import database_generation.non_linearity as NL
+from mats_l1_processing.instrument import nonLinearity as NL
 from joblib import Parallel, delayed
 import time 
-from mats_l1_processing.intrument import CCD
+from mats_l1_processing.instrument import CCD
 
 #%% 
 ## non-linearity-stuff ##
