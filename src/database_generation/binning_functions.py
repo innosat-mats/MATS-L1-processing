@@ -17,7 +17,7 @@ from scipy.stats import kde
 from mats_l1_processing.L1_calibration_functions import  get_true_image
 import copy
 from mats_l1_processing import read_in_functions
-
+from mats_l1_processing.intrument import nonLinearity
 # fmt: on
 
 
@@ -29,7 +29,7 @@ def bin_ref(ref, ccd,non_linearity_other=None):
     # simple code for binning
 
     if non_linearity_other == None:
-        non_linearity_other = 
+        non_linearity_other = nonLinearity()
 
     binned = bin_ref_non_linear(ref,ccd,non_linearity_other)
 
