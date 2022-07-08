@@ -309,7 +309,7 @@ def read_CCDitem(rac_dir, PicID, labtemp=999):
               
 
            
-    add_and_rename_CCDitem_info(CCDitem["CCDSEL"])
+    add_and_rename_CCDitem_info(CCDitem)
 
 
     #Add temperature data from rac files   

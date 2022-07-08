@@ -243,17 +243,21 @@ def get_linearity(
             man_tot, inst_tot, threshold, fittype
         )
         
+        #This is not needed I think!
         if fittype=='threshold2':
             non_lin_important = get_non_lin_important(poly_or_spline,0.1) #Get threshold where non-linearity becomes important 
         else:
             non_lin_important = threshold
 
-        non_linearity = instrument.nonLinearity(fittype, threshold,non_lin_important,channels[i],poly_or_spline)
 
-        filename = 'linearity_' + str(channels[i]) + '_' + testtype + '.pkl'    
+        #Generate non-linearity object and save it
+        non_linearity = instrument.nonLinearity(channels[i],fittype=fittype, fit_parameters=poly_or_spline, fit_threshold=threshold,non_lin_important=non_lin_important)
+
+        filename = 'linearity' + '_' + testtype + '_' + str(channels[i]) + '.pkl'    
         with open(filename, 'wb') as f:
             pickle.dump(non_linearity, f)
         
+        #Plotting
         if plot:
             plt.plot([0, threshold*1.3], [0, threshold*1.3], "k--")
             
@@ -300,7 +304,7 @@ def get_linearity(
             plt.ylim([0, threshold*1.3])
 
     if plot:
-        plt.savefig("linearity_fit_channel_" + str(channels[i]) + "_" + testtype + ".png")
+        plt.savefig("linearity_fit_channel_" + testtype + ".png")
         plt.grid(True)
         plt.show()
         plt.close()
@@ -311,7 +315,7 @@ def get_linearity(
         return None
 
 def make_linearity(channel, calibration_file, plot=True, exp_type='col',inverse=False):
-
+    
     calibration_data = toml.load(calibration_file)
 
     CCDitems = read_in_functions.read_CCDitems(calibration_data["primary_data"]["linearity"]["folder"])

@@ -2,7 +2,7 @@ import mats_l1_processing
 import numpy as np
 from PIL import Image
 from mats_l1_processing.L1_calibration_functions import read_flatfield
-from mats_l1_processing.intrument import CCD
+from mats_l1_processing.instrument import CCD
 from mats_l1_processing.LindasCalibrationFunctions import (
     plot_CCDimage,
     read_all_files_in_protocol,

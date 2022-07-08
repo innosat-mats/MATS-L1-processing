@@ -51,13 +51,13 @@ def bin_ref_non_linear(ref,CCDItem,CCD):
     )
 
     nrowr, ncolr, nrskipr, ncskipr, nrbinr, ncbinr, exptimer = (
-        CCDItem["NROW"],
-        CCDItem["NCOL"] + 1,
-        CCDItem["NRSKIP"],
-        CCDItem["NCSKIP"],
-        CCDItem["NRBIN"],
-        CCDItem["NColBinCCD"],
-        CCDItem["TEXPMS"],
+        ref["NROW"],
+        ref["NCOL"] + 1,
+        ref["NRSKIP"],
+        ref["NCSKIP"],
+        ref["NRBIN"],
+        ref["NColBinCCD"],
+        ref["TEXPMS"],
     )
 
     exptimefactor = int((exptime - 2000) / (exptimer - 2000))
@@ -68,16 +68,16 @@ def bin_ref_non_linear(ref,CCDItem,CCD):
     if ncskip == ncskipr and nrskip == nrskipr:
 
         # declare zero array for row binning
-        rowbin = np.zeros([nrow, ncol])
+        rowbin = np.zeros([nrow, ncolr])
 
         for j in range(0, nrow):
-            rowbin[j, :] = CCD.non_linearity_pixel.get_measured_image(imgref[j * nrbin : (j + 1) * nrbin, :].sum(axis=0))
+            rowbin[j, :] = CCD.non_linearity_sumrow.get_measured_image(imgref[j * nrbin : (j + 1) * nrbin, :].sum(axis=0))
 
 
-        binned = np.zeros([nrowr, ncol])
+        binned = np.zeros([nrow, ncol])
 
         for j in range(0, ncol):
-            binned[:, j] = CCD.non_linearity_pixel(rowbin[:, j * ncbin : (j + 1) * ncbin].sum(axis=1))
+            binned[:, j] = CCD.non_linearity_sumwell.get_measured_image(rowbin[:, j * ncbin : (j + 1) * ncbin].sum(axis=1))
 
 
         binned = binned 

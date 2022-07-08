@@ -1,7 +1,7 @@
 import pytest
 
 from mats_l1_processing.read_and_calibrate_all_files_parallel import main
-from mats_l1_processing.intrument import Instrument
+from mats_l1_processing.instrument import Instrument
 
 __author__ = "Ole Martin Christensen"
 __copyright__ = "Ole Martin Christensen"

@@ -71,8 +71,8 @@ class CCD:
         flatfield_LSM (np.array): flatfield image for LSM 
 
         non_linearity_pixel (nonLinearity): Linearity of an average pixel
-        non_linearity_pixel (nonLinearity): Linearity of the shift register
-        non_linearity_pixel (nonLinearity): Linerarity of the summation well
+        non_linearity_sumrow (nonLinearity): Linearity of the shift register
+        non_linearity_sumwell (nonLinearity): Linerarity of the summation well
 
         ampcorrection (float): correction for pre-amplification
 
@@ -399,9 +399,15 @@ class nonLinearity:
 
         """
         image_measured = np.zeros(image_true.shape)
-        for i in range(image_measured.shape[0]):
-            for j in range(image_measured.shape[1]):
-                image_measured[i,j] = self.get_measured_value(image_true[i,j])
+        if image_measured.ndim == 1:
+            for i in range(image_measured.shape[0]):
+                image_measured[i] = self.get_measured_value(image_true[i])
+        else:
+            for i in range(image_measured.shape[0]):
+                for j in range(image_measured.shape[1]):
+                    image_measured[i,j] = self.get_measured_value(image_true[i,j])
+
+        return image_measured
 
     def get_measured_value(self,x_true):
         """Method to get a measured value for a given true value (forward model)
@@ -438,7 +444,7 @@ class nonLinearity:
                 return b*(self.non_lin_important-e)**2+a*(self.non_lin_important-e)+a*e
 
         else:
-            raise NotImplementedError
+            raise NotImplementedError(self.fittype)
 
 class Instrument:
     """Class to hold a set of MATS CCDs

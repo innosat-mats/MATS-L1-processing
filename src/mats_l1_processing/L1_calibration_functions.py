@@ -87,7 +87,7 @@ def inverse_model_real(CCDitem,value):
     elif value_mapped_to_summation_well>CCDunit.non_linearity_sumwell.get_measured_value(CCDunit.non_linearity_sumwell.non_lin_important):
         x = CCDunit.non_linearity_sumwell.non_lin_important
     else:
-        x = opt.minimize(optimize_function,x0=value,args=(CCDunit,nrowbin,ncolbin,value))
+        x = opt.minimize(optimize_function,x0=value,args=(CCDunit,nrowbin,ncolbin,value)).x
 
     return x
 
