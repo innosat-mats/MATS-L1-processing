@@ -18,6 +18,7 @@ from mats_l1_processing.L1_calibration_functions import  get_true_image
 import copy
 from mats_l1_processing import read_in_functions
 from mats_l1_processing.instrument import nonLinearity
+import warnings
 # fmt: on
 
 
@@ -34,9 +35,6 @@ def bin_ref(ref, CCDItem,CCD=None):
     binned = bin_ref_non_linear(ref,CCDItem,CCD)
 
     return binned
-
-def transfer_function(value_in,poly):
-    return np.polyval(poly,value_in)
 
 def bin_ref_non_linear(ref,CCDItem,CCD):
 
@@ -62,7 +60,16 @@ def bin_ref_non_linear(ref,CCDItem,CCD):
 
     exptimefactor = int((exptime - 2000) / (exptimer - 2000))
     # reference image mapped to each pixel and scaled with exptimefactor that will be binned according to 'ccd' settings
+    if np.any(ref["IMAGE"]<0):
+        warnings.warn('reference image has negative values')
+
     imgref = CCD.non_linearity_pixel.get_measured_image(ref["IMAGE"]*exptimefactor/ncbinr/nrbinr)
+
+    if (not np.any(ref["IMAGE"]<0)) and (np.any(imgref<0)):
+        warnings.warn('non-linear reference image has negative values')
+
+    if np.any(imgref<0):
+        warnings.warn('Image has negative values')
 
     # images must cover the same ccd section
     if ncskip == ncskipr and nrskip == nrskipr:
@@ -72,15 +79,17 @@ def bin_ref_non_linear(ref,CCDItem,CCD):
 
         for j in range(0, nrow):
             rowbin[j, :] = CCD.non_linearity_sumrow.get_measured_image(imgref[j * nrbin : (j + 1) * nrbin, :].sum(axis=0))
-
+            if np.any(rowbin[j, :]<0):    
+                warnings.warn('rowbin has negative values')
 
         binned = np.zeros([nrow, ncol])
 
         for j in range(0, ncol):
             binned[:, j] = CCD.non_linearity_sumwell.get_measured_image(rowbin[:, j * ncbin : (j + 1) * ncbin].sum(axis=1))
+            if np.any(binned[:, j] <0):
+                warnings.warn('colbin has negative values')
+        
 
-
-        binned = binned 
         return binned
 
     else:
@@ -254,7 +263,7 @@ def get_binning_test_data_from_CCD_item(
         ref = copy.deepcopy(CCDr_list[i])
         ref["IMAGE"] = CCDr_sub_img[i].copy()
 
-        # bin reference image according to bin_input settings
+        # bin reference image according to bin_input settings, where non-linearity from other components are compansated for!
         binned_reference = bin_ref(copy.deepcopy(ref), bin_input[i].copy(),CCD)
 
         # adding bias to get the correct values for non-linearity

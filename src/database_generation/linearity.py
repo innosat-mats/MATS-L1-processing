@@ -185,21 +185,6 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1",inverse=Fa
 
     return p_low, bin_center, low_measured_mean
 
-def get_non_lin_important(p,beta = 0.8, fittype='threshold2'):
-    if fittype != 'threshold2':
-        raise NotImplementedError
-    
-    a = p[0]
-    b = p[1]
-    e = p[2]
-    #threshold = b*((beta+2*b*e-a)/(2*b)-e)**2 + a*((beta+2*b*e-a)/(2*b)) +a*e
-    threshold = (beta+2*b*e-a)/(2*b)
-    if threshold<0:
-        beta = 1-beta
-        threshold = (beta+2*b*e-a)/(2*b)
-
-    return threshold
-
 def get_linearity(
     CCDitems,
     calibration_file,
@@ -243,15 +228,8 @@ def get_linearity(
             man_tot, inst_tot, threshold, fittype
         )
         
-        #This is not needed I think!
-        if fittype=='threshold2':
-            non_lin_important = get_non_lin_important(poly_or_spline,0.1) #Get threshold where non-linearity becomes important 
-        else:
-            non_lin_important = threshold
-
-
         #Generate non-linearity object and save it
-        non_linearity = instrument.nonLinearity(channels[i],fittype=fittype, fit_parameters=poly_or_spline, fit_threshold=threshold,non_lin_important=non_lin_important)
+        non_linearity = instrument.nonLinearity(channels[i],fittype=fittype, fit_parameters=poly_or_spline, fit_threshold=threshold,dfdx_non_lin_important=0.6,dfdx_saturation=0.05)
 
         filename = 'linearity' + '_' + testtype + '_' + str(channels[i]) + '.pkl'    
         with open(filename, 'wb') as f:
@@ -304,7 +282,7 @@ def get_linearity(
             plt.ylim([0, threshold*1.3])
 
     if plot:
-        plt.savefig("linearity_fit_channel_" + testtype + ".png")
+        plt.savefig("linearity_fit_" + testtype + ".png")
         plt.grid(True)
         plt.show()
         plt.close()

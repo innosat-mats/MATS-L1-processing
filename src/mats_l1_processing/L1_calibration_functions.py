@@ -66,7 +66,7 @@ def optimize_function(x,CCD,nrowbin,ncolbin,value):
     
     return np.abs(y_model-value)
 
-def inverse_model_real(CCDitem,value):
+def inverse_model_real(CCDitem,value,method='BFGS'):
 
     try:
         CCDunit = CCDitem["CCDunit"]
@@ -77,38 +77,55 @@ def inverse_model_real(CCDitem,value):
     ncolbin = CCDitem["NColBinCCD"]
 
     value_mapped_to_pixels = value/(nrowbin*ncolbin)
-    value_mapped_to_shift_register = value/(nrowbin)
+    value_mapped_to_shift_register = value/(ncolbin)
     value_mapped_to_summation_well = value
 
-    if value_mapped_to_pixels>CCDunit.non_linearity_pixel.get_measured_value(CCDunit.non_linearity_pixel.non_lin_important):
-        x = CCDunit.non_linearity_pixel.non_lin_important
-    elif value_mapped_to_shift_register>CCDunit.non_linearity_sumrow.get_measured_value(CCDunit.non_linearity_sumrow.non_lin_important):
-        x = CCDunit.non_linearity_sumrow.non_lin_important
-    elif value_mapped_to_summation_well>CCDunit.non_linearity_sumwell.get_measured_value(CCDunit.non_linearity_sumwell.non_lin_important):
-        x = CCDunit.non_linearity_sumwell.non_lin_important
-    else:
-        x = opt.minimize(optimize_function,x0=value,args=(CCDunit,nrowbin,ncolbin,value)).x
+    #Check that values are within the linear region:
+    
+    flag = 0 #0 = all ok, 1 = pixel reached non-linearity in pixel, row or column,  4 = pixel reached saturation in pixel, row or column
 
-    return x
+    if value_mapped_to_pixels>CCDunit.non_linearity_pixel.get_measured_non_lin_important():
+        flag = 1
+    elif value_mapped_to_shift_register>CCDunit.non_linearity_sumrow.get_measured_non_lin_important():
+        flag = 1
+    elif value_mapped_to_summation_well>CCDunit.non_linearity_sumwell.get_measured_non_lin_important():
+        flag = 1
+
+    if value_mapped_to_pixels>CCDunit.non_linearity_pixel.get_measured_saturation():
+            x = CCDunit.non_linearity_pixel.saturation*nrowbin*ncolbin
+            flag = 4
+    elif value_mapped_to_shift_register>CCDunit.non_linearity_sumrow.get_measured_saturation():
+            x = CCDunit.non_linearity_sumrow.saturation*ncolbin
+            flag = 4
+    elif value_mapped_to_summation_well>CCDunit.non_linearity_sumwell.get_measured_saturation():
+            x = CCDunit.non_linearity_sumwell.saturation
+            flag = 4
+    else:
+        x = opt.minimize(optimize_function,x0=value,args=(CCDunit,nrowbin,ncolbin,value),method=method).x
+
+    return x,flag
 
 def get_linearized_image(CCDitem, image_bias_sub):
     image_linear = np.zeros(image_bias_sub.shape)
+    error_flag = np.zeros(image_bias_sub.shape)
     for i in range(image_bias_sub.shape[0]):
         for j in range(image_bias_sub.shape[1]): 
-            image_linear[i,j] = inverse_model_real(CCDitem,image_bias_sub[i,j]).x
+            image_linear[i,j],error_flag[i,j] = inverse_model_real(CCDitem,image_bias_sub[i,j]).x
+            
 
-    return image_linear
+    return image_linear,error_flag
 
 def loop_over_rows(CCDitem,image_bias_sub):
     image_linear = np.zeros(image_bias_sub.shape)
+    error_flag = np.zeros(image_bias_sub.shape)
     for j in range(image_bias_sub.shape[0]): 
-            image_linear[j] = inverse_model_real(CCDitem,image_bias_sub[j]).x
+            image_linear[j],error_flag[j] = inverse_model_real(CCDitem,image_bias_sub[j]).x
 
-    return image_linear
+    return image_linear,error_flag
 
 def get_linearized_image_parallelized(CCDitem, image_bias_sub):
-    image_linear_list = Parallel(n_jobs=4)(delayed( loop_over_rows)(CCDitem,image_bias_sub[i]) for i in range(image_bias_sub.shape[0]))
-    return np.array(image_linear_list)
+    image_linear_list,error_flag = Parallel(n_jobs=4)(delayed( loop_over_rows)(CCDitem,image_bias_sub[i]) for i in range(image_bias_sub.shape[0]))
+    return np.array(image_linear_list),np.array(error_flag)
 
 ## Flatfield ##
 

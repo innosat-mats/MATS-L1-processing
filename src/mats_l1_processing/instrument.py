@@ -358,24 +358,25 @@ class nonLinearity:
         fit_parameters (list, np.array or obj) = parmeter of object describing the non-linearity fit. 
 
     """
-    def __init__(self,channel, fittype, fit_parameters=None, fit_threshold=1e9,saturation=1e9,non_lin_important=1e9):
+    def __init__(self,channel, fittype, fit_parameters=None, fit_threshold=1e9,dfdx_saturation=0.05,dfdx_non_lin_important=0.5):
         """Init method for CCD class
 
         Args:
             channel (str) = channel name 
             fittype (str): Type of fit the non-linearity is representing
             fit_threshold (optional) = max value of measured data used in fitting of the non-linearity
-            saturation (float) = measured value where the CCD is considered saturated, all values above this are set to this value.
-            non_lin_important (float) = non_lin_important the true value where non_linearity becomes important.
+            saturation (float) = the first derivative at which the sensor is considered saturated (default 0.05)
+            non_lin_important (float) = the first derivative value where non_linearity becomes important.
             fit_parameters (list, np.array or obj) = parmeter of object describing the non-linearity fit.
             
         """
         self.fittype = fittype
         self.fit_threshold = fit_threshold
-        self.saturation = saturation
-        self.non_lin_important = non_lin_important #the true value where non_linearity becomes important
         self.channel = channel
         if fit_parameters == None:
+            self.saturation = 1e9
+            self.non_lin_important = 1e9
+
             if fittype=='polyfit1':
                 self.fit_parameters = np.array([1,0])
             elif fittype=='polyfit2':
@@ -387,6 +388,10 @@ class nonLinearity:
                 raise NotImplementedError
         else:
             self.fit_parameters = fit_parameters
+            self.saturation = self.calc_non_lin_important(dfdx_saturation)
+            self.non_lin_important = self.calc_non_lin_important(dfdx_non_lin_important)
+
+        
 
     def get_measured_image(self, image_true):
         """Method to get a measured value for a given true image (forward model)
@@ -424,8 +429,8 @@ class nonLinearity:
         # 0 = all good, 1 = non linear part important, 2 = value exceeds fit threshold 
 
         if (self.fittype=='polyfit1') or (self.fittype=='polyfit2'):
-            if x_true > self.non_lin_important:
-                return self.threshold
+            if x_true > self.saturation:
+                return self.saturation
             else:
                 return np.polyval(self.fit_parameters,x_true)
 
@@ -437,14 +442,38 @@ class nonLinearity:
             if x_true < e:
                 return a*x_true             
 
-            elif x_true<self.non_lin_important:
+            elif x_true<self.saturation:
                 return b*(x_true-e)**2+a*(x_true-e)+a*e
 
             else:
-                return b*(self.non_lin_important-e)**2+a*(self.non_lin_important-e)+a*e
+                return b*(self.saturation-e)**2+a*(self.saturation-e)+a*e
 
         else:
             raise NotImplementedError(self.fittype)
+
+        
+
+    def get_measured_saturation(self):
+        return self.get_measured_value(self.saturation)
+
+    def get_measured_non_lin_important(self):
+        return self.get_measured_value(self.non_lin_important)
+
+    def calc_non_lin_important(self,beta):
+        if self.fittype != 'threshold2':
+            raise NotImplementedError
+        else:
+            a = self.fit_parameters[0]
+            b = self.fit_parameters[1]
+            e = self.fit_parameters[2]
+            if b<0:
+                threshold = (beta+2*b*e-a)/(2*b)
+            else:
+                beta = 1+beta
+                threshold = (beta+2*b*e-a)/(2*b)
+        
+        return threshold
+
 
 class Instrument:
     """Class to hold a set of MATS CCDs
