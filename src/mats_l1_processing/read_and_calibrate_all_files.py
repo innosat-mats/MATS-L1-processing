@@ -78,6 +78,14 @@ if __name__ == "__main__":
         dest="in_directory",
         help="input diretory of mats images and metadata",
     )
+    
+    parser.add_argument(
+        "-calib_file",
+        nargs="?",
+        default="../../scripts/calibration_data.toml",
+        dest="calib_file",
+        help="calibration toml file",
+    )
     parser.add_argument(
         "-nc",
         "-no_calibrate",
@@ -94,6 +102,6 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    main(args.in_directory, args.no_calibrate)
+    main(args.in_directory, args.no_calibrate, args.plot)
 
 # %%
