@@ -11,10 +11,11 @@ Forward model for MATS' calibration
 import numpy as np
 import matplotlib.pyplot as plt
 
-from read_in_functions import readprotocol, read_all_files_in_protocol
-from L1_calibration_functions import get_true_image, desmear_true_image, subtract_dark, compensate_flatfield
-from L1_calibration_functions import calculate_flatfield, calculate_dark, desmear_true_image_reverse, get_true_image_reverse, bin_image_using_predict_and_get_true_image, bin_image_with_BC 
-from mats_l1_processing.intrument import CCD
+from mats_l1_processing.read_in_functions import readprotocol 
+from mats_l1_processing.LindasCalibrationFunctions import read_all_files_in_protocol
+from mats_l1_processing.L1_calibration_functions import get_true_image, desmear_true_image, subtract_dark, compensate_flatfield
+from mats_l1_processing.L1_calibration_functions import calculate_flatfield, calculate_dark, desmear_true_image_reverse, get_true_image_reverse, bin_image_using_predict_and_get_true_image, bin_image_with_BC 
+from mats_l1_processing.instrument import CCD
 #from LindasCalibrationFunctions import plot_CCDimage 
 
 
@@ -168,6 +169,8 @@ clims=[-2,2]
 
 directory='/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/Binning/Binning-simulation/'
 protocol='PROTOCOL-BINNING.txt'
+calibration_file='/Users/lindamegner/MATS/retrieval/git/MATS-L1-processing/scripts/calibration_data_linda.toml'
+
 
 read_from='rac'  
 df_protocol=readprotocol(directory+protocol)
@@ -190,7 +193,7 @@ except:
     try:
         CCDunits[CCDitem['channel']]
     except:  
-        CCDunits[CCDitem['channel']]=CCD(CCDitem['channel']) 
+        CCDunits[CCDitem['channel']]=CCD(CCDitem['channel'],calibration_file) 
     CCDitem['CCDunit']=CCDunits[CCDitem['channel']]
 
 

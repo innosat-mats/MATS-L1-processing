@@ -358,7 +358,7 @@ class nonLinearity:
         fit_parameters (list, np.array or obj) = parmeter of object describing the non-linearity fit. 
 
     """
-    def __init__(self,channel, fittype, fit_parameters=None, fit_threshold=1e9,dfdx_saturation=0.05,dfdx_non_lin_important=0.5):
+    def __init__(self,channel, fittype='threshold2', fit_parameters=None, fit_threshold=1e9,dfdx_saturation=0.05,dfdx_non_lin_important=0.5):
         """Init method for CCD class
 
         Args:
