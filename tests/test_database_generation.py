@@ -2,7 +2,6 @@ import pytest
 
 from database_generation.flatfield import make_flatfield
 from database_generation.linearity import make_linearity
-from database_generation.linearity import get_non_lin_important
 import numpy as np
 
 __author__ = "Ole Martin Christensen"
