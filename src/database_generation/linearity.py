@@ -332,7 +332,7 @@ def make_linearity(channel, calibration_file, plot=True, exp_type='col',inverse=
         fittype=calibration_data["primary_data"]["linearity"]["fittype"],
         threshold=threshold,
         remove_blanks=True,
-        plot=True
+        plot=plot
     )
 
     return poly_or_spline
