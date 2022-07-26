@@ -82,7 +82,7 @@ def inverse_model_real(CCDitem,value,method='BFGS'):
 
     #Check that values are within the linear region:
     
-    flag = 0 #0 = all ok, 1 = pixel reached non-linearity in pixel, row or column,  4 = pixel reached saturation in pixel, row or column
+    flag = 0 #0 = all ok, 1 = pixel reached non-linearity in pixel, row or column,  3 = pixel reached saturation in pixel, row or column
 
     if value_mapped_to_pixels>CCDunit.non_linearity_pixel.get_measured_non_lin_important():
         flag = 1
@@ -93,13 +93,13 @@ def inverse_model_real(CCDitem,value,method='BFGS'):
 
     if value_mapped_to_pixels>CCDunit.non_linearity_pixel.get_measured_saturation():
             x = CCDunit.non_linearity_pixel.saturation*nrowbin*ncolbin
-            flag = 4
+            flag = 3
     elif value_mapped_to_shift_register>CCDunit.non_linearity_sumrow.get_measured_saturation():
             x = CCDunit.non_linearity_sumrow.saturation*ncolbin
-            flag = 4
+            flag = 3
     elif value_mapped_to_summation_well>CCDunit.non_linearity_sumwell.get_measured_saturation():
             x = CCDunit.non_linearity_sumwell.saturation
-            flag = 4
+            flag = 3
     else:
         x = opt.minimize(optimize_function,x0=value,args=(CCDunit,nrowbin,ncolbin,value),method=method).x
 

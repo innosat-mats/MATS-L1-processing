@@ -25,11 +25,11 @@ def gen_non_linear_table(CCDitemfile,calibrationfile,channel=1):
     return x_true,x_measured,x_test,CCDitem,flag
 
 # %%
-channel = 5
+channel = 2
 #x_true,x_measured,x_test,CCDitem,flag = gen_non_linear_table('testdata/simulated_data/full_frame.json','calibration_data/calibration_data.toml',channel)
 
 # %%
-x_true_2,x_measured_2,x_test_2,CCDitem_2,flag_2 = gen_non_linear_table('testdata/simulated_data/full_frame.json','calibration_data/calibration_data_linear.toml',channel)
+x_true_2,x_measured_2,x_test_2,CCDitem_2,flag_2 = gen_non_linear_table('testdata/simulated_data/full_frame.json','calibration_data/calibration_data.toml',channel)
 
 
 # %%
@@ -42,4 +42,13 @@ x_true_2,x_measured_2,x_test_2,CCDitem_2,flag_2 = gen_non_linear_table('testdata
 errorvalue=0
 plt.plot(x_true_2,x_measured_2,'o')
 plt.plot(x_true_2[flag_2==errorvalue],x_measured_2[flag_2==errorvalue])
+# %%
+errorvalue=0
+plt.plot(x_true_2[flag_2==errorvalue],x_measured_2[flag_2==errorvalue])
+errorvalue=1
+plt.plot(x_true_2[flag_2==errorvalue],x_measured_2[flag_2==errorvalue])
+errorvalue=3
+plt.plot(x_true_2[flag_2==errorvalue],x_measured_2[flag_2==errorvalue])
+
+
 # %%

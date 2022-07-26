@@ -229,7 +229,9 @@ def get_linearity(
         )
         
         #Generate non-linearity object and save it
-        non_linearity = instrument.nonLinearity(channels[i],fittype=fittype, fit_parameters=poly_or_spline, fit_threshold=threshold,dfdx_non_lin_important=0.6,dfdx_saturation=0.05)
+        non_linearity = instrument.nonLinearity(channels[i],fittype=fittype, 
+                        fit_parameters=poly_or_spline, fit_threshold=threshold,
+                        dfdx_non_lin_important=0.2,dfdx_saturation=0.05)
 
         filename = 'linearity' + '_' + testtype + '_' + str(channels[i]) + '.pkl'    
         with open(filename, 'wb') as f:
