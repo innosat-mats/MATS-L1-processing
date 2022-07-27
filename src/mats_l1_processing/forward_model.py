@@ -21,7 +21,7 @@ from mats_l1_processing.instrument import CCD
 
 
 
-def plot(pic,fig,axis,title='',clim=999):
+def frameplot(pic,fig,axis,title='',clim=999):
 
                     
     sp=axis.pcolormesh(pic,cmap=plt.cm.jet)
@@ -40,7 +40,7 @@ def plot(pic,fig,axis,title='',clim=999):
     
 
 
-def forward(photons,CCDitem):
+def forward(photons,CCDitem, f=0, plotme=True):
     simage_raw=np.float64(photons*np.ones([511,2048]))
     #simage_raw=np.float64(photons*np.ones_like(CCDitem['IMAGE']))
     # TOD0 Step 8 Transform from photons to electrons and then to LSB.   
@@ -51,7 +51,6 @@ def forward(photons,CCDitem):
     
     #plotmean=photons*CCDitem['NCBIN CCDColumns']*CCDitem['NCBIN FPGAColumns']*CCDitem['NRBIN']
     #clims=[plotmean-np.sqrt(plotmean), plotmean+np.sqrt(plotmean)]
-    plot(simage_raw_binned, fig, ax[0,f], title='raw simulated image')
     
     # Now modify the image in forward direction and Plot the result
     
@@ -69,10 +68,8 @@ def forward(photons,CCDitem):
     #simage_flatf=simage_raw*image_flatf_fact[CCDitem['NRSKIP']:CCDitem['NRSKIP']+CCDitem['NROW'],
     #                                     CCDitem['NCSKIP']:CCDitem['NCSKIP']+CCDitem['NCOL']+1]
 
-
     simage_flatf_binned=bin_image_using_predict_and_get_true_image(CCDitem.copy(), simage_flatf.copy())
     #simage_flatf_binned=get_true_image(CCDitem.copy(),simage_flatf_binned)
-    plot(simage_flatf_binned, fig, ax[1,f], title='raw+flat')
     
     #dark
     # TBD: Decide on threshold fro when to use pixel correction (little dark current) and when to use average image correction (large dark current). 
@@ -84,10 +81,6 @@ def forward(photons,CCDitem):
     #simage_dark=simage_flatf+dark_fullpic[CCDitem['NRSKIP']:CCDitem['NRSKIP']+CCDitem['NROW'],
     #                                      CCDitem['NCSKIP']:CCDitem['NCSKIP']+CCDitem['NCOL']+1]
 
-    
-    
-    
-    
     # Binning and bad columns
     simage_dark_binned=bin_image_using_predict_and_get_true_image(CCDitem.copy(), simage_dark.copy())
     # testfig=plt.figure()
@@ -98,58 +91,89 @@ def forward(photons,CCDitem):
     #simage_dark_binned=get_true_image(CCDitem.copy(),simage_dark_binned)
     
     
-    plot(simage_dark_binned, fig, ax[2,f], title='raw+flat+dark+binned')
-    
     #add smear
     simage_smear=desmear_true_image_reverse(CCDitem.copy(), simage_dark_binned.copy())
-    plot(simage_smear, fig, ax[3,f], title='raw+flat+dark+smear')
-    
-    
+
         
     #add bias
     simage_bias=get_true_image_reverse(CCDitem.copy(),simage_smear.copy())
-    plot(simage_bias,fig, ax[4,f], title='raw+flat+dark+smear+bias')
+
     
     return simage_raw,simage_raw_binned, simage_flatf, simage_flatf_binned, simage_dark, simage_dark_binned, simage_smear, simage_bias
         
-    
-    
+       
     
 
-def backward(input_image,CCDitem):    
+def backward(input_image,CCDitem, b=1, d=2, plotme=True):    
     
         # # Do normal calibration to reverse the forward model   
     image=input_image.copy()
-    plot(image,fig, ax[4,b], 'From forward')
-    plot(input_image-image,fig, ax[4,d], 'simage-image')
 
     image_bias_sub = get_true_image(CCDitem, image)
-    plot(image_bias_sub,fig, ax[3,b], 'Bias subtracted') 
-    plot(simage_smear-image_bias_sub,fig, ax[3,d], 'simage-image')
-    
+
     image_desmeared = desmear_true_image(CCDitem,image_bias_sub.copy())
-    plot(image_desmeared,fig, ax[2,b],' Desmeared LSB')  
-    plot(simage_dark_binned-image_desmeared,fig, ax[2,d], 'simage-image')
-    
+
     image_dark_sub=subtract_dark(CCDitem,image_desmeared.copy())
-    plot(image_dark_sub,fig, ax[1,b], ' Dark current subtracted.')     
-    plot(simage_flatf_binned-image_dark_sub,fig, ax[1,d], 'simage-image')
-    
-    
+        
     image_flatf_comp=compensate_flatfield(CCDitem,image_dark_sub.copy())
     #plotmean=photons*CCDitem['NCBIN CCDColumns']*CCDitem['NCBIN FPGAColumns']*CCDitem['NRBIN']
     #clims=[plotmean-np.sqrt(plotmean), plotmean+np.sqrt(plotmean)]
 
-    plot(image_flatf_comp,fig, ax[0,b], ' Flat field compensated.')     
-    plot(simage_raw_binned-image_flatf_comp,fig, ax[0,d], 'simage-image')
+
     
-    fig.suptitle('Forward model followed by backward i.e calibration')
+   
     
 
     return image, image_bias_sub, image_desmeared, image_dark_sub, image_flatf_comp
 
+def forward_and_backward(CCDitem, photons, plot=True):
+    #clims=[-2,2]
 
 
+
+    
+    simage_raw,simage_raw_binned, simage_flatf, simage_flatf_binned, simage_dark, simage_dark_binned, simage_smear, simage_bias=forward(photons,CCDitem, plotme=False)
+
+    if plot:
+        fig,ax=plt.subplots(5,3)
+        f=0
+        frameplot(simage_raw_binned, fig, ax[0,f], title='raw simulated image')
+        frameplot(simage_flatf_binned, fig, ax[1,f], title='raw+flat')
+    
+        frameplot(simage_dark_binned, fig, ax[2,f], title='raw+flat+dark+binned')
+    
+        frameplot(simage_smear, fig, ax[3,f], title='raw+flat+dark+smear')
+        frameplot(simage_bias,fig, ax[4,f], title='raw+flat+dark+smear+bias')
+
+
+
+    image, image_bias_sub, image_desmeared, image_dark_sub, image_flatf_comp=backward(simage_bias,CCDitem, plotme=False)
+
+    if plot:
+        b=1
+        d=2
+        frameplot(image,fig, ax[4,b], 'From forward')
+        frameplot(image-image,fig, ax[4,d], 'simage-image')
+    
+        frameplot(image_bias_sub,fig, ax[3,b], 'Bias subtracted') 
+        frameplot(simage_smear-image_bias_sub,fig, ax[3,d], 'simage-image')
+    
+        frameplot(image_desmeared,fig, ax[2,b],' Desmeared LSB')  
+        frameplot(simage_dark_binned-image_desmeared,fig, ax[2,d], 'simage-image')
+    
+        frameplot(image_dark_sub,fig, ax[1,b], ' Dark current subtracted.')     
+        frameplot(simage_flatf_binned-image_dark_sub,fig, ax[1,d], 'simage-image')
+    
+        frameplot(image_flatf_comp,fig, ax[0,b], ' Flat field compensated.')     
+        frameplot(simage_raw_binned-image_flatf_comp,fig, ax[0,d], 'simage-image')
+    
+        fig.suptitle('Forward model followed by backward i.e calibration')
+
+    #Test to see that the backward removes what forward added:
+    assert np.sum(np.abs(simage_dark_binned-image_desmeared)) < image.size*1.e-12  
+    assert np.sum(np.abs(simage_flatf_binned-image_dark_sub)) < image.size*1.e-12  
+    assert np.sum(np.abs(simage_raw_binned-image_flatf_comp)) < image.size*1.e-12  
+                   
 # =============================================================================
 # Main
 # =============================================================================
@@ -157,7 +181,7 @@ def backward(input_image,CCDitem):
 
 
 
-clims=[-2,2]
+
 
 # Read in a CCDitem 
 
@@ -197,23 +221,9 @@ except:
     CCDitem['CCDunit']=CCDunits[CCDitem['channel']]
 
 
-    
-
 #  Hack to have no compensation for bad colums at the time. TODO later.
-#CCDitem['NBC']=0
+CCDitem['NBC']=0
 CCDitem['BC']=np.array(CCDitem['BC'])  
     
 
-
-
-fig,ax=plt.subplots(5,3)
-f=0
-b=1
-d=2
-
-# Create simage
-photons= 1000
-
-simage_raw,simage_raw_binned, simage_flatf, simage_flatf_binned, simage_dark, simage_dark_binned, simage_smear, simage_bias=forward(photons,CCDitem)
-
-image, image_bias_sub, image_desmeared, image_dark_sub, image_flatf_comp=backward(simage_bias,CCDitem)
+forward_and_backward(CCDitem,  photons=1000, plot=False)

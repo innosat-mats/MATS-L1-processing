@@ -524,7 +524,7 @@ def bin_image_using_predict(header, reference_image="999"):
 
     ncolbintotal = ncolbinC * ncolbinF
 
-    if reference_image == "999":
+    if isinstance(reference_image, str): # If reerence_image is string it has been set to default of "999"and needs to be intitalised. Ugly porgramming,  
         reference_image = header["IMAGE"]
 
     # bad column analysis
