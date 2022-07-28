@@ -221,9 +221,9 @@ except:
     CCDitem['CCDunit']=CCDunits[CCDitem['channel']]
 
 
-#  Hack to have no compensation for bad colums at the time. TODO later.
-CCDitem['NBC']=0
-CCDitem['BC']=np.array(CCDitem['BC'])  
+#  Hack to have no compensation for bad colums at the time. This should nolonger be needed LM 28Jul2022
+# CCDitem['NBC']=0
+# CCDitem['BC']=np.array(CCDitem['BC'])  
     
 
-forward_and_backward(CCDitem,  photons=1000, plot=False)
+forward_and_backward(CCDitem,  photons=1000, plot=True)
