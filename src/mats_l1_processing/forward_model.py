@@ -15,7 +15,7 @@ from mats_l1_processing.read_in_functions import readprotocol
 from mats_l1_processing.LindasCalibrationFunctions import read_all_files_in_protocol
 from mats_l1_processing.L1_calibration_functions import get_true_image, desmear_true_image, subtract_dark, compensate_flatfield
 from mats_l1_processing.L1_calibration_functions import calculate_flatfield, calculate_dark, desmear_true_image_reverse, get_true_image_reverse, bin_image_using_predict_and_get_true_image, bin_image_with_BC 
-from mats_l1_processing.instrument import CCD
+from mats_l1_processing.instrument import Instrument, CCD
 #from LindasCalibrationFunctions import plot_CCDimage 
 
 
@@ -200,30 +200,18 @@ read_from='rac'
 df_protocol=readprotocol(directory+protocol)
 df_bright=df_protocol[df_protocol.DarkBright=='B']
 CCDitems=read_all_files_in_protocol(df_bright, read_from,directory)
-# The imagge of this CCDitem is not used  , only the meta data
-
-
-CCDunits={}
+# The image of this CCDitem is not used  , only the meta data
 
 
 CCDitem=CCDitems[0]
-
-
-    
-    
-#Check  if the CCDunit has been created. It takes time to create it so it should not be created if not needed
-try: CCDitem['CCDunit']
-except: 
-    try:
-        CCDunits[CCDitem['channel']]
-    except:  
-        CCDunits[CCDitem['channel']]=CCD(CCDitem['channel'],calibration_file) 
-    CCDitem['CCDunit']=CCDunits[CCDitem['channel']]
 
 
 #  Hack to have no compensation for bad colums at the time. This should nolonger be needed LM 28Jul2022
 # CCDitem['NBC']=0
 # CCDitem['BC']=np.array(CCDitem['BC'])  
     
+
+intrument = Instrument(calibration_file)
+CCDitem['CCDunit']=intrument.get_CCD("IR1")
 
 forward_and_backward(CCDitem,  photons=1000, plot=True)

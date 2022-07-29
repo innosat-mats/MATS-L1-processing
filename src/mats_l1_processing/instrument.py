@@ -536,4 +536,5 @@ class Instrument:
             (CCD) MATS CCD object a.k.a CCDunit
 
         """
-        getattr(self,channel)
+        return getattr(self,channel)
+     

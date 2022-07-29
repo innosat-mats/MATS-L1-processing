@@ -69,34 +69,12 @@ def test_forward_backward():
     
     with open('testdata/CCDitem_example.pkl', 'rb') as f:
         CCDitem = pickle.load(f)
-        
-  
     
-  
-    #It would be better to replace the paragraph below by the following, but that does not work at the moemtn , see git issue 28
-    # with open('testdata/CCDunit_IR1_example.pkl', 'rb') as f:
-    #     CCDunit_IR1=pickle.load(f)        
-    #CCDitem['CCDunit']=CCDunit_IR1
-    
-    
-    #Check  if the CCDunit has been created. It takes time to create it so it should not be created if not needed
-    CCDunits={}
-    try: CCDitem['CCDunit']
-    except: 
-        try:
-            CCDunits[CCDitem['channel']]
-        except:  
-            CCDunits[CCDitem['channel']]=CCD(CCDitem['channel'],"tests/calibration_data_test.toml") 
-        CCDitem['CCDunit']=CCDunits[CCDitem['channel']]
-    
-    
-    
-    # #  Hack to have no compensation for bad colums at the time. This should nolonger be needed LM 28Jul2022
-    # CCDitem['NBC']=0
-    # CCDitem['BC']=np.array(CCDitem['BC'])  
-        
-    
-    forward_and_backward(CCDitem,  photons=1000, plot=True)
+    with open('testdata/CCDunit_IR1_example.pkl', 'rb') as f:
+        CCDunit_IR1=pickle.load(f)        
+    CCDitem['CCDunit']=CCDunit_IR1
+
+    forward_and_backward(CCDitem,  photons=1000, plot=False)
 
 if __name__ == "__main__":
 
