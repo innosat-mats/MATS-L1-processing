@@ -181,7 +181,7 @@ def forward_and_backward(CCDitem, photons, plot=True):
 
 
 
-
+'''
 
 # Read in a CCDitem 
 
@@ -215,3 +215,5 @@ intrument = Instrument(calibration_file)
 CCDitem['CCDunit']=intrument.get_CCD("IR1")
 
 forward_and_backward(CCDitem,  photons=1000, plot=True)
+
+'''
