@@ -109,10 +109,6 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1",inverse=Fa
     """Bins the data into evenly spaced bins and performs a fit. Valid fittypes are:
     'polyfit1'
     'polyfit2'
-    'curvefit1'
-    'curvefit2'
-    'spline1'
-    'threshold1'
     'threshold2'
     """
 
@@ -148,31 +144,6 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1",inverse=Fa
             y,
             2,
         )
-    elif fittype == "curvefit1":
-        p_low = fit_with_curvefit(
-            x,
-            y,
-            1,
-        )
-    elif fittype == "curvefit2":
-        p_low = fit_with_curvefit(
-            x,
-            y,
-            2,
-        )
-    elif fittype == "spline1":
-        p_low = fit_with_spline(
-            x,
-            y,
-            1,
-        )
-    elif fittype == "threshold1":
-        p_low = fit_with_curvefit(
-            x,
-            y,
-            1,
-            'threshold',
-        )
     elif fittype == "threshold2":
         p_low = fit_with_curvefit(
             x,
@@ -190,7 +161,7 @@ def get_linearity(
     calibration_file,
     channels=[1, 2, 3, 4, 5, 6],
     testtype="col",
-    fittype="polyfit1",
+    fittype="threshold2",
     threshold=30e3,
     remove_blanks=True,
     plot=True,
@@ -231,7 +202,7 @@ def get_linearity(
         #Generate non-linearity object and save it
         non_linearity = instrument.nonLinearity(channels[i],fittype=fittype, 
                         fit_parameters=poly_or_spline, fit_threshold=threshold,
-                        dfdx_non_lin_important=0.2,dfdx_saturation=0.05)
+                        dfdx_non_lin_important=0.4,dfdx_saturation=0.05)
 
         filename = 'linearity' + '_' + testtype + '_' + str(channels[i]) + '.pkl'    
         with open(filename, 'wb') as f:

@@ -429,7 +429,7 @@ class nonLinearity:
         # 0 = all good, 1 = non linear part important, 2 = value exceeds fit threshold 
 
         if (self.fittype=='polyfit1') or (self.fittype=='polyfit2'):
-            if x_true > self.saturation:
+            if np.any(x_true > self.saturation):
                 return self.saturation
             else:
                 return np.polyval(self.fit_parameters,x_true)
@@ -439,10 +439,10 @@ class nonLinearity:
             b = self.fit_parameters[1]
             e = self.fit_parameters[2]
 
-            if x_true < e:
+            if np.any(x_true < e):
                 return a*x_true             
 
-            elif x_true<self.saturation:
+            elif np.any(x_true<self.saturation):
                 return b*(x_true-e)**2+a*(x_true-e)+a*e
 
             else:
