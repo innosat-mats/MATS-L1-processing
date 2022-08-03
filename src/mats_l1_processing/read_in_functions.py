@@ -43,7 +43,7 @@ def plot_full_temperature_info(temperaturedata, relativetimedata):
 
 
 def add_temperature_info_to_CCDitems(CCDitems, read_from, directory, labtemp=999):
-    from get_temperature import create_temperature_info_array, add_temperature_info
+    from mats_l1_processing.get_temperature import create_temperature_info_array, add_temperature_info
 
     if read_from == "rac":
         temperaturedata, relativetimedata = create_temperature_info_array(
