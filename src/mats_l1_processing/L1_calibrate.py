@@ -87,14 +87,14 @@ def L1_calibrate(CCDitem, calibrationfile):
     # =============================================================================
 
     image_lsb = CCDitem["IMAGE"]
-
+    
     # Step 1 and 2: Remove bias and compensate for bad columns, image still in LSB
-    image_bias_sub = get_true_image(CCDitem)
+    image_bias_sub,error_flags_bias = get_true_image(CCDitem)
     #    image_bias_sub = get_true_image(CCDitem)
 
-    # step 3: correct for non-linearity
-    #image_linear,error_flags = get_linearized_image_parallelized(CCDitem, image_bias_sub)
-    image_linear = image_bias_sub
+    # step 3: correct for non-linearity (image is converted into float??)
+    image_linear,error_flags_linearity = get_linearized_image(CCDitem, image_bias_sub)
+    #image_linear = image_bias_sub
 
     # Step 4: Desmear
     image_desmeared = desmear_true_image(CCDitem, image_linear)

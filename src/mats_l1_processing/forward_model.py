@@ -109,7 +109,7 @@ def backward(input_image,CCDitem, b=1, d=2, plotme=True):
         # # Do normal calibration to reverse the forward model   
     image=input_image.copy()
 
-    image_bias_sub = get_true_image(CCDitem, image)
+    image_bias_sub, flag = get_true_image(CCDitem, image)
 
     image_desmeared = desmear_true_image(CCDitem,image_bias_sub.copy())
 

@@ -23,3 +23,4 @@ title = "Level 1 calibration files for testing this package"
     pixel = 'calibration_data/linearity/linear/linearity'
     sumrow = 'calibration_data/linearity/linear/linearity'
     sumwell = 'calibration_data/linearity/linear/linearity'
+    tables = 'calibration_data/linearity/tables/20220802/'

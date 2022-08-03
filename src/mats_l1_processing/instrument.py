@@ -12,6 +12,7 @@ import toml
 import numpy as np
 import scipy
 import pickle
+import pandas as pd
 
 class CCD:
     """Class to represent a single physical CCD on MATS, a.k.a CCDunit
@@ -236,6 +237,12 @@ class CCD:
             + ".pkl", 'rb') as fp:
 
             self.non_linearity_sumwell = pickle.load(fp)
+        
+        if 'tables' in calibration_data["linearity"]:
+            self.tablefolder = calibration_data["linearity"]["tables"]
+            self.tables = pd.read_csv(self.tablefolder + 'tables.csv')
+        else:
+            self.tables = None
 
         # Amplification correction for UV channels
         if self.channel == "UV1" or self.channel == "UV2":
@@ -341,7 +348,25 @@ class CCD:
 
         return flatfield
 
+    def get_table(self,CCDitem):
+        """Check to see if there is a precalculated table for the CCDMacro used 
 
+        Args:
+            CCDitem (dict): Dictionary of type CCDitem
+
+        Returns:
+            lookup_table (np.array): a lookup table for the non-linearty
+
+        """
+        
+        df_table = self.tables.loc[(self.tables['CCDSEL'] == 1) & (self.tables['NRBIN'] == 1) & (self.tables['NCBIN CCDColumns'] == 1) & (self.tables['GAIN Mode'] == 'High')]
+        
+        if df_table is not None:
+            table = np.load(self.tablefolder + df_table['Tablefile'][0] +'.npy')
+        else:
+            table = None
+        
+        return table
 
 class nonLinearity:
     """Class to represent a non-linearity for a MATS CCD.

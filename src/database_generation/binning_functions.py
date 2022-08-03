@@ -217,7 +217,7 @@ def get_binning_test_data_from_CCD_item(
 
     if remove_blanks:
         for i in range(0, len(CCDitems)):
-            CCDitems[i]["IMAGE"] = get_true_image(CCDitems[i])
+            CCDitems[i]["IMAGE"], _ = get_true_image(CCDitems[i])
 
     # stack data into 4 arrays one for each measurement type
     CCDl_list = np.copy(CCDitems[0::4])  # long exposure
