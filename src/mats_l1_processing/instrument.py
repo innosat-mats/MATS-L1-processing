@@ -8,6 +8,7 @@ is included.
 
 """
 
+from cmath import e
 import toml
 import numpy as np
 import scipy
@@ -359,13 +360,17 @@ class CCD:
 
         """
         
-        df_table = self.tables.loc[(self.tables['CCDSEL'] == 1) & (self.tables['NRBIN'] == 1) & (self.tables['NCBIN CCDColumns'] == 1) & (self.tables['GAIN Mode'] == 'High')]
-        
-        if df_table is not None:
-            table = np.load(self.tablefolder + df_table['Tablefile'][0] +'.npy')
-        else:
+        if self.tables is None:
             table = None
+
+        else: 
+            df_table = self.tables.loc[(self.tables['CCDSEL'] == CCDitem['CCDSEL']) & (self.tables['NRBIN'] == CCDitem['NRBIN']) & (self.tables['NCBIN CCDColumns'] == CCDitem['NCBIN CCDColumns']) & (self.tables['GAIN Mode'] == CCDitem['GAIN Mode'])]
         
+            if df_table is not None:
+                table = np.load(self.tablefolder + df_table.iloc[0]['Tablefile'] +'.npy')
+            else:
+                table = None
+            
         return table
 
 class nonLinearity:
@@ -389,10 +394,10 @@ class nonLinearity:
         Args:
             channel (str) = channel name 
             fittype (str): Type of fit the non-linearity is representing
-            fit_threshold (optional) = max value of measured data used in fitting of the non-linearity
-            saturation (float) = the first derivative at which the sensor is considered saturated (default 0.05)
-            non_lin_important (float) = the first derivative value where non_linearity becomes important.
             fit_parameters (list, np.array or obj) = parmeter of object describing the non-linearity fit.
+            fit_threshold (optional) = max value of measured data used in fitting of the non-linearity
+            dfdx_saturation (float) = the first derivative at which the sensor is considered saturated (default 0.05)
+            dfdx_non_lin_important (float) = the first derivative value where non_linearity becomes important.
             
         """
         self.fittype = fittype
@@ -415,8 +420,6 @@ class nonLinearity:
             self.fit_parameters = fit_parameters
             self.saturation = self.calc_non_lin_important(dfdx_saturation)
             self.non_lin_important = self.calc_non_lin_important(dfdx_non_lin_important)
-
-        
 
     def get_measured_image(self, image_true):
         """Method to get a measured value for a given true image (forward model)
@@ -477,7 +480,6 @@ class nonLinearity:
             raise NotImplementedError(self.fittype)
 
         
-
     def get_measured_saturation(self):
         return self.get_measured_value(self.saturation)
 

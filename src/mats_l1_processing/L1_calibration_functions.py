@@ -91,7 +91,7 @@ def test_for_saturation(CCDunit,nrowbin,ncolbin,value):
     elif value_mapped_to_summation_well>CCDunit.non_linearity_sumwell.get_measured_saturation():
             x = CCDunit.non_linearity_sumwell.saturation
             flag = 3
-    
+
     return flag,x
 
 def check_true_value_max(CCDunit,nrowbin,ncolbin,x_true,flag):
@@ -144,9 +144,9 @@ def inverse_model_real(CCDitem,value,method='BFGS'):
     
     flag, x = test_for_saturation(CCDunit,nrowbin,ncolbin,value)
 
-    if (flag == 0) or flag == 1:
+    if (flag == 0) or (flag == 1):
         x_hat = opt.minimize(optimize_function,x0=value,args=(CCDunit,nrowbin,ncolbin,value),method=method)
-        x = x_hat.x
+        x = x_hat.x[0]
         flag,x = check_true_value_max(CCDunit,nrowbin,ncolbin,x,flag)
 
 
@@ -167,7 +167,7 @@ def inverse_model_table(table,value):
     if not (int(table[2,int(value)]) == int(value)):
         raise ValueError('table must be indexed with counts')
 
-    return table[0,int(value)], table[2,int(value)]
+    return table[0,int(value)], table[1,int(value)]
 
 def get_linearized_image(CCDitem, image_bias_sub):
     image_linear = np.zeros(image_bias_sub.shape)
@@ -601,8 +601,11 @@ def bin_image_using_predict(header, reference_image="999"):
 
     ncolbintotal = ncolbinC * ncolbinF
 
-    if reference_image == "999":
-        reference_image = header["IMAGE"]
+    if type(reference_image) == str:
+        if reference_image == "999":
+            reference_image = header["IMAGE"]
+        else:
+            raise ValueError('Invalid reference image')
 
     # bad column analysis
     n_read, n_coadd = binning_bc(ncol, ncolskip, ncolbinF, ncolbinC, header["BC"])

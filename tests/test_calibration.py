@@ -2,11 +2,12 @@ import pytest
 
 from mats_l1_processing.read_and_calibrate_all_files_parallel import main
 from mats_l1_processing.instrument import Instrument, CCD
+from mats_l1_processing.L1_calibration_functions import inverse_model_real,inverse_model_table
 
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
-
+import time
 
 __author__ = "Ole Martin Christensen"
 __copyright__ = "Ole Martin Christensen"
@@ -48,8 +49,6 @@ def test_readfunctions():
     read_from="imgview" 
     CCDitems=read_all_files_in_root_directory(read_from,directory)
     
-
-    
 def test_CCDunit():
     intrument = Instrument("tests/calibration_data_test.toml")
     CCDunit_IR1=intrument.get_CCD("IR1")
@@ -76,8 +75,35 @@ def test_forward_backward():
 
     forward_and_backward(CCDitem,  photons=1000, plot=False)
 
+def test_non_linearity():
+    with open('testdata/CCDitem_example.pkl', 'rb') as f:
+        CCDitem = pickle.load(f)
+    
+    with open('testdata/CCDunit_IR1_example.pkl', 'rb') as f:
+        CCDunit_IR1=pickle.load(f)        
+    CCDitem['CCDunit']=CCDunit_IR1
+
+    table = CCDitem['CCDunit'].get_table(CCDitem)
+    ref_table = np.load('testdata/IR1_table.npy')
+    assert (table==ref_table).all()
+
+    image_linear_table,error_flag = inverse_model_table(table,0)
+    image_linear_real,error_flag = inverse_model_real(CCDitem,0)
+    assert image_linear_table==0.0
+    assert np.abs(image_linear_real-image_linear_table)<1e-3
+    
+    image_linear_table,error_flag = inverse_model_table(table,1e3)
+    image_linear_real,error_flag = inverse_model_real(CCDitem,1e3)
+    assert np.abs(image_linear_real-image_linear_table)<1e-3
+
+    image_linear_table,error_flag = inverse_model_table(table,10e3)
+    image_linear_real,error_flag = inverse_model_real(CCDitem,10e3)
+    assert np.abs(image_linear_real-image_linear_table)<1e-3
+
 if __name__ == "__main__":
 
     test_readfunctions()
     test_CCDunit()
     test_forward_backward()
+    test_non_linearity()
+    test_calibrate()

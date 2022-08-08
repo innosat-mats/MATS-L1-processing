@@ -18,9 +18,6 @@ from mats_l1_processing.L1_calibration_functions import calculate_flatfield, cal
 from mats_l1_processing.instrument import Instrument, CCD
 #from LindasCalibrationFunctions import plot_CCDimage 
 
-
-
-
 def frameplot(pic,fig,axis,title='',clim=999):
 
                     

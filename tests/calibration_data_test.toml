@@ -20,7 +20,7 @@ title = "Level 1 calibration files for testing this package"
     flatfieldfolder_cold_unprocessed = "calibration_data/20200330_flatfields_0C/"
     baffle_flatfield = "calibration_data/Flatfield20210421/PayloadImages/"
 [linearity]
-    pixel = 'calibration_data/linearity/linear/linearity'
-    sumrow = 'calibration_data/linearity/linear/linearity'
-    sumwell = 'calibration_data/linearity/linear/linearity'
+    pixel = 'calibration_data/linearity/final/linearity_exp'
+    sumrow = 'calibration_data/linearity/final/linearity_row'
+    sumwell = 'calibration_data/linearity/final/linearity_col'
     tables = 'calibration_data/linearity/tables/20220802/'

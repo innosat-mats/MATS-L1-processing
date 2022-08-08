@@ -153,6 +153,8 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1",inverse=Fa
         )    
     else:
         ValueError("Invalid fittype")
+    
+    np.savez(str(np.random.randint(0, 100)),x,y,p_low)
 
     return p_low, bin_center, low_measured_mean
 
@@ -210,10 +212,10 @@ def get_linearity(
         
         #Plotting
         if plot:
-            plt.plot([0, threshold*1.3], [0, threshold*1.3], "k--")
+            plt.plot([0, threshold*1.3], [0, threshold*1.3], "k--",label=None)
             
-            plt.xlabel('simulated')
-            plt.ylabel('measured')
+            plt.xlabel('simulated (counts)')
+            plt.ylabel('measured (counts)')
 
             plt.plot(
                 man_tot.flatten()[::plotting_factor],
@@ -222,12 +224,14 @@ def get_linearity(
                 alpha=0.1,
                 markeredgecolor="none",
                 c=color[channels[i]],
+                label=None,
             )
             plt.plot(
                 bin_center,
                 low_measured_mean,
                 "+",
                 c=color[channels[i]],
+                label=None,
             )
             if fittype == "spline1":
                 raise NotImplementedError('spline no longer supported')
@@ -240,6 +244,7 @@ def get_linearity(
                     y,
                     "-",
                     c=color[channels[i]],
+                    label='channel ' + str(channels[i]),
                 )
 
             else:
@@ -248,15 +253,17 @@ def get_linearity(
                     np.polyval(poly_or_spline, np.arange(0, threshold*1.3)),
                     "-",
                     c=color[channels[i]],
+                    label='channel' + str(channels[i]),
                 )
 
-            plt.plot([0, threshold], [threshold, threshold], "k:")
+            plt.plot([0, threshold], [threshold, threshold], "k:",label=None)
             plt.xlim([0, threshold*1.3])
             plt.ylim([0, threshold*1.3])
 
     if plot:
-        plt.savefig("linearity_fit_" + testtype + ".png")
+        plt.legend()
         plt.grid(True)
+        plt.savefig("linearity_fit_" + testtype + ".png")
         plt.show()
         plt.close()
 

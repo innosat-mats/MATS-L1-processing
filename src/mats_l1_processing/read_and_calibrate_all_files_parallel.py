@@ -37,8 +37,12 @@ def main(directory, calibrationfile, calibrate=True, plot=False):
     CCDitems = read_all_files_in_directory(read_from, directory)  # read in data
 
     # calibrate and/or plot the images
+    #if calibrate:
+    #    Parallel(n_jobs=8)(delayed(L1_calibrate)(CCDitem,calibrationfile) for CCDitem in CCDitems)
+
     if calibrate:
-        Parallel(n_jobs=8)(delayed(L1_calibrate)(CCDitem,calibrationfile) for CCDitem in CCDitems)
+        for CCDitem in CCDitems:
+            L1_calibrate(CCDitem,calibrationfile)
 
 # %%
 if __name__ == "__main__":
