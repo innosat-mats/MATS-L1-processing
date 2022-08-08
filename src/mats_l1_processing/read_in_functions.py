@@ -69,11 +69,14 @@ def read_all_files_in_root_directory(read_from, root_directory):
     if read_from == "rac":
         CCDitems = read_all_files_in_directory(
             read_from, root_directory+'RacFiles_out/')
+    elif read_from == "rac_operational":
+        CCDitems = read_all_files_in_directory(
+            read_from, root_directory)
     elif read_from == "imgview":
         CCDitems = read_all_files_in_directory(
             read_from, root_directory+'PayloadImages/')
     else:
-        raise Exception("read_from needs to = rac or imgview ")
+        raise Exception("read_from needs to = rac,rac_operational or imgview ")
     return CCDitems
 
 
@@ -83,7 +86,7 @@ def read_all_files_in_directory(read_from, directory):
     import os
     import pandas as pd
     CCDitems = []
-    if read_from == "rac":
+    if (read_from == "rac") or (read_from == "rac_operational"):
         df = pd.read_csv(directory + "CCD.csv", skiprows=[0])
         items = df.to_dict("records")
         for item in items:
@@ -100,7 +103,7 @@ def read_all_files_in_directory(read_from, directory):
                 CCDitem = read_CCDitem_from_imgview(directory, IDstring)
                 CCDitems.append(CCDitem)
     else:
-        raise Exception("read_from needs to = rac or imgview ")
+        raise Exception("read_from needs to = rac,rac_operational or imgview ")
 
     for CCDitem in CCDitems:
 

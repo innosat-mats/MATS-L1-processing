@@ -14,6 +14,7 @@ import numpy as np
 import scipy
 import pickle
 import pandas as pd
+import scipy.io
 
 class CCD:
     """Class to represent a single physical CCD on MATS, a.k.a CCDunit

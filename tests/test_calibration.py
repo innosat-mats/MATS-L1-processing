@@ -75,7 +75,7 @@ def test_forward_backward():
 
     forward_and_backward(CCDitem,  photons=1000, plot=False)
 
-def test_non_linearity():
+def test_non_linearity_fullframe():
     with open('testdata/CCDitem_example.pkl', 'rb') as f:
         CCDitem = pickle.load(f)
     
@@ -100,10 +100,42 @@ def test_non_linearity():
     image_linear_real,error_flag = inverse_model_real(CCDitem,10e3)
     assert np.abs(image_linear_real-image_linear_table)<1e-3
 
+def test_non_linearity_binned():
+    with open('testdata/CCDitem_binned_example.pkl', 'rb') as f:
+        CCDitem = pickle.load(f)
+    
+    with open('testdata/CCDunit_UV1_example.pkl', 'rb') as f:
+        CCDunit_UV1=pickle.load(f)        
+    CCDitem['CCDunit']=CCDunit_UV1
+
+    table = CCDitem['CCDunit'].get_table(CCDitem)
+    ref_table_false = np.load('testdata/IR1_table.npy')
+    assert not (table==ref_table_false).all()
+    ref_table = np.load('testdata/UV1_table.npy')
+    assert (table==ref_table).all()
+
+    image_linear_table,error_flag = inverse_model_table(table,0)
+    image_linear_real,error_flag = inverse_model_real(CCDitem,0)
+    assert image_linear_table==0.0
+    assert np.abs(image_linear_real-image_linear_table)<1e-3
+    
+    image_linear_table,error_flag = inverse_model_table(table,1e3)
+    image_linear_real,error_flag = inverse_model_real(CCDitem,1e3)
+    assert np.abs(image_linear_real-image_linear_table)<1e-3
+
+    image_linear_table,error_flag = inverse_model_table(table,10e3)
+    image_linear_real,error_flag = inverse_model_real(CCDitem,10e3)
+    assert np.abs(image_linear_real-image_linear_table)<1e-3
+
+    image_linear_table,error_flag = inverse_model_table(table,30e3)
+    image_linear_real,error_flag = inverse_model_real(CCDitem,30e3)
+    assert np.abs(image_linear_real-image_linear_table)<1e-3
+
 if __name__ == "__main__":
 
     test_readfunctions()
     test_CCDunit()
     test_forward_backward()
-    test_non_linearity()
+    test_non_linearity_fullframe()
+    test_non_linearity_binned()
     test_calibrate()
