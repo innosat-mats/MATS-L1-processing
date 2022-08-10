@@ -154,8 +154,6 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1",inverse=Fa
     else:
         ValueError("Invalid fittype")
     
-    np.savez(str(np.random.randint(0, 100)),x,y,p_low)
-
     return p_low, bin_center, low_measured_mean
 
 def get_linearity(
