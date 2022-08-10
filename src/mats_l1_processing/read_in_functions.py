@@ -167,10 +167,9 @@ def add_and_rename_CCDitem_info(CCDitem):
     if CCDitem["read_from"] == "rac":
         # del CCDitem['NCBIN FPGAColumns']
         try:
-            CCDitem["DigGain"] = CCDitem["GAIN Truncation"]
+            CCDitem["DigGain"]
         except:
-            raise Exception("GAIN Truncation nonexisting")
-
+            CCDitem["DigGain"] = CCDitem["GAIN Truncation"]
         try:
             CCDitem["SigMode"]
             # 0 should be high in output LM 200604. This is opposite to what it is in input.
