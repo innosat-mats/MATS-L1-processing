@@ -96,6 +96,21 @@ def test_for_saturation(CCDunit,nrowbin,ncolbin,value):
 
 def check_true_value_max(CCDunit,nrowbin,ncolbin,x_true,flag):
     
+    """A method which takes in a CCDunit and binning factors and flags 
+    for saturation, and sets value to the saturated value if needed. 
+
+    Args:
+        CCDunit (obj): A CCDUnit object
+        nrowbin (int): number of rows binned
+        ncolbin (int): nuber of cols binned 
+        x_true (float): true value of counts
+        flag (int): flag of pixel (to be modified)
+
+    Returns: 
+        flag (int): flag to indicate high degree of non-linearity and/or saturation
+        x (float): true number of counts
+    """
+
     value_mapped_to_pixels = x_true/(nrowbin*ncolbin)
     value_mapped_to_shift_register = x_true/(ncolbin)
     value_mapped_to_summation_well = x_true

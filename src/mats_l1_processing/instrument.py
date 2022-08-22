@@ -383,7 +383,7 @@ class nonLinearity:
     Attributes:
         fittype (str): Type of fit the non-linearity is representing
         fit_threshold (float) = max value of measured data used in fitting of the non-linearity
-        saturation (float) = measured value where the CCD is considered saturated, all values above this are set to this value.
+        saturation (float) = true value where the CCD is considered saturated, all values above this are set to the forward model with this value as input.
         non_lin_important (float) = non_lin_important the true value where non_linearity becomes important.
         channel (str) = channel name 
         fit_parameters (list, np.array or obj) = parmeter of object describing the non-linearity fit. 
