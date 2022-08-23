@@ -6,6 +6,7 @@ Created on Thu Oct 07 09:47 2021
 Functions are used to estimate the linearity of the MATS channels from binning tests
 """
 from re import A
+from statistics import covariance
 from database_generation import binning_functions as bf
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -96,7 +97,7 @@ def fit_with_curvefit(x, y, deg,fun='polynomial'):
     else:
         ValueError("only deg 1 and 2 are accepted")
 
-    return p
+    return p,params[1]
 
 
 def fit_with_spline(x, y, deg):
@@ -110,6 +111,8 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1",inverse=Fa
     'polyfit1'
     'polyfit2'
     'threshold2'
+
+    2022.08.22: Only threshold 2 is valid (OMC)
     """
 
     all_simulated = man_tot.flatten()
@@ -145,7 +148,7 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1",inverse=Fa
             2,
         )
     elif fittype == "threshold2":
-        p_low = fit_with_curvefit(
+        p_low,covariance = fit_with_curvefit(
             x,
             y,
             2,
@@ -154,7 +157,7 @@ def fit_curve(man_tot, inst_tot, threshold=np.inf, fittype="polyfit1",inverse=Fa
     else:
         ValueError("Invalid fittype")
     
-    return p_low, bin_center, low_measured_mean
+    return p_low, bin_center, low_measured_mean,covariance
 
 def get_linearity(
     CCDitems,
@@ -195,13 +198,13 @@ def get_linearity(
             remove_blanks=remove_blanks,
         )
         
-        poly_or_spline, bin_center, low_measured_mean = fit_curve(
+        poly_or_spline, bin_center, low_measured_mean,covariance = fit_curve(
             man_tot, inst_tot, threshold, fittype
         )
         
         #Generate non-linearity object and save it
         non_linearity = instrument.nonLinearity(channels[i],fittype=fittype, 
-                        fit_parameters=poly_or_spline, fit_threshold=threshold,
+                        fit_parameters=poly_or_spline, covariance=covariance, fit_threshold=threshold,
                         dfdx_non_lin_important=0.4,dfdx_saturation=0.05)
 
         filename = 'linearity' + '_' + testtype + '_' + str(channels[i]) + '.pkl'    

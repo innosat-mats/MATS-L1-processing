@@ -387,15 +387,16 @@ class nonLinearity:
         non_lin_important (float) = non_lin_important the true value where non_linearity becomes important.
         channel (str) = channel name 
         fit_parameters (list, np.array or obj) = parmeter of object describing the non-linearity fit. 
-
+        covariance (np.array) = covariances of the non-linear fit
     """
-    def __init__(self,channel, fittype='threshold2', fit_parameters=None, fit_threshold=1e9,dfdx_saturation=0.05,dfdx_non_lin_important=0.5):
+    def __init__(self,channel, fittype='threshold2', fit_parameters=None, covariance=None, fit_threshold=1e9,dfdx_saturation=0.05,dfdx_non_lin_important=0.5):
         """Init method for CCD class
 
         Args:
             channel (str) = channel name 
             fittype (str): Type of fit the non-linearity is representing
             fit_parameters (list, np.array or obj) = parmeter of object describing the non-linearity fit.
+            covariance (np.array) = numpy array describing the unceritainty of the fit
             fit_threshold (optional) = max value of measured data used in fitting of the non-linearity
             dfdx_saturation (float) = the first derivative at which the sensor is considered saturated (default 0.05)
             dfdx_non_lin_important (float) = the first derivative value where non_linearity becomes important.
@@ -404,6 +405,12 @@ class nonLinearity:
         self.fittype = fittype
         self.fit_threshold = fit_threshold
         self.channel = channel
+
+        if covariance == None:
+            self.covariance = None
+        else:
+            self.covariance = covariance
+
         if fit_parameters == None:
             self.saturation = 1e9
             self.non_lin_important = 1e9
@@ -421,6 +428,7 @@ class nonLinearity:
             self.fit_parameters = fit_parameters
             self.saturation = self.calc_non_lin_important(dfdx_saturation)
             self.non_lin_important = self.calc_non_lin_important(dfdx_non_lin_important)
+
 
     def get_measured_image(self, image_true):
         """Method to get a measured value for a given true image (forward model)
@@ -501,6 +509,17 @@ class nonLinearity:
                 threshold = (beta+2*b*e-a)/(2*b)
         
         return threshold
+
+    def get_random_fit_parameter(self):
+        """Method to returns the fit parameters, except that they are randomly sampled from the fitted distribution (rather than just the mean)
+
+        Args:
+
+        Returns:
+            (np.array) fit parameters from random sample 
+
+        """
+        return np.random.multivariate_normal(self.fit_parameters, self.covariance, size=None, check_valid='warn', tol=1e-8)
 
 
 class Instrument:

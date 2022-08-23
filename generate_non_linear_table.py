@@ -44,7 +44,7 @@ import operator as op
 
 #%%
 
-def gen_non_linear_table(CCDitem,calibrationfile,covariance_exp=None,covariance_col=None,fittype='inverse'):
+def gen_non_linear_table(CCDitem,calibrationfile,covariance_exp=None,covariance_col=None,fittype='inverse',randomize=False):
 
     #Add stuff not in the non linear tables (but required for add_and_rename)
     CCDitem["read_from"] = 'rac'
@@ -57,6 +57,10 @@ def gen_non_linear_table(CCDitem,calibrationfile,covariance_exp=None,covariance_
     CCDitem = add_and_rename_CCDitem_info(CCDitem)
     CCDitem["CCDunit"] = CCD(CCDitem["channel"], calibrationfile)
     
+    if randomize:
+        CCDitem["CCDunit"].non_linearity_pixel.fit_parameters = CCDitem["CCDunit"].non_linearity_pixel.get_random_fit_parameter()
+        CCDitem["CCDunit"].non_linearity_sumwell.fit_parameters = CCDitem["CCDunit"].non_linearity_sumwell.get_random_fit_parameter()
+
     if fittype == 'interp':
         CCDitem["CCDunit"].non_linearity_pixel.saturation = CCDitem["CCDunit"].non_linearity_pixel.calc_non_lin_important(0.01)
         CCDitem["CCDunit"].non_linearity_sumrow.saturation = CCDitem["CCDunit"].non_linearity_sumrow.calc_non_lin_important(0.01)
@@ -164,41 +168,41 @@ items = df.to_dict("records")
 
 
 # %%
-names = ['ppp','ppn','pnp','npp','pnn','nnp','npn','nnn']
+# names = ['ppp','ppn','pnp','npp','pnn','nnp','npn','nnn']
 
-#%%
-for i in range(0,len(items)):
+# #%%
+# for i in range(0,len(items)):
    
-   x_true_2,x_measured_2,CCDitem_2,flag_2 = gen_non_linear_table(items[i],'calibration_data/calibration_data.toml',fittype='interp')
-   table = np.array([x_true_2,flag_2,x_measured_2])
-   np.save(str(i) + '.npy',table)
-   covariance_exp,_,covariance_col = gen_non_linear_error(items[i],'calibration_data/calibration_data.toml')
-   for j in range(len(names)):
-       covariance_test(covariance_exp,covariance_col,items,i,names[j],fittype='interp')
+#    x_true_2,x_measured_2,CCDitem_2,flag_2 = gen_non_linear_table(items[i],'calibration_data/calibration_data.toml',fittype='interp')
+#    table = np.array([x_true_2,flag_2,x_measured_2])
+#    np.save(str(i) + '.npy',table)
+#    covariance_exp,_,covariance_col = gen_non_linear_error(items[i],'calibration_data/calibration_data.toml')
+#    for j in range(len(names)):
+#        covariance_test(covariance_exp,covariance_col,items,i,names[j],fittype='interp')
 
 #%%
 
-for i in range(len(items)):
-    non_lins = []
-    for j in range(len(names)):
-        non_lins.append(np.load(str(i) + names[j] + '.npy'))    
-        plt.plot(non_lins[j][0,:],non_lins[j][2,:])
+# for i in range(len(items)):
+#     non_lins = []
+#     for j in range(len(names)):
+#         non_lins.append(np.load(str(i) + names[j] + '.npy'))    
+#         plt.plot(non_lins[j][0,:],non_lins[j][2,:])
     
-    non_lins.append(np.load(str(i) + '.npy'))
+#     non_lins.append(np.load(str(i) + '.npy'))
 
-    non_lin_important = [ n for n,i in enumerate(non_lins[-1][1,:]) if i==1 ][0]
+#     non_lin_important = [ n for n,i in enumerate(non_lins[-1][1,:]) if i==1 ][0]
     
-    plt.plot(non_lins[-1][0,:],non_lins[-1][2,:],linewidth=4)
-    plt.plot([0,non_lin_important*1.5],[non_lin_important,non_lin_important])
-    plt.ylim([0,non_lin_important*1.5])
-    plt.xlim([0,non_lin_important*1.5])
-    plt.title('test' + str(i+1))
-    plt.xlabel('true counts')
-    plt.ylabel('measured counts')
-    plt.savefig('test' + str(i+1),dpi=600)
-    plt.show()
+#     plt.plot(non_lins[-1][0,:],non_lins[-1][2,:],linewidth=4)
+#     plt.plot([0,non_lin_important*1.5],[non_lin_important,non_lin_important])
+#     plt.ylim([0,non_lin_important*1.5])
+#     plt.xlim([0,non_lin_important*1.5])
+#     plt.title('test' + str(i+1))
+#     plt.xlabel('true counts')
+#     plt.ylabel('measured counts')
+#     plt.savefig('test' + str(i+1),dpi=600)
+#     plt.show()
 
-    array = np.array(non_lins)
+#     array = np.array(non_lins)
 
 #     # plt.plot(array[:,0,1:].std(0)/non_lins[-1][0,1:])
 #     # plt.plot([array[-1,0,non_lin_important],array[-1,0,non_lin_important]],[0,1])
@@ -229,4 +233,22 @@ for i in range(len(items)):
 #     plt.ylabel('measured counts')
 #     plt.savefig('test' + str(i+1),dpi=600)
 #     plt.show()
+# %%
+
+n_samples = 10
+
+for i in range(len(items)):
+    for n in range(n_samples):
+        x_true_2,x_measured_2,CCDitem_2,flag_2 = gen_non_linear_table(items[i],'calibration_data/calibration_data.toml',fittype='interp',randomize=True)
+        table = np.array([x_true_2,flag_2,x_measured_2])
+        np.save(str(i) + '_' + str(n) + '_' + '.npy',table)
+
+i = 0
+for n in range(n_samples):
+    table = np.load(str(i) + '_' + str(n) + '_' + '.npy')
+    plt.plot(table[0,:],table[2,:])
+    plt.ylim([0,10000])
+
+
+plt.show()
 # %%
