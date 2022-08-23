@@ -519,7 +519,11 @@ class nonLinearity:
             (np.array) fit parameters from random sample 
 
         """
-        return np.random.multivariate_normal(self.fit_parameters, self.covariance, size=None, check_valid='warn', tol=1e-8)
+        if isinstance(self.covariance, np.ndarray):
+            return np.random.multivariate_normal(self.fit_parameters, self.covariance, size=None, check_valid='warn', tol=1e-8)
+        else:
+            return self.fit_parameters
+            
 
 
 class Instrument:

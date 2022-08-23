@@ -237,18 +237,17 @@ items = df.to_dict("records")
 
 n_samples = 10
 
+# for i in range(len(items)):
+#     for n in range(n_samples):
+#         x_true_2,x_measured_2,CCDitem_2,flag_2 = gen_non_linear_table(items[i],'calibration_data/calibration_data.toml',fittype='interp',randomize=True)
+#         table = np.array([x_true_2,flag_2,x_measured_2])
+#         np.save(str(i) + '_' + str(n) + '_' + '.npy',table)
+
+# i = 0
 for i in range(len(items)):
     for n in range(n_samples):
-        x_true_2,x_measured_2,CCDitem_2,flag_2 = gen_non_linear_table(items[i],'calibration_data/calibration_data.toml',fittype='interp',randomize=True)
-        table = np.array([x_true_2,flag_2,x_measured_2])
-        np.save(str(i) + '_' + str(n) + '_' + '.npy',table)
-
-i = 0
-for n in range(n_samples):
-    table = np.load(str(i) + '_' + str(n) + '_' + '.npy')
-    plt.plot(table[0,:],table[2,:])
-    plt.ylim([0,10000])
-
-
-plt.show()
+        table = np.load(str(i) + '_' + str(n) + '_' + '.npy')
+        plt.plot(table[0,:],table[2,:])
+        plt.ylim([0,10000])
+    plt.show()
 # %%
