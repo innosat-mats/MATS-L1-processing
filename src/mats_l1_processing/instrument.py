@@ -406,10 +406,10 @@ class nonLinearity:
         self.fit_threshold = fit_threshold
         self.channel = channel
 
-        if covariance == None:
-            self.covariance = None
-        else:
+        if isinstance(covariance, np.ndarray):
             self.covariance = covariance
+        else:
+            self.covariance = None
 
         if fit_parameters == None:
             self.saturation = 1e9
