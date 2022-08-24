@@ -23,7 +23,7 @@ from mats_l1_processing.L1_calibration_functions import (
 #################################################
 
 
-def calibrate_all_items(CCDitems, plot=False):
+def calibrate_all_items(CCDitems, instrument, plot=False):
     import matplotlib.pyplot as plt
     from LindasCalibrationFunctions import plot_CCDimage
 
@@ -34,7 +34,7 @@ def calibrate_all_items(CCDitems, plot=False):
             image_desmeared,
             image_dark_sub,
             image_flatf_comp,
-        ) = L1_calibrate(CCDitem)
+        ) = L1_calibrate(CCDitem, instrument)
 
         if plot == True:
             fig, ax = plt.subplots(5, 1)
@@ -46,24 +46,9 @@ def calibrate_all_items(CCDitems, plot=False):
             fig.suptitle(CCDitem["channel"])
 
 
-def L1_calibrate(CCDitem, calibrationfile):
-    global CCDunits
+def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file instread of instrument object 
 
-    try:
-        CCDunits
-    except:
-        CCDunits = {}
-
-    # Check  if the CCDunit has been created. It takes time to create it so it should not be created if not needed. 
-    # In running calibration code the 7 CCDunits (IR1-4, UV1-2 and NADIR) should be created at the start so that this check will not be necessary.
-    try:
-        CCDitem["CCDunit"]
-    except:
-        try:
-            CCDunits[CCDitem["channel"]]
-        except:
-            CCDunits[CCDitem["channel"]] = CCD(CCDitem["channel"], calibrationfile)
-        CCDitem["CCDunit"] = CCDunits[CCDitem["channel"]]
+    CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
 
     #  Hack to have no compensation for bad colums at the time. TODO later.
     CCDitem["NBC"] = 0

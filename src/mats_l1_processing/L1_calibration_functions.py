@@ -253,9 +253,7 @@ def calculate_flatfield(CCDitem):
         raise Exception("No CCDunit defined for the CCDitem")
     image_flatf = CCDunit.flatfield(int(CCDitem["SigMode"]))
     # TODO absolute calibration should be done here. For now just scaling to mean of flatfield picture; thaat is i ALL of theCCD is used this should not change the mean value.
-    meanff = np.mean(
-        image_flatf
-    )  # Note that this is the mean of the full flatfield , not of the part of the image used.
+    meanff = np.mean(image_flatf)  # Note that this is the mean of the full flatfield , not of the part of the image used.
     if (
         CCDitem["NCBIN CCDColumns"] > 1 or CCDitem["NCBIN FPGAColumns"] > 1
     ):  # Or row binning

@@ -11,18 +11,17 @@ from mats_l1_processing.read_in_functions import readprotocol
 import matplotlib.pyplot as plt
 
 # from scipy import signal
-from scipy import ndimage
+from scipy import ndimage, io
 from scipy.signal import spline_filter
-import toml
 from pathlib import Path
 
 
-def make_flatfield(channel, signalmode, calibration_file, plot=True):
+def make_flatfield(channel, signalmode, instrument, calibration_data, plot=True):
     # makes flatfield using both a cold flatfield without baffle and a room temp flatfield with baffle.
 
-    calibration_data = toml.load(calibration_file)
+    CCDunit=instrument.get_CCD("IR1")
 
-    CCDunit = CCD(channel, calibration_file)
+
 
     if signalmode == "HSM":
         flatfield_wo_baffle = read_flatfield(
@@ -96,6 +95,11 @@ def make_flatfield(channel, signalmode, calibration_file, plot=True):
     picd = np.float64(Image.open(directory + dfile + ".pnm"))  # read image
 
     flatfield_w_baffle = pic - picd
+    
+    #Save these files to give to Jörg:
+    #io.savemat('flatfield_wo_baffle_'+channel+'.mat', {'data': flatfield_wo_baffle})
+    #io.savemat('flatfield_w_baffle_'+channel+'.mat', {'data': flatfield_w_baffle})
+    
 
     # Scale flatfield without baffle so that the group of pixels that
     # are close to the main axis of the instrument gets the mean value of 1.

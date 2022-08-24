@@ -133,6 +133,7 @@ def test_non_linearity_binned():
 
 if __name__ == "__main__":
 
+    test_calibrate()    
     test_readfunctions()
     test_CCDunit()
     test_forward_backward()

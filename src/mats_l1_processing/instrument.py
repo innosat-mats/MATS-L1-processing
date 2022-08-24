@@ -292,7 +292,7 @@ class CCD:
         elif mode == 1:
             darkcurrent = 10 ** (self.log_a_img_avr_LSM * T + self.log_b_img_avr_LSM)
         else:
-            print("Undefined mode")
+            raise Exception("Undefined mode")
         return darkcurrent
 
     def ro_avr(self, mode):
@@ -310,7 +310,7 @@ class CCD:
         elif mode == 1:
             ro_avr = self.ro_avr_LSM
         else:
-            print("Undefined mode")
+            raise Exception("Undefined mode")
         return ro_avr
 
     def alpha_avr(self, mode):  # electrons/LSB
@@ -328,7 +328,7 @@ class CCD:
         elif mode == 1:
             alpha_avr = self.alpha_avr_LSM
         else:
-            print("Undefined mode")
+            raise Exception("Undefined mode")
         return alpha_avr
 
     def flatfield(self, mode):  # return flatfield at 0C for the CCD (in LSB?)
@@ -338,7 +338,7 @@ class CCD:
             mode (str): Gain mode/ Signal mode for CCD 
 
         Returns:
-            flatfield ?
+            Flatfield of the CCD for the given mode.
 
         """
         if mode == 0:
@@ -346,7 +346,7 @@ class CCD:
         elif mode == 1:
             flatfield = self.flatfield_LSM
         else:
-            print("Undefined mode")
+            raise Exception("Undefined mode")
 
         return flatfield
 
