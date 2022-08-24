@@ -6,7 +6,6 @@ Created on Thu Oct 07 09:47 2021
 Functions are used to estimate the linearity of the MATS channels from binning tests
 """
 from re import A
-from statistics import covariance
 from database_generation import binning_functions as bf
 import pandas as pd
 from matplotlib import pyplot as plt
