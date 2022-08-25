@@ -44,7 +44,7 @@ import operator as op
 
 #%%
 
-def gen_non_linear_table(CCDitem,calibrationfile,covariance_exp=None,covariance_col=None,fittype='inverse',randomize=False):
+def gen_non_linear_table(CCDitem,calibrationfile,fittype='inverse',randomize=False):
 
     #Add stuff not in the non linear tables (but required for add_and_rename)
     CCDitem["read_from"] = 'rac'
@@ -54,29 +54,23 @@ def gen_non_linear_table(CCDitem,calibrationfile,covariance_exp=None,covariance_
     #CCDitem["channel"] = channel_num_to_str(CCDitem['CCDSEL'])
     #CCDitem["RID"] = 'CCD' + str(CCDitem['CCDSEL'])
     #CCDitem["CCDunit"] = CCD(CCDitem["channel"], calibrationfile)
+
     CCDitem = add_and_rename_CCDitem_info(CCDitem)
+    print(CCDitem["channel"])
     CCDitem["CCDunit"] = CCD(CCDitem["channel"], calibrationfile)
     
+    CCDitem["CCDunit"].non_linearity_pixel.non_lin_important = CCDitem["CCDunit"].non_linearity_pixel.calc_non_lin_important(0.5)
+    CCDitem["CCDunit"].non_linearity_sumrow.non_lin_important = CCDitem["CCDunit"].non_linearity_sumrow.calc_non_lin_important(0.5)
+    CCDitem["CCDunit"].non_linearity_sumwell.non_lin_important = CCDitem["CCDunit"].non_linearity_sumwell.calc_non_lin_important(0.5)
+
+
     if randomize:
         CCDitem["CCDunit"].non_linearity_pixel.fit_parameters = CCDitem["CCDunit"].non_linearity_pixel.get_random_fit_parameter()
         CCDitem["CCDunit"].non_linearity_sumwell.fit_parameters = CCDitem["CCDunit"].non_linearity_sumwell.get_random_fit_parameter()
 
-    if fittype == 'interp':
-        CCDitem["CCDunit"].non_linearity_pixel.saturation = CCDitem["CCDunit"].non_linearity_pixel.calc_non_lin_important(0.01)
-        CCDitem["CCDunit"].non_linearity_sumrow.saturation = CCDitem["CCDunit"].non_linearity_sumrow.calc_non_lin_important(0.01)
-        CCDitem["CCDunit"].non_linearity_sumwell.saturation = CCDitem["CCDunit"].non_linearity_sumwell.calc_non_lin_important(0.01)
-
-    if type(covariance_exp) != type(None):
-
-        default_parameters = CCDitem["CCDunit"].non_linearity_pixel.fit_parameters
-        CCDitem["CCDunit"].non_linearity_pixel.fit_parameters = [default_parameters[0]+covariance_exp['a'],default_parameters[1]+covariance_exp['b'],default_parameters[2]+covariance_exp['e']]
-        CCDitem["CCDunit"].non_linearity_pixel.saturation = CCDitem["CCDunit"].non_linearity_pixel.calc_non_lin_important(0.01)
-        CCDitem["CCDunit"].non_linearity_pixel.non_lin_important = CCDitem["CCDunit"].non_linearity_pixel.calc_non_lin_important(0.01)
-
-        default_parameters = CCDitem["CCDunit"].non_linearity_sumwell.fit_parameters
-        CCDitem["CCDunit"].non_linearity_sumwell.fit_parameters = [default_parameters[0]+covariance_col['a'],default_parameters[1]+covariance_col['b'],default_parameters[2]+covariance_col['e']]
-        CCDitem["CCDunit"].non_linearity_sumwell.saturation = CCDitem["CCDunit"].non_linearity_sumwell.calc_non_lin_important(0.01)
-        CCDitem["CCDunit"].non_linearity_sumwell.non_lin_important = CCDitem["CCDunit"].non_linearity_sumwell.calc_non_lin_important(0.01)
+        CCDitem["CCDunit"].non_linearity_pixel.saturation = CCDitem["CCDunit"].non_linearity_pixel.calc_non_lin_important(0.05)
+        CCDitem["CCDunit"].non_linearity_sumrow.saturation = CCDitem["CCDunit"].non_linearity_sumrow.calc_non_lin_important(0.05)
+        CCDitem["CCDunit"].non_linearity_sumwell.saturation = CCDitem["CCDunit"].non_linearity_sumwell.calc_non_lin_important(0.05)
 
     try:
         CCDunit = CCDitem["CCDunit"]
@@ -117,102 +111,9 @@ def gen_non_linear_table(CCDitem,calibrationfile,covariance_exp=None,covariance_
 
     return x_true,x_measured,CCDitem,flag
 
-#%%
-def get_covariances(channel):
-    df = pd.read_csv('calibration_data/linearity/final/covariance_col')
-    cov_col = df.iloc[channel-1]
-
-    df = pd.read_csv('calibration_data/linearity/final/covariance_row')
-    cov_row = df.iloc[channel-1]
-
-    df = pd.read_csv('calibration_data/linearity/final/covariance_exp')
-    cov_exp = df.iloc[channel-1]
-
-    return cov_col,cov_row,cov_exp
-
-def convert_covariances(covariance,sign1,sign2,sign3):
-    covariance[0] = sign1*(covariance[0])
-    covariance[1] = sign2*(covariance[1])
-    covariance[2] = sign3*(covariance[2])
-
-    return covariance
-
-def gen_non_linear_error(CCDitem,calibrationfile):
-
-    #Add stuff not in the non linear tables (but required for add_and_rename)
-    CCDitem["read_from"] = 'rac'
-    CCDitem["EXP Nanoseconds"] = 0
-    CCDitem["BC"] = '[]'
-
-    CCDitem = add_and_rename_CCDitem_info(CCDitem)
-    CCDitem["CCDunit"] = CCD(CCDitem["channel"], calibrationfile)
-  
-    covariance_exp,covariance_row,covariance_col = get_covariances(CCDitem['CCDSEL'])
-
-    return covariance_exp,covariance_row,covariance_col
-
-def covariance_test(covariance_exp,covariance_col,items,i,name,fittype='inverse'):
-
-    map = {"p":1,"n":-1}
-    convert_covariances(covariance_exp,map[name[0]],map[name[1]],map[name[2]])
-    convert_covariances(covariance_col,map[name[0]],map[name[1]],map[name[2]])
-
-    x_true_2,x_measured_2,CCDitem_2,flag_2 = gen_non_linear_table(items[i],'calibration_data/calibration_data.toml',covariance_exp,covariance_col,fittype)
-    table = np.array([x_true_2,flag_2,x_measured_2])
-    np.save(str(i)+name+ '.npy',table)
-
-
 directory = "calibration_data/linearity/tables/20220802/"
 df = pd.read_csv(directory + "tables.csv")
 items = df.to_dict("records")
-
-
-# %%
-# names = ['ppp','ppn','pnp','npp','pnn','nnp','npn','nnn']
-
-# #%%
-# for i in range(0,len(items)):
-   
-#    x_true_2,x_measured_2,CCDitem_2,flag_2 = gen_non_linear_table(items[i],'calibration_data/calibration_data.toml',fittype='interp')
-#    table = np.array([x_true_2,flag_2,x_measured_2])
-#    np.save(str(i) + '.npy',table)
-#    covariance_exp,_,covariance_col = gen_non_linear_error(items[i],'calibration_data/calibration_data.toml')
-#    for j in range(len(names)):
-#        covariance_test(covariance_exp,covariance_col,items,i,names[j],fittype='interp')
-
-#%%
-
-# for i in range(len(items)):
-#     non_lins = []
-#     for j in range(len(names)):
-#         non_lins.append(np.load(str(i) + names[j] + '.npy'))    
-#         plt.plot(non_lins[j][0,:],non_lins[j][2,:])
-    
-#     non_lins.append(np.load(str(i) + '.npy'))
-
-#     non_lin_important = [ n for n,i in enumerate(non_lins[-1][1,:]) if i==1 ][0]
-    
-#     plt.plot(non_lins[-1][0,:],non_lins[-1][2,:],linewidth=4)
-#     plt.plot([0,non_lin_important*1.5],[non_lin_important,non_lin_important])
-#     plt.ylim([0,non_lin_important*1.5])
-#     plt.xlim([0,non_lin_important*1.5])
-#     plt.title('test' + str(i+1))
-#     plt.xlabel('true counts')
-#     plt.ylabel('measured counts')
-#     plt.savefig('test' + str(i+1),dpi=600)
-#     plt.show()
-
-#     array = np.array(non_lins)
-
-#     # plt.plot(array[:,0,1:].std(0)/non_lins[-1][0,1:])
-#     # plt.plot([array[-1,0,non_lin_important],array[-1,0,non_lin_important]],[0,1])
-#     # plt.ylim([0,1])
-#     # plt.xlim([0,non_lin_important*1.5])
-#     # plt.title('test' + str(i+1))
-#     # plt.xlabel('standard_deviation_of_true_counts')
-#     # plt.ylabel('measured counts')
-#     # plt.savefig('test' + str(i+1),dpi=600)
-#     # plt.show()
 
 # %%
 # names = ['./','tmp/']
@@ -235,19 +136,118 @@ items = df.to_dict("records")
 #     plt.show()
 # %%
 
-n_samples = 10
-
+n_samples = 5
 # for i in range(len(items)):
+#     x_true_2,x_measured_2,CCDitem_2,flag_2 = gen_non_linear_table(items[i],'calibration_data/calibration_data.toml',fittype='interp')
+#     table = np.array([x_true_2,flag_2,x_measured_2])
+#     np.save(str(i) + '.npy',table)
 #     for n in range(n_samples):
 #         x_true_2,x_measured_2,CCDitem_2,flag_2 = gen_non_linear_table(items[i],'calibration_data/calibration_data.toml',fittype='interp',randomize=True)
 #         table = np.array([x_true_2,flag_2,x_measured_2])
-#         np.save(str(i) + '_' + str(n) + '_' + '.npy',table)
+#         np.save(str(i) + '_' + str(n) + '.npy',table)
 
-# i = 0
+# %%
+
+non_lin_fit = []
+non_lin_std = []
+lin_max_list = []
 for i in range(len(items)):
+    non_lins = []
     for n in range(n_samples):
-        table = np.load(str(i) + '_' + str(n) + '_' + '.npy')
-        plt.plot(table[0,:],table[2,:])
-        plt.ylim([0,10000])
-    plt.show()
+        non_lins.append(np.load(str(i) + '_' + str(n) + '.npy'))
+
+        #plt.plot(table[0,:],table[2,:])
+        #plt.ylim([0,10000])
+    
+    non_lins.append(np.load(str(i) + '.npy'))
+    lin_max = [ n for n,i in enumerate(non_lins[-1][1,:]) if i==1 ][0]
+    lin_max_list.append(lin_max)
+
+    A = np.array(non_lins)
+    # plt.plot(A[:,0,:].T)
+    # plt.plot([lin_max,lin_max],[0,A[:,0,:].max()],'k--')
+    # plt.xlim([0,lin_max*1.5])
+    # plt.grid()
+    # plt.gca().set_aspect("equal")
+    # plt.savefig('test' + str(i+1),dpi=600)
+    # plt.show()
+
+    A_diff = A[:-1,0,:]-A[-1,0,:]
+    # plt.plot(A_diff[:,:].T)
+    # plt.plot([lin_max,lin_max],[A_diff.min(),A_diff.max()],'k--')
+    # plt.xlim([0,lin_max*1.5])
+    # plt.savefig('test' + str(i+1) + "_abs",dpi=600)
+    # plt.show()
+
+    A_std = np.std(A_diff,axis=0)
+
+    # plt.plot(A_std/A[-1,0,:]*100)
+    # plt.plot([lin_max,lin_max],[0,A_std.max()],'k--')
+    # plt.xlim([0,lin_max*1.5])
+    # plt.ylim([0,5])
+    # plt.savefig('test' + str(i+1) + "_rel",dpi=600)
+    # plt.show()
+
+    non_lin_fit.append(A[-1,0,:])
+    non_lin_std.append(A_std)
+
+non_lin_fit = np.array(non_lin_fit)
+non_lin_std = np.array(non_lin_std)
+lin_max_list = np.array(lin_max_list)
+
+# %%
+
+cmap = plt.get_cmap("tab10")
+for i in range(0,6):
+    plt.plot(np.arange(0,lin_max_list[i]),non_lin_std[i,:lin_max_list[i]]/non_lin_fit[i,:lin_max_list[i]],color=cmap(items[i]['CCDSEL']),label='channel ' + str(items[i]['CCDSEL']))
+    plt.plot(np.arange(lin_max_list[i]+1,len(non_lin_std[i,:])),non_lin_std[i,lin_max_list[i]:-1]/non_lin_fit[i,lin_max_list[i]:-1],color=cmap(items[i]['CCDSEL']),linestyle='dotted',label=None)
+plt.title('Error for fullframe macro')
+plt.xlabel('measured counts')
+plt.ylabel('relative uncertainty')
+plt.xlim([0,8e3])
+plt.ylim([0,0.1])
+plt.legend()
+plt.grid()
+plt.savefig('error_fullframe',dpi=600)
+plt.show()
+
+# # %%
+for i in range(6,12):
+    plt.plot(np.arange(0,lin_max_list[i]),non_lin_std[i,:lin_max_list[i]]/non_lin_fit[i,:lin_max_list[i]],color=cmap(items[i]['CCDSEL']))
+    plt.plot(np.arange(lin_max_list[i]+1,len(non_lin_std[i,:])),non_lin_std[i,lin_max_list[i]:-1]/non_lin_fit[i,lin_max_list[i]:-1],color=cmap(items[i]['CCDSEL']),linestyle='dotted')
+plt.title('Error for highres_IR macro')
+plt.xlabel('measured counts')
+plt.ylabel('relative uncertainty')
+plt.xlim([0,64e3])
+plt.ylim([0,0.1])
+plt.grid()
+plt.savefig('error_highres_IR',dpi=600)
+plt.show()
+
+# #%%
+for i in range(12,18):
+    plt.plot(np.arange(0,lin_max_list[i]),non_lin_std[i,:lin_max_list[i]]/non_lin_fit[i,:lin_max_list[i]],color=cmap(items[i]['CCDSEL']))
+    plt.plot(np.arange(lin_max_list[i]+1,len(non_lin_std[i,:])),non_lin_std[i,lin_max_list[i]:-1]/non_lin_fit[i,lin_max_list[i]:-1],color=cmap(items[i]['CCDSEL']),linestyle='dotted')
+plt.title('Error for lowpixel macro')
+plt.xlabel('measured counts')
+plt.ylabel('relative uncertainty')
+plt.xlim([0,64e3])
+plt.ylim([0,0.1])
+plt.grid()
+plt.savefig('error_lowpixel',dpi=600)
+plt.show()
+
+#%%
+for i in range(18,24):
+    plt.plot(np.arange(0,lin_max_list[i]),non_lin_std[i,:lin_max_list[i]]/non_lin_fit[i,:lin_max_list[i]],color=cmap(items[i]['CCDSEL']))
+    plt.plot(np.arange(lin_max_list[i]+1,len(non_lin_std[i,:])),non_lin_std[i,lin_max_list[i]:-1]/non_lin_fit[i,lin_max_list[i]:-1],color=cmap(items[i]['CCDSEL']),linestyle='dotted')
+plt.title('Error for highres_UV macro')
+plt.xlabel('measured counts')
+plt.ylabel('relative uncertainty')
+plt.xlim([0,64e3])
+plt.ylim([0,0.1])
+plt.grid()
+plt.savefig('error_highres_UV',dpi=600)
+plt.show()
+
 # %%
