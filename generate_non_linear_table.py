@@ -1,4 +1,5 @@
 #%%
+from cProfile import label
 import json
 import numpy as np
 from matplotlib import pyplot as plt
@@ -197,57 +198,86 @@ lin_max_list = np.array(lin_max_list)
 
 # %%
 
-cmap = plt.get_cmap("tab10")
-for i in range(0,6):
-    plt.plot(np.arange(0,lin_max_list[i]),non_lin_std[i,:lin_max_list[i]]/non_lin_fit[i,:lin_max_list[i]],color=cmap(items[i]['CCDSEL']),label='channel ' + str(items[i]['CCDSEL']))
-    plt.plot(np.arange(lin_max_list[i]+1,len(non_lin_std[i,:])),non_lin_std[i,lin_max_list[i]:-1]/non_lin_fit[i,lin_max_list[i]:-1],color=cmap(items[i]['CCDSEL']),linestyle='dotted',label=None)
-plt.title('Error for fullframe macro')
-plt.xlabel('measured counts')
-plt.ylabel('relative uncertainty')
-plt.xlim([0,8e3])
-plt.ylim([0,0.1])
-plt.legend()
-plt.grid()
-plt.savefig('error_fullframe',dpi=600)
-plt.show()
+# cmap = plt.get_cmap("tab10")
+# for i in range(0,6):
+#     plt.plot(np.arange(0,lin_max_list[i]),non_lin_std[i,:lin_max_list[i]]/non_lin_fit[i,:lin_max_list[i]],color=cmap(items[i]['CCDSEL']),label='channel ' + str(items[i]['CCDSEL']))
+#     plt.plot(np.arange(lin_max_list[i]+1,len(non_lin_std[i,:])),non_lin_std[i,lin_max_list[i]:-1]/non_lin_fit[i,lin_max_list[i]:-1],color=cmap(items[i]['CCDSEL']),linestyle='dotted',label=None)
+# plt.title('Error for fullframe macro')
+# plt.xlabel('measured counts')
+# plt.ylabel('relative uncertainty')
+# plt.xlim([0,8e3])
+# plt.ylim([0,0.1])
+# plt.legend()
+# plt.grid()
+# plt.savefig('error_fullframe',dpi=600)
+# plt.show()
 
-# # %%
-for i in range(6,12):
-    plt.plot(np.arange(0,lin_max_list[i]),non_lin_std[i,:lin_max_list[i]]/non_lin_fit[i,:lin_max_list[i]],color=cmap(items[i]['CCDSEL']))
-    plt.plot(np.arange(lin_max_list[i]+1,len(non_lin_std[i,:])),non_lin_std[i,lin_max_list[i]:-1]/non_lin_fit[i,lin_max_list[i]:-1],color=cmap(items[i]['CCDSEL']),linestyle='dotted')
-plt.title('Error for highres_IR macro')
-plt.xlabel('measured counts')
-plt.ylabel('relative uncertainty')
-plt.xlim([0,64e3])
-plt.ylim([0,0.1])
-plt.grid()
-plt.savefig('error_highres_IR',dpi=600)
-plt.show()
+# # # %%
+# for i in range(6,12):
+#     plt.plot(np.arange(0,lin_max_list[i]),non_lin_std[i,:lin_max_list[i]]/non_lin_fit[i,:lin_max_list[i]],color=cmap(items[i]['CCDSEL']))
+#     plt.plot(np.arange(lin_max_list[i]+1,len(non_lin_std[i,:])),non_lin_std[i,lin_max_list[i]:-1]/non_lin_fit[i,lin_max_list[i]:-1],color=cmap(items[i]['CCDSEL']),linestyle='dotted')
+# plt.title('Error for highres_IR macro')
+# plt.xlabel('measured counts')
+# plt.ylabel('relative uncertainty')
+# plt.xlim([0,64e3])
+# plt.ylim([0,0.1])
+# plt.grid()
+# plt.savefig('error_highres_IR',dpi=600)
+# plt.show()
+
+# # #%%
+# for i in range(12,18):
+#     plt.plot(np.arange(0,lin_max_list[i]),non_lin_std[i,:lin_max_list[i]]/non_lin_fit[i,:lin_max_list[i]],color=cmap(items[i]['CCDSEL']))
+#     plt.plot(np.arange(lin_max_list[i]+1,len(non_lin_std[i,:])),non_lin_std[i,lin_max_list[i]:-1]/non_lin_fit[i,lin_max_list[i]:-1],color=cmap(items[i]['CCDSEL']),linestyle='dotted')
+# plt.title('Error for lowpixel macro')
+# plt.xlabel('measured counts')
+# plt.ylabel('relative uncertainty')
+# plt.xlim([0,64e3])
+# plt.ylim([0,0.1])
+# plt.grid()
+# plt.savefig('error_lowpixel',dpi=600)
+# plt.show()
 
 # #%%
-for i in range(12,18):
-    plt.plot(np.arange(0,lin_max_list[i]),non_lin_std[i,:lin_max_list[i]]/non_lin_fit[i,:lin_max_list[i]],color=cmap(items[i]['CCDSEL']))
-    plt.plot(np.arange(lin_max_list[i]+1,len(non_lin_std[i,:])),non_lin_std[i,lin_max_list[i]:-1]/non_lin_fit[i,lin_max_list[i]:-1],color=cmap(items[i]['CCDSEL']),linestyle='dotted')
-plt.title('Error for lowpixel macro')
-plt.xlabel('measured counts')
-plt.ylabel('relative uncertainty')
-plt.xlim([0,64e3])
-plt.ylim([0,0.1])
-plt.grid()
-plt.savefig('error_lowpixel',dpi=600)
-plt.show()
-
-#%%
-for i in range(18,24):
-    plt.plot(np.arange(0,lin_max_list[i]),non_lin_std[i,:lin_max_list[i]]/non_lin_fit[i,:lin_max_list[i]],color=cmap(items[i]['CCDSEL']))
-    plt.plot(np.arange(lin_max_list[i]+1,len(non_lin_std[i,:])),non_lin_std[i,lin_max_list[i]:-1]/non_lin_fit[i,lin_max_list[i]:-1],color=cmap(items[i]['CCDSEL']),linestyle='dotted')
-plt.title('Error for highres_UV macro')
-plt.xlabel('measured counts')
-plt.ylabel('relative uncertainty')
-plt.xlim([0,64e3])
-plt.ylim([0,0.1])
-plt.grid()
-plt.savefig('error_highres_UV',dpi=600)
-plt.show()
+# for i in range(18,24):
+#     plt.plot(np.arange(0,lin_max_list[i]),non_lin_std[i,:lin_max_list[i]]/non_lin_fit[i,:lin_max_list[i]],color=cmap(items[i]['CCDSEL']))
+#     plt.plot(np.arange(lin_max_list[i]+1,len(non_lin_std[i,:])),non_lin_std[i,lin_max_list[i]:-1]/non_lin_fit[i,lin_max_list[i]:-1],color=cmap(items[i]['CCDSEL']),linestyle='dotted')
+# plt.title('Error for highres_UV macro')
+# plt.xlabel('measured counts')
+# plt.ylabel('relative uncertainty')
+# plt.xlim([0,64e3])
+# plt.ylim([0,0.1])
+# plt.grid()
+# plt.savefig('error_highres_UV',dpi=600)
+# plt.show()
 
 # %%
+cmap = plt.get_cmap("tab10")
+plt.plot(np.arange(8e3),np.arange(8e3),'k',label=None)
+for i in range(0,6):
+    plt.plot(np.arange(0,lin_max_list[i]),non_lin_fit[i,:lin_max_list[i]],color=cmap(items[i]['CCDSEL']),label='channel ' + str(items[i]['CCDSEL']))
+    plt.plot(np.arange(lin_max_list[i]+1,len(non_lin_std[i,:])),non_lin_fit[i,lin_max_list[i]:-1],color=cmap(items[i]['CCDSEL']),linestyle='dotted',label=None)
+plt.title('non_linearity for fullframe macro')
+plt.xlabel('measured counts')
+plt.ylabel('corrected counts')
+plt.xlim([0,8e3])
+plt.ylim([0,8e3])
+plt.legend()
+plt.grid()
+plt.savefig('non_lin_fullframe',dpi=600)
+plt.show()
+
+cmap = plt.get_cmap("tab10")
+plt.plot(np.arange(64e3),np.arange(64e3),'k',label=None)
+for i in range(18,24):
+    plt.plot(np.arange(0,lin_max_list[i]),non_lin_fit[i,:lin_max_list[i]],color=cmap(items[i]['CCDSEL']),label='channel ' + str(items[i]['CCDSEL']))
+    plt.plot(np.arange(lin_max_list[i]+1,len(non_lin_std[i,:])),non_lin_fit[i,lin_max_list[i]:-1],color=cmap(items[i]['CCDSEL']),linestyle='dotted',label=None)
+plt.title('non_linearity for highres_UV macro')
+plt.xlabel('measured counts')
+plt.ylabel('corrected counts')
+plt.xlim([0,64e3])
+plt.ylim([0,64e3])
+plt.legend()
+plt.grid()
+plt.savefig('non_lin_highres_UV',dpi=600)
+plt.show()
