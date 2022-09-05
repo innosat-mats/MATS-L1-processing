@@ -263,7 +263,7 @@ def find_CCDitem_matching_protocol_entry(CCD_image_data, PicID):
                 # (5 digits corresponds to 10^5 ns) since computations
                 # of the number of nanoseconds are rounded off in teh new imageviewer
                 # (which must have been updated in ) summer 2021.
-                if str(item["EXP Nanoseconds"])[:-5] == str(itemnumber)[:-5] and item["CCDSEL"] == CCDSEL
+                if round(item["EXP Nanoseconds"],-5) == round(itemnumber,-5) and item["CCDSEL"] == CCDSEL
             )
         except:
             raise Exception('Image '+PicID +

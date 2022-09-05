@@ -19,13 +19,14 @@ import matplotlib.pyplot as plt
 
 from mats_l1_processing.L1_calibrate import L1_calibrate
 from mats_l1_processing.LindasCalibrationFunctions import plot_CCDimage
+from mats_l1_processing.instrument import Instrument
 
 import argparse
 from tqdm import tqdm
 from joblib import Parallel, delayed
 
 
-def main(directory, calibrationfile, calibrate=True, plot=False):
+def main(directory, calibration_file, calibrate=True, plot=False):
     """Run program.
 
     Keyword arguments:
@@ -33,6 +34,8 @@ def main(directory, calibrationfile, calibrate=True, plot=False):
     """
 
     read_from = "rac"  # read from extracted rac file
+    
+    instrument = Instrument(calibration_file)
     
     CCDitems = read_all_files_in_directory(read_from, directory)  # read in data
 
@@ -42,7 +45,7 @@ def main(directory, calibrationfile, calibrate=True, plot=False):
 
     if calibrate:
         for CCDitem in CCDitems:
-            L1_calibrate(CCDitem,calibrationfile)
+            L1_calibrate(CCDitem,instrument)
 
 # %%
 if __name__ == "__main__":

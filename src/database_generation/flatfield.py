@@ -14,14 +14,17 @@ import matplotlib.pyplot as plt
 from scipy import ndimage, io
 from scipy.signal import spline_filter
 from pathlib import Path
+import toml
 
 
-def make_flatfield(channel, signalmode, instrument, calibration_data, plot=True):
+def make_flatfield(channel, signalmode, calibration_file, plot=True):
     # makes flatfield using both a cold flatfield without baffle and a room temp flatfield with baffle.
 
-    CCDunit=instrument.get_CCD("IR1")
 
 
+    CCDunit=CCD(channel,calibration_file)
+
+    calibration_data=toml.load(calibration_file)
 
     if signalmode == "HSM":
         flatfield_wo_baffle = read_flatfield(
