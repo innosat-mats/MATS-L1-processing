@@ -22,7 +22,8 @@ import toml
 from mats_l1_processing.LindasCalibrationFunctions import filter_on_time
 import pickle
 import mats_l1_processing.instrument as instrument
-from mats_l1_processing.read_in_functions import channel_num_to_str
+from mats_l1_processing.read_in_functions import channel_num_to_str, add_and_rename_CCDitem_info
+from mats_l1_processing.L1_calibration_functions import CCD, inverse_model_real,total_model_scalar,check_true_value_max,test_for_saturation
 
 def fit_with_polyfit(x, y, deg):
 
@@ -314,3 +315,70 @@ def make_linearity(channel, calibration_file, plot=True, exp_type='col',inverse=
     )
 
     return poly_or_spline
+
+def gen_non_linear_table(CCDitem,calibrationfile,fittype='inverse',randomize=False):
+
+    #Add stuff not in the non linear tables (but required for add_and_rename)
+    CCDitem["read_from"] = 'rac'
+    CCDitem["EXP Nanoseconds"] = 0
+    CCDitem["BC"] = '[]'
+
+    #CCDitem["channel"] = channel_num_to_str(CCDitem['CCDSEL'])
+    #CCDitem["RID"] = 'CCD' + str(CCDitem['CCDSEL'])
+    #CCDitem["CCDunit"] = CCD(CCDitem["channel"], calibrationfile)
+
+    CCDitem = add_and_rename_CCDitem_info(CCDitem)
+    print(CCDitem["channel"])
+    CCDitem["CCDunit"] = CCD(CCDitem["channel"], calibrationfile)
+    
+    CCDitem["CCDunit"].non_linearity_pixel.non_lin_important = CCDitem["CCDunit"].non_linearity_pixel.calc_non_lin_important(0.5)
+    CCDitem["CCDunit"].non_linearity_sumrow.non_lin_important = CCDitem["CCDunit"].non_linearity_sumrow.calc_non_lin_important(0.5)
+    CCDitem["CCDunit"].non_linearity_sumwell.non_lin_important = CCDitem["CCDunit"].non_linearity_sumwell.calc_non_lin_important(0.5)
+
+
+    if randomize:
+        CCDitem["CCDunit"].non_linearity_pixel.fit_parameters = CCDitem["CCDunit"].non_linearity_pixel.get_random_fit_parameter()
+        CCDitem["CCDunit"].non_linearity_sumwell.fit_parameters = CCDitem["CCDunit"].non_linearity_sumwell.get_random_fit_parameter()
+
+        CCDitem["CCDunit"].non_linearity_pixel.saturation = CCDitem["CCDunit"].non_linearity_pixel.calc_non_lin_important(0.05)
+        CCDitem["CCDunit"].non_linearity_sumrow.saturation = CCDitem["CCDunit"].non_linearity_sumrow.calc_non_lin_important(0.05)
+        CCDitem["CCDunit"].non_linearity_sumwell.saturation = CCDitem["CCDunit"].non_linearity_sumwell.calc_non_lin_important(0.05)
+
+    try:
+        CCDunit = CCDitem["CCDunit"]
+    except:
+        raise Exception("No CCDunit defined for the CCDitem")
+
+    nrowbin = CCDitem["NRBIN"]
+    ncolbin = CCDitem["NColBinCCD"]
+
+    if fittype=='interp':
+        x_true_samples = np.arange(0,2**17-1,1)
+        x_measured_sample = np.zeros(x_true_samples.shape)
+
+        for i in range(len(x_true_samples)):
+            x_measured_sample[i] = total_model_scalar(x_true_samples[i],CCDunit,nrowbin,ncolbin)
+
+        x_measured = np.arange(0,2**16-1,1)
+        x_true = np.interp(x_measured,x_measured_sample,x_true_samples)
+        flag = np.zeros(x_true.shape)
+
+        for i in range(len(x_true)):
+            flag[i], x_sat = test_for_saturation(CCDunit,nrowbin,ncolbin,x_measured[i])
+            if (flag[i] == 3):
+                x_true[i] = x_sat
+
+            flag[i],x_true[i] = check_true_value_max(CCDunit,nrowbin,ncolbin,x_true[i],flag[i])
+
+    elif fittype=='inverse':
+        x_measured = np.arange(0,2**16-1,1)
+        x_true = np.zeros(x_measured.shape)
+        flag = np.zeros(x_measured.shape)
+        
+        for i in range(len(x_measured)):
+            x_true[i],flag[i] = inverse_model_real(CCDitem,x_measured[i],method='Nelder-Mead')
+
+    else:
+        raise ValueError('fittype need to be inverse or interp')
+
+    return x_true,x_measured,CCDitem,flag

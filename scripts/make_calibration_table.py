@@ -1,3 +1,7 @@
+'''
+This script writes a latex table containing the non-linearity constants
+'''
+
 #%%
 import pickle
 import glob
