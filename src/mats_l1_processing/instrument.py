@@ -351,7 +351,7 @@ class CCD:
         return flatfield
 
     def get_table(self,CCDitem):
-        """Check to see if there is a precalculated table for the CCDMacro used 
+        """Check to see if there is a precalculated non linearity table for the CCDMacro used 
 
         Args:
             CCDitem (dict): Dictionary of type CCDitem
@@ -570,6 +570,7 @@ class Instrument:
             self.IR4 = CCD("IR4",calibration_file)
             self.UV1 = CCD("UV1",calibration_file)
             self.UV2 = CCD("UV2",calibration_file)
+            self.NADIR = CCD("IR1",calibration_file)
             
         elif type(channel) == str:
             setattr(self, channel, CCD("channel",calibration_file))

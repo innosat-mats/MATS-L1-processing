@@ -23,6 +23,33 @@ from joblib import Parallel, delayed
 import time 
 from mats_l1_processing.instrument import CCD
 
+
+
+# Utility functions
+
+def combine_flags(flag1, flag2, flag3=None, flag4=None):
+    """Combines binary flags into one binary flag array. Minimum 2 flags , maximum 4
+
+    Args:
+        flag1, flag2 (np.array of integers):
+        flag3, flag4  (optional, np.array of integers):
+
+    Returns: 
+        
+        flags (np array) flags containing all the above flags in a binary array.
+        1st bit gives the value of flag1, second bits gives the value of flag2
+     
+
+    """
+    
+    flags=flag1*2**0+flag2*2**1
+    if flag3 !=None:
+        flags=flags+flag3*2**2
+        if flag4 !=None:
+            flags=flags+flag4*2**3
+        
+    
+    return flags
 #%% 
 ## non-linearity-stuff ##
 
@@ -186,7 +213,7 @@ def inverse_model_table(table,value):
 
 def get_linearized_image(CCDitem, image_bias_sub):
     image_linear = np.zeros(image_bias_sub.shape)
-    error_flag = np.zeros(image_bias_sub.shape)
+    error_flag = np.zeros(image_bias_sub.shape, dtype=np.uint16)
 
     table = CCDitem['CCDunit'].get_table(CCDitem)
     if table is not None:
@@ -269,11 +296,25 @@ def subtract_dark_opposite_order(image, CCDitem):
     return image_dark_sub
 
 
-def subtract_dark(CCDitem, image="No picture"):
-    if type(image) is str:
+def subtract_dark(CCDitem, image=None):
+    """Subtracts the dark current from the image.
+
+    Args:
+        CCDitem:  dictonary containing CCD image and information
+        image (optional) np.array: If this is given then it will be used instead of the image in the CCDitem
+
+    Returns: 
+        image_dark_sub (np.array, dtype=float64): true number of counts
+        flags (np.array, dtype = uint16): 2 flags to indicate problems with the darc subtractions. 
+            Binary array: 1st bit idicates that the dark subtraction renedered a negative value as result, second bit indiates a temperature out of normal range.
+    """
+    
+    if image is None:
         image = CCDitem["IMAGE"]
+        
     dark_fullpic = calculate_dark(CCDitem)
 
+    
     image_dark_sub = (
         image
         - dark_fullpic[
@@ -282,7 +323,17 @@ def subtract_dark(CCDitem, image="No picture"):
         ]
     )
     # rows,colums Note that nrow always seems to be implemented as +1 already, whereas NCOL does not, hence the missing '+1' in the column calculation /LM201204
-    return image_dark_sub
+    
+    #If image becomes negative set flag
+    error_flag_negative= np.zeros(image.shape, dtype=np.uint16)
+    error_flag_negative[image_dark_sub<0] = 1
+    error_flag_temperature=np.zeros(image.shape, dtype=np.uint16)
+    if CCDitem["temperature"]<-50. or CCDitem["temperature"]>30.: # Filter out cases where the temperature seems wrong. 
+        error_flag_temperature.fill(1)
+    
+    flags=combine_flags(error_flag_negative, error_flag_temperature)
+   
+    return image_dark_sub, flags
 
 
 def calculate_dark(CCDitem):
@@ -731,7 +782,7 @@ def get_true_image(header, image="No picture"):
         )
 
     #If image becomes negative set flag
-    flag = np.zeros(true_image.shape)
+    flag = np.zeros(true_image.shape, dtype=np.uint16)
     flag[true_image<0] = 1
     
     return true_image, flag
@@ -838,6 +889,17 @@ def desmear_true_image_opposite_order(image, header):
 
 
 def desmear_true_image(header, image="No picture"):
+    """Subtracts the smearing (due to no shutter) from the image.
+
+    Args:
+        CCDitem:  dictonary containing CCD image and information
+        image (optional) np.array: If this is given then it will be used instead of the image in the CCDitem
+
+    Returns: 
+        image (np.array, dtype=float64): desmeared image
+        flag (np.array, dtype = uint16): error flag to indicate that the de-smearing gave a negative value as a reslut    
+        """
+    
     if type(image) is str:
         image = header["IMAGE"]
 
@@ -856,8 +918,12 @@ def desmear_true_image(header, image="No picture"):
             TotTime = TotTime + T_row_extra
 
     # row 0 here is the first row to read out from the chip
+    
+    # Flag for negative values
+    flag= np.zeros(image.shape, dtype=np.uint16)
+    flag[image<0] = 1
 
-    return image
+    return image, flag
 
 
 def desmear_true_image_reverse(header, image="No picture"):

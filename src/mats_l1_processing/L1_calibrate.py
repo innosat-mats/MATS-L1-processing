@@ -82,14 +82,13 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
     #image_linear = image_bias_sub
 
     # Step 4: Desmear
-    image_desmeared = desmear_true_image(CCDitem, image_linear)
+    image_desmeared, error_flags_desmear= desmear_true_image(CCDitem, image_linear)
     #    image_desmeared = desmear_true_image(CCDitem)
 
     # Step 5 Remove dark current
     # TBD: Decide on threshold fro when to use pixel correction (little dark current) and when to use average image correction (large dark current).
-    # TBD: The temperature needs to be decided in a better way then taken from the ADC as below.
-    # Either read from rac files of temperature sensors or estimated from the top of the image
-    image_dark_sub = subtract_dark(CCDitem, image_desmeared)
+
+    image_dark_sub, error_flags_dark = subtract_dark(CCDitem, image_desmeared)
 
     # Step 6 Remove flat field of the particular CCD.
 
