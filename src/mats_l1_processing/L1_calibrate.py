@@ -51,25 +51,12 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
     CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
 
     #  Hack to have no compensation for bad colums at the time. TODO later.
-    CCDitem["NBC"] = 0
-    CCDitem["BC"] = np.array([])
+    if not (CCDitem["NBC"] == 0):
+        CCDitem["NBC"] = 0
+        CCDitem["BC"] = np.array([])
+        error_bad_column = np.ones(CCDitem["IMAGE"].shape)
+        
 
-    # Step0 Compensate for window mode. This should be done first, because it is done in Mikaels software
-    # TODO: Cchek if automatic mode and implement it.
-
-    # =============================================================================
-    #     #The below should really be doene for old rac files (extracted prior to May2020)
-    #     if CCDitem['read_from']=='imgview':
-    #         if (CCDitem['WinMode']) <=4:
-    #             winfactor=2**CCDitem['WinMode']
-    #         elif (CCDitem['WinMode']) ==7:
-    #             winfactor=1       # Check that this is what you want!
-    #         else:
-    #             raise Exception('Undefined Window')
-    #         image_lsb=winfactor*CCDitem['IMAGE']
-    #     else:
-    #         image=_lsb=CCDitem['IMAGE']
-    # =============================================================================
 
     image_lsb = CCDitem["IMAGE"]
     
