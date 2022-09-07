@@ -106,13 +106,13 @@ def backward(input_image,CCDitem, b=1, d=2, plotme=True):
         # # Do normal calibration to reverse the forward model   
     image=input_image.copy()
 
-    image_bias_sub, flag = get_true_image(CCDitem, image)
+    image_bias_sub, flags = get_true_image(CCDitem, image)
 
-    image_desmeared = desmear_true_image(CCDitem,image_bias_sub.copy())
+    image_desmeared, flags = desmear_true_image(CCDitem,image_bias_sub.copy())
 
-    image_dark_sub=subtract_dark(CCDitem,image_desmeared.copy())
+    image_dark_sub, flags=subtract_dark(CCDitem,image_desmeared.copy())
         
-    image_flatf_comp=compensate_flatfield(CCDitem,image_dark_sub.copy())
+    image_flatf_comp, flags=compensate_flatfield(CCDitem,image_dark_sub.copy())
     #plotmean=photons*CCDitem['NCBIN CCDColumns']*CCDitem['NCBIN FPGAColumns']*CCDitem['NRBIN']
     #clims=[plotmean-np.sqrt(plotmean), plotmean+np.sqrt(plotmean)]
 

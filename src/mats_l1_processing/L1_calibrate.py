@@ -79,7 +79,7 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
 
     # Step 6 Remove flat field of the particular CCD.
 
-    image_flatf_comp = compensate_flatfield(CCDitem, image_dark_sub)
+    image_flatf_comp, error_flags_flatfield = compensate_flatfield(CCDitem, image_dark_sub)
     CCDitem["image_calibrated"] = image_flatf_comp
 
     # Step 7 Remove ghost imaging. TBD.

@@ -248,8 +248,21 @@ def get_linearized_image_parallelized(CCDitem, image_bias_sub):
 
 ## Flatfield ##
 
-def compensate_flatfield(CCDitem, image="No picture"):
-    if type(image) is str:  
+def compensate_flatfield(CCDitem, image=None):
+    """Compensates for flatfield.
+
+    Args:
+        CCDitem:  dictonary containing CCD image and information
+        image (optional) np.array: If this is given then it will be used instead of the image in the CCDitem
+
+    Returns: 
+        image_dark_sub (np.array, dtype=float64): true number of counts
+        flags (np.array, dtype = uint16): 2 flags to indicate problems with the darc subtractions. 
+            Binary array: 1st bit idicates that the dark subtraction renedered a negative value as result, second bit indiates a temperature out of normal range.
+    """    
+    
+    
+    if image is None:  
         image = CCDitem["IMAGE"]
     image_flatf_fact = calculate_flatfield(CCDitem)
     mean = image_flatf_fact[
@@ -270,7 +283,11 @@ def compensate_flatfield(CCDitem, image="No picture"):
     )
     # rows,colums Note that nrow always seems to be implemented as +1 already, whereas NCOL does not, hence the missing '+1' in the column calculation /LM201204
 
-    return image_flatf_comp
+
+    flag= np.zeros(image.shape, dtype=np.uint16)
+    flag[image_flatf_comp<0] = 1 # Flag for negative value
+    
+    return image_flatf_comp, flag
 
 
 def calculate_flatfield(CCDitem):
