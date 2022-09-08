@@ -200,8 +200,8 @@ def readimg(filename):
     header["NRBIN"] = NRowBinCCD
     header["NRSKIP"] = NRowSkip
     header["NCOL"] = NCol
-    header["NColBinFPGA"] = NColBinFPGA
-    header["NColBinCCD"] = NColBinCCD
+    header["NCBIN FPGAColumns"] = 2**NColBinFPGA
+    header["NCBIN CCDColumns"] = NColBinCCD
     header["NCSKIP"] = NColSkip
     header["NFLUSH"] = N_flush
     header["TEXPMS"] = Texposure_LSB + Texposure_MSB * 2 ** 16
@@ -322,8 +322,8 @@ def readimage_create_CCDitem(
     CCDitem["NRBIN"] = NRowBinCCD
     CCDitem["NRSKIP"] = NRowSkip
     CCDitem["NCOL"] = NCol
-    CCDitem["NColBinFPGA"] = NColBinFPGA
-    CCDitem["NColBinCCD"] = NColBinCCD
+    CCDitem["NCBIN FPGAColumns"] = 2**NColBinFPGA
+    CCDitem["NCBIN CCDColumns"] = NColBinCCD
     CCDitem["NCSKIP"] = NColSkip
     CCDitem["NFLUSH"] = N_flush
     CCDitem["TEXPMS"] = Texposure_LSB + Texposure_MSB * 2 ** 16
@@ -370,7 +370,7 @@ def readracimg(filename):
     header["NRowSkip"] = metadata["NRSKIP"][0]
     header["NCol"] = metadata["NCOL"][0]
     header["NColBinFPGA"] = metadata["NCBIN"][0] >> 8 & 0b1111
-    header["NColBinCCD"] = metadata["NCBIN"][0] & 0b11111111
+    header["NCBIN CCDColumns"] = metadata["NCBIN"][0] & 0b11111111
     header["NColSkip"] = metadata["NCSKIP"][0]
     header["N_flush"] = metadata["NFLUSH"][0]
     header["Texposure"] = metadata["TEXPMS"][0]
@@ -460,8 +460,9 @@ def read_txtfile_create_CCDitem(filepath):
 
     # Extract variables from certain bits within the same element, see 6.4.1 Software ICD /LM 20191115
 
-    CCDitem["NColBinFPGA"] = CCDitem["NCBIN"] >> 8 & 0b1111
-    CCDitem["NColBinCCD"] = CCDitem["NCBIN"] & 0b11111111
+    ncolbfpga= CCDitem["NCBIN"] >> 8 & 0b1111
+    CCDitem["NCBIN FPGAColumns"]=2**ncolbfpga
+    CCDitem["NCBIN CCDColumns"] = CCDitem["NCBIN"] & 0b11111111
     del CCDitem["NCBIN"]
     CCDitem["DigGain"] = CCDitem["GAIN"] & 0b1111
     CCDitem["TimingFlag"] = CCDitem["GAIN"] >> 8 & 1
@@ -513,21 +514,20 @@ def read_CCDitems_no_images(rac_dir, labtemp=999):
         CCDitem["channel"] = channel
         #       Renaming of stuff. The names in the code here is based on the old rac extract file (prior to May 2020) rac_extract file works
         CCDitem["id"] = str(CCDitem["EXP Nanoseconds"]) + \
-            "_" + str(CCDitem["CCDSEL"])
+            "_" + str(CCDitem["CCDSEL"]) #CCDitem["id"] should not be needed in operational retrieval. Keeping it because protocol reading / CodeCalibrationReport needs it.
 
-        # TODO LM June 2020: Change  all code so that the new names, i. CCDitem['NCBIN CCDColumns'] and CCDitem['NCBIN FPGAColumns'] are used instead of the old.
         try:
-            CCDitem["NColBinCCD"]
+            CCDitem["NCBIN CCDColumns"]
         except:
-            CCDitem["NColBinCCD"] = CCDitem["NCBIN CCDColumns"]
+            CCDitem["NCBIN CCDColumns"] = CCDitem["NColBinCCD"]
 
-        # CCDitem['NColBinFPGA']=CCDitem['NCBIN FPGAColumns']
+
         try:
-            CCDitem["NColBinFPGA"]
+            CCDitem["NCBIN FPGAColumns"]
         except:
-            CCDitem["NColBinFPGA"] = log(CCDitem["NCBIN FPGAColumns"]) / log(2)
+            CCDitem["NCBIN FPGAColumns"] = 2**CCDitem["NColBinFPGA"]
 
-        # del CCDitem['NCBIN FPGAColumns']
+
         if CCDitem["GAIN Mode"] == "High":
             CCDitem["DigGain"] = 0
         elif CCDitem["GAIN Mode"] == "Low":

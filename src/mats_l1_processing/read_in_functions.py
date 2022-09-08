@@ -149,22 +149,22 @@ def add_and_rename_CCDitem_info(CCDitem):
     if CCDitem["read_from"] == "rac":
         #   Renaming of stuff. The names in the code here is based on the old rac extract file (prior to May 2020) rac_extract file works
         CCDitem["id"] = str(CCDitem["EXP Nanoseconds"]) + \
-            "_" + str(CCDitem["CCDSEL"])
+            "_" + str(CCDitem["CCDSEL"])  #CCDitem["id"] should not be needed in operational retrieval. Keeping it because protocol reading / CodeCalibrationReport needs it.  LM220908
 
-    # TODO LM June 2020: Change  all code so that the new names, i. CCDitem['NCBIN CCDColumns'] and CCDitem['NCBIN FPGAColumns'] are used instead of the old.
     try:
-        CCDitem["NColBinCCD"]
+        CCDitem["NCBIN CCDColumns"]
     except:
-        CCDitem["NColBinCCD"] = CCDitem["NCBIN CCDColumns"]
+        CCDitem["NCBIN CCDColumns"] = CCDitem["NColBinCCD"]
 
-    # CCDitem['NColBinFPGA']=CCDitem['NCBIN FPGAColumns']
+
     try:
-        CCDitem["NColBinFPGA"]
+        CCDitem["NCBIN FPGAColumns"]
     except:
-        CCDitem["NColBinFPGA"] = log(CCDitem["NCBIN FPGAColumns"]) / log(2)
+        CCDitem["NCBIN FPGAColumns"] = 2**CCDitem["NColBinFPGA"]
+
 
     if CCDitem["read_from"] == "rac":
-        # del CCDitem['NCBIN FPGAColumns']
+
         try:
             CCDitem["DigGain"]
         except:

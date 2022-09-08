@@ -180,7 +180,7 @@ def inverse_model_real(CCDitem,value,method='BFGS'):
         raise Exception("No CCDunit defined for the CCDitem")
 
     nrowbin = CCDitem["NRBIN"]
-    ncolbin = CCDitem["NColBinCCD"]
+    ncolbin = CCDitem["NCBIN CCDColumns"]
 
     #Check that values are within the linear region:
     
@@ -364,9 +364,9 @@ def calculate_dark(CCDitem):
         * int(CCDitem["TEXPMS"])
         / 1000.0
     )  # tot dark current in electrons
-    # totbinpix = int(CCDitem["NColBinCCD"]) * 2 ** int(
-    #    CCDitem["NColBinFPGA"]
-    # )  # Note that the numbers are described in differnt ways see table 69 in Software iCD
+    # totbinpix = int(CCDitem["NCBIN CCDColumns"]) * int(
+    #    CCDitem["NCBIN FPGAColumns"]
+    # ) 
     dark_calc_image = (
         CCDunit.ampcorrection
         * totdarkcurrent
@@ -396,8 +396,8 @@ def predict_image(reference_image, hsm_header, lsm_image, lsm_header, header):
     ncolskip = int(header["NColSkip"])
 
     nrowbin = int(header["NRowBinCCD"])
-    ncolbinC = int(header["NColBinCCD"])
-    ncolbinF = 2 ** int(header["NColBinFPGA"])
+    ncolbinC = int(header["NCBIN CCDColumns"])
+    ncolbinF = int(header["NCBIN FPGAColumns"])
 
     if int(header["SignalMode"]) > 0:
         blank = int(lsm_header["BlankTrailingValue"])
@@ -508,8 +508,8 @@ def meanbin_image_with_BC(header, reference_image="999"):
     ncolskip = int(header["NCSKIP"])
 
     nrowbin = int(header["NRBIN"])
-    ncolbinC = int(header["NColBinCCD"])
-    ncolbinF = 2 ** int(header["NColBinFPGA"])
+    ncolbinC = int(header["NCBIN CCDColumns"])
+    ncolbinF = int(header["NCBIN FPGAColumns"])
 
     bad_columns = header["BC"]
 
@@ -584,8 +584,8 @@ def bin_image_with_BC(header, reference_image="999"):
     ncolskip = int(header["NCSKIP"])
 
     nrowbin = int(header["NRBIN"])
-    ncolbinC = int(header["NColBinCCD"])
-    ncolbinF = 2 ** int(header["NColBinFPGA"])
+    ncolbinC = int(header["NCBIN CCDColumns"])
+    ncolbinF = int(header["NCBIN FPGAColumns"])
 
     bad_columns = header["BC"]
 
@@ -660,8 +660,8 @@ def bin_image_using_predict(header, reference_image="999"):
     ncolskip = int(header["NCSKIP"])
 
     nrowbin = int(header["NRBIN"])
-    ncolbinC = int(header["NColBinCCD"])
-    ncolbinF = 2 ** int(header["NColBinFPGA"])
+    ncolbinC = int(header["NCBIN CCDColumns"])
+    ncolbinF = int(header["NCBIN FPGAColumns"])
 
     blank = int(header["TBLNK"])
 
@@ -768,7 +768,7 @@ def get_true_image(header, image="No picture"):
         image = header["IMAGE"]
 
     # Both 0 and 1 means that no binning has been done on CCD (depricated)
-    ncolbinC = int(header["NColBinCCD"])
+    ncolbinC = int(header["NCBIN CCDColumns"])
     if ncolbinC == 0:
         ncolbinC = 1
 
@@ -783,7 +783,7 @@ def get_true_image(header, image="No picture"):
     n_read, n_coadd = binning_bc(
         int(header["NCOL"]) + 1,
         int(header["NCSKIP"]),
-        2 ** int(header["NColBinFPGA"]),
+        int(header["NCBIN FPGAColumns"]),
         ncolbinC,
         header["BC"],
     )
@@ -791,7 +791,7 @@ def get_true_image(header, image="No picture"):
     # go through the columns
     for j_c in range(0, int(header["NCOL"] + 1)):  # LM201102 Big fix +1
         # remove blank values and readout offsets
-        bc_comp_fact=(2 ** int(header["NColBinFPGA"]) * ncolbinC / n_coadd[j_c])
+        bc_comp_fact=(int(header["NCBIN FPGAColumns"]) * ncolbinC / n_coadd[j_c])
         true_image[0 : int(header["NROW"]) + 1, j_c] = (
             true_image[0 : int(header["NROW"] + 1), j_c]
             - (n_read[j_c] * (header["TBLNK"] - 128)
@@ -812,7 +812,7 @@ def get_true_image_reverse(header, true_image="No picture"):
     if type(true_image) is str:
         true_image = header["IMAGE"]
 
-    ncolbinC = int(header["NColBinCCD"])
+    ncolbinC = int(header["NCBIN CCDColumns"])
     if ncolbinC == 0:
         ncolbinC = 1
 
@@ -820,7 +820,7 @@ def get_true_image_reverse(header, true_image="No picture"):
     n_read, n_coadd = binning_bc(
         int(header["NCOL"]) + 1,
         int(header["NCSKIP"]),
-        2 ** int(header["NColBinFPGA"]),
+        int(header["NCBIN FPGAColumns"]),
         ncolbinC,
         header["BC"],
     )
@@ -830,7 +830,7 @@ def get_true_image_reverse(header, true_image="No picture"):
         # compensate for bad columns
         true_image[0 : int(header["NROW"]) + 1, j_c] = true_image[
             0 : int(header["NROW"] + 1), j_c
-        ] / (2 ** int(header["NColBinFPGA"]) * ncolbinC / n_coadd[j_c])
+        ] / (int(header["NCBIN FPGAColumns"]) * ncolbinC / n_coadd[j_c])
 
         # add blank values and readout offsets
         true_image[0 : int(header["NROW"]) + 1, j_c] = (
@@ -858,7 +858,7 @@ def get_true_image_from_compensated(image, header):
     for j_c in range(0, int(header["NCol"]) + 1):  # LM201102 Big fix +1 added
         true_image[0 : header["NRow"], j_c] = (
             true_image[0 : header["NRow"], j_c]
-            - 2 ** header["NColBinFPGA"] * (header["BlankTrailingValue"] - 128)
+            - header["NCBIN FPGAColumns"] * (header["BlankTrailingValue"] - 128)
             - 128
         )
 
@@ -993,10 +993,10 @@ def calculate_time_per_row(header):
 
     # image parameters
     ncol = int(header["NCOL"]) + 1
-    ncolbinC = int(header["NColBinCCD"])
+    ncolbinC = int(header["NCBIN CCDColumns"])
     if ncolbinC == 0:
         ncolbinC = 1
-    ncolbinF = 2 ** int(header["NColBinFPGA"])
+    ncolbinF = int(header["NCBIN FPGAColumns"])
 
     nrow = int(header["NROW"])
     nrowbin = int(header["NRBIN"])
@@ -1089,7 +1089,7 @@ def compare_image(image1, image2, header):
 
     nrowbin = int(header["NRBIN"])
     ncolbinC = int(header["NCBIN"])
-    ncolbinF = 2 ** int(header["NColBinFPGA"])
+    ncolbinF = int(header["NCBIN FPGAColumns"])
 
     if nrowskip + nrowbin * nrow > 511:
         nrow = np.floor((511 - nrowskip) / nrowbin)
@@ -1225,8 +1225,8 @@ def compensate_bad_columns(header, image="No picture"):
 
     ncolskip = int(header["NCSKIP"])
 
-    ncolbinC = int(header["NColBinCCD"])
-    ncolbinF = 2 ** int(header["NColBinFPGA"])
+    ncolbinC = int(header["NCBIN CCDColumns"])
+    ncolbinF = int(header["NCBIN FPGAColumns"])
 
     # change to Leading if Trailing does not work properly
     blank = int(header["TBLNK"])
@@ -1287,7 +1287,7 @@ def compensate_bad_columns(header, image="No picture"):
 #
 #    for j_c in range(0,int(header['NCol'])):
 #        true_image[0:header['NRow'], j_c] = ( true_image[0:header['NRow'],j_c] -
-#                  2**header['NColBinFPGA'] * (header['BlankTrailingValue']-128) - 128 )
+#                  header['NCBIN FPGAColumns'] * (header['BlankTrailingValue']-128) - 128 )
 #
 #
 #    return true_image
@@ -1442,8 +1442,8 @@ def readimg(filename):
     header["NRowBinCCD"] = NRowBinCCD
     header["NRowSkip"] = NRowSkip
     header["NCol"] = NCol
-    header["NColBinFPGA"] = NColBinFPGA
-    header["NColBinCCD"] = NColBinCCD
+    header["NCBIN FPGAColumns"] = 2**NColBinFPGA
+    header["NCBIN CCDColumns"] = NColBinCCD
     header["NColSkip"] = NColSkip
     header["N_flush"] = N_flush
     header["Texposure"] = Texposure_LSB + Texposure_MSB * 2 ** 16

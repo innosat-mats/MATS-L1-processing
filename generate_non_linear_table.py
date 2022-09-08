@@ -44,7 +44,7 @@ def gen_non_linear_table(CCDitem,calibrationfile,fittype='inverse',randomize=Fal
         raise Exception("No CCDunit defined for the CCDitem")
 
     nrowbin = CCDitem["NRBIN"]
-    ncolbin = CCDitem["NColBinCCD"]
+    ncolbin = CCDitem["NCBIN CCDColumns"]
 
     if fittype=='interp':
         x_true_samples = np.arange(0,2**17-1,1)
