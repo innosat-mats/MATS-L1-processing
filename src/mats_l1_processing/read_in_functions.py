@@ -59,7 +59,6 @@ def add_temperature_info_to_CCDitems(CCDitems, read_from, directory, labtemp=999
         CCDitem = add_temperature_info(
             CCDitem, temperaturedata, relativetimedata, labtemp
         )
-    #        timestamp=epoch+datetime.timedelta(0,CCDitem['reltime'])
 
     return CCDitems
 
@@ -139,10 +138,10 @@ def add_and_rename_CCDitem_info(CCDitem):
             CCDitem["CCDSEL"] = int(CCDitem["CCDSEL"])
 
     try:
-        CCDitem["reltime"] = 1.0e-9 * CCDitem["EXP Nanoseconds"]
+        CCDitem["EXP Nanoseconds"]
     except:
         try:
-            CCDitem["reltime"] = (
+            CCDitem["EXP Nanoseconds"] = 1.0e9*(
                 int(CCDitem["EXPTS"]) + int(CCDitem["EXPTSS"]) / 2 ** 16)
         except:
             raise Exception("No info on the relative time")

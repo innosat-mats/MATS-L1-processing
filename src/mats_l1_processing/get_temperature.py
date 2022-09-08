@@ -37,7 +37,7 @@ def add_temperature_info(CCDitem, temperaturedata, relativetimedata, temperature
     # Find the temperature of the CCDs. If not read from rac set the temperature.
     if CCDitem["read_from"] == "rac":
         # find the closest time when heater settings have been recorded. Could be changed to interpolate.
-        ind = (np.abs(relativetimedata - CCDitem["reltime"])).argmin()
+        ind = (np.abs(relativetimedata - 1.0e-9*CCDitem["EXP Nanoseconds"])).argmin()
         HTR1A = temperaturedata[ind, 0] #Splitter plate heater (paoHTR1A/B)
         HTR1B = temperaturedata[ind, 1] #Splitter plate heater(paoHTR1A/B)
         HTR2A = temperaturedata[ind, 2] #Limb house heater (paoHTR2A/B)

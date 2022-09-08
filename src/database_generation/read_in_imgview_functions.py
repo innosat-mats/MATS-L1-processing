@@ -540,10 +540,10 @@ def read_CCDitems_no_images(rac_dir, labtemp=999):
         #       CCDitem['']=CCDitem['']
         CCDitem["read_from"] = "rac"
         try:
-            CCDitem["reltime"] = 1.0e-9 * CCDitem["EXP Nanoseconds"]
+            CCDitem["EXP Nanoseconds"]
         except:
             try:
-                CCDitem["reltime"] = (
+                CCDitem["EXP Nanoseconds"] = 1.0e9*(
                     int(CCDitem["EXPTS"]) + int(CCDitem["EXPTSS"]) / 2 ** 16
                 )
             except:
@@ -566,6 +566,6 @@ def read_CCDitems_no_images(rac_dir, labtemp=999):
         CCDitem = add_temperature_info(
             CCDitem, temperaturedata, relativetimedata, labtemp
         )
-    #        timestamp=epoch+datetime.timedelta(0,CCDitem['reltime'])
+
 
     return CCD_image_data
