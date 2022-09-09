@@ -295,7 +295,7 @@ def calculate_flatfield(CCDitem):
         CCDunit = CCDitem["CCDunit"]
     except:
         raise Exception("No CCDunit defined for the CCDitem")
-    image_flatf = CCDunit.flatfield(int(CCDitem["SigMode"]))
+    image_flatf = CCDunit.flatfield(CCDitem["GAIN Mode"])
     # TODO absolute calibration should be done here. For now just scaling to mean of flatfield picture; thaat is i ALL of theCCD is used this should not change the mean value.
     meanff = np.mean(image_flatf)  # Note that this is the mean of the full flatfield , not of the part of the image used.
     if (
@@ -360,7 +360,7 @@ def calculate_dark(CCDitem):
         raise Exception("No CCDunit defined for the CCDitem")
     #    CCDunit=CCD(CCDitem['channel'])
     totdarkcurrent = (
-        CCDunit.darkcurrent2D(CCDitem["temperature"], int(CCDitem["SigMode"]))
+        CCDunit.darkcurrent2D(CCDitem["temperature"], CCDitem["GAIN Mode"])
         * int(CCDitem["TEXPMS"])
         / 1000.0
     )  # tot dark current in electrons
@@ -370,7 +370,7 @@ def calculate_dark(CCDitem):
     dark_calc_image = (
         CCDunit.ampcorrection
         * totdarkcurrent
-        / CCDunit.alpha_avr(int(CCDitem["SigMode"]))
+        / CCDunit.alpha_avr(CCDitem["GAIN Mode"])
     )
 
     if (
@@ -668,7 +668,7 @@ def bin_image_using_predict(header, reference_image="999"):
     blank_off = blank - 128
 
     # gain=2**(int(header['Gain']) & 255) #use for old data format
-    gain = 2.0 ** header["DigGain"]
+    gain = 2.0 ** header["GAIN Truncation"]
     bad_columns = header["BC"]
 
     if nrowbin == 0:  # no binning means beaning of one
@@ -774,7 +774,7 @@ def get_true_image(header, image="No picture"):
 
     # correct for digital gain from FPGA binning
     true_image = image * 2 ** (
-        int(header["DigGain"])
+        int(header["GAIN Truncation"])
     )  # Says Gain in original coding.  Check with Nickolay LM 201215
     # Check if this is same as "GAIN Truckation". Check with Molflow if this is corrected for already in  Level 0. 
      
@@ -841,9 +841,8 @@ def get_true_image_reverse(header, true_image="No picture"):
 
     # add gain
     image = true_image / 2 ** (
-        int(header["DigGain"])
-    )  # TODO I dont think htis should be DigGain . Says Gain in original coding.  Check with Nickolay LM 201215
-# Check if this is same as "GAIN Truckation". Check with Molflow if this is corrected for already in  Level 0. 
+        int(header["GAIN Truncation"])
+    )  # Check with Molflow if this is corrected for already in  Level 0. 
     return image
 
 
@@ -1232,9 +1231,8 @@ def compensate_bad_columns(header, image="No picture"):
     blank = int(header["TBLNK"])
 
     gain = 2 ** (
-        int(header["DigGain"])
-    )  # TODO I dont think htis should be DigGain . Says Gain in original coding.  Check with Nickolay LM 201215
-
+        int(header["GAIN Truncation"])
+    )  
     if ncolbinC == 0:  # no binning means binning of one
         ncolbinC = 1
 

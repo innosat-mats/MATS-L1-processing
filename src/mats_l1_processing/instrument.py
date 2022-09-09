@@ -268,9 +268,9 @@ class CCD:
 
         """
 
-        if mode == "high":
+        if mode == "High":
             darkcurrent = 10 ** (self.log_a_avr_HSM * T + self.log_b_avr_HSM)
-        elif mode == "low":
+        elif mode == "Low":
             darkcurrent = 10 ** (self.log_a_avr_LSM * T + self.log_b_avr_LSM)
         else:
             raise ValueError('Mode must be "high" or "low"')
@@ -287,9 +287,9 @@ class CCD:
             darkcurrent (np.array): average dark current of the CCD
 
         """
-        if mode == 0:
+        if mode == 'High':
             darkcurrent = 10 ** (self.log_a_img_avr_HSM * T + self.log_b_img_avr_HSM)
-        elif mode == 1:
+        elif mode == 'Low':
             darkcurrent = 10 ** (self.log_a_img_avr_LSM * T + self.log_b_img_avr_LSM)
         else:
             raise Exception("Undefined mode")
@@ -305,9 +305,9 @@ class CCD:
             ro_avr ?
 
         """
-        if mode == 0:
+        if mode == 'High':
             ro_avr = self.ro_avr_HSM
-        elif mode == 1:
+        elif mode == 'Low':
             ro_avr = self.ro_avr_LSM
         else:
             raise Exception("Undefined mode")
@@ -323,9 +323,9 @@ class CCD:
             alpha_avr ?
 
         """
-        if mode == 0:
+        if mode == 'High':
             alpha_avr = self.alpha_avr_HSM
-        elif mode == 1:
+        elif mode == 'Low':
             alpha_avr = self.alpha_avr_LSM
         else:
             raise Exception("Undefined mode")
@@ -341,9 +341,9 @@ class CCD:
             Flatfield of the CCD for the given mode.
 
         """
-        if mode == 0:
+        if mode == 'High':
             flatfield = self.flatfield_HSM
-        elif mode == 1:
+        elif mode == 'Low':
             flatfield = self.flatfield_LSM
         else:
             raise Exception("Undefined mode")

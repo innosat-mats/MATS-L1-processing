@@ -166,24 +166,22 @@ def add_and_rename_CCDitem_info(CCDitem):
     if CCDitem["read_from"] == "rac":
 
         try:
-            CCDitem["DigGain"]
+            CCDitem["GAIN Truncation"]
         except:
-            CCDitem["DigGain"] = CCDitem["GAIN Truncation"]
+            CCDitem["GAIN Truncation"] = CCDitem["DigGain"]
+            
         try:
-            CCDitem["SigMode"]
-            # 0 should be high in output LM 200604. This is opposite to what it is in input.
-            # TODO change all L1 code with so that it uses CCDitem["GAIN Mode"] instead of SigMode LM 211022
+            CCDitem["GAIN Mode"]
+            # 0 is high in output LM 200604. This is opposite to what it is in input.
         except:
-            if CCDitem["GAIN Mode"] == 'High':
-                CCDitem["SigMode"] = 0
-            elif CCDitem["GAIN Mode"] == 'Low':
-                CCDitem["SigMode"] = 1
+            if CCDitem["SigMode"] == 0:
+                CCDitem["GAIN Mode"] = 'High'
+            elif CCDitem["SigMode"] == 1:
+                CCDitem["GAIN Mode"] = 'Low'
+                
 
-    # TODO rename. See teble 2 in Paylaod internal ICD.Row 11 in table.  High gain mode= signal mode 0. Low gain mode= sig mode 1.
-    # Gain timing= full/fast timing
-    # Gain truncation = gain (bit truncated in FPGA)=Dig gain
 
-        # Convert BC to list of integer instead of str
+        # Convert BC to array of integer instead of str
         if CCDitem["BC"] == "[]":
             CCDitem["BC"] = np.array([])
         else:
@@ -194,14 +192,17 @@ def add_and_rename_CCDitem_info(CCDitem):
     #  Hack to have no compensation for bad colums at the time. TODO later.
         if CCDitem['NBC']==0:
             CCDitem['BC']=np.array([])  
+        else:
+            raise Exception('Image view picture with bad columns' )
     
         
     CCDitem["channel"] = channel_num_to_str(CCDitem["CCDSEL"])
 
     # Add temperature info fom OBC, the temperature info from the rac files are better since they are based on the thermistos on hte UV channels
+
     ADC_temp_in_mV = int(CCDitem["TEMP"]) / 32768 * 2048
     ADC_temp_in_degreeC = 1.0 / 0.85 * ADC_temp_in_mV - 296
-    CCDitem["OBCtemperature"] = ADC_temp_in_degreeC
+    CCDitem["temperature_ADC"] = ADC_temp_in_degreeC
 
     return CCDitem
 

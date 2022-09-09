@@ -205,8 +205,11 @@ def readimg(filename):
     header["NCSKIP"] = NColSkip
     header["NFLUSH"] = N_flush
     header["TEXPMS"] = Texposure_LSB + Texposure_MSB * 2 ** 16
-    header["DigGain"] = Gain & 0b1111
-    header["SigMode"] = SignalMode
+    header["GAIN Truncation"] = Gain & 0b1111
+    if SignalMode == 0:
+        header["GAIN Mode"] = 'High'
+    elif SignalMode == 1:
+        header["GAIN Mode"] = 'Low'
     header["TEMP"] = Temperature_read
     header["Noverflow"] = Noverflow  # FBINOV?
     header["LBLNK"] = BlankLeadingValue
@@ -327,8 +330,12 @@ def readimage_create_CCDitem(
     CCDitem["NCSKIP"] = NColSkip
     CCDitem["NFLUSH"] = N_flush
     CCDitem["TEXPMS"] = Texposure_LSB + Texposure_MSB * 2 ** 16
-    CCDitem["DigGain"] = Gain & 0b1111
+    CCDitem["GAIN Truncation"] = Gain & 0b1111
     CCDitem["SigMode"] = SignalMode
+    if SignalMode == 0:
+        CCDitem["GAIN Mode"] = 'High'
+    elif SignalMode == 1:
+        CCDitem["GAIN Mode"] = 'Low'
     CCDitem["TEMP"] = Temperature_read
     CCDitem["Noverflow"] = Noverflow  # FBINOV?
     CCDitem["LBLNK"] = BlankLeadingValue
@@ -374,7 +381,7 @@ def readracimg(filename):
     header["NColSkip"] = metadata["NCSKIP"][0]
     header["N_flush"] = metadata["NFLUSH"][0]
     header["Texposure"] = metadata["TEXPMS"][0]
-    header["DigGain"] = metadata["GAIN"] & 0b1111
+    header["GAIN Truncation"] = metadata["GAIN"] & 0b1111
     header["SignalMode"] = metadata["GAIN"] >> 12 & 1
 
     header["Temperature_read"] = metadata["TEMP"][
@@ -464,9 +471,13 @@ def read_txtfile_create_CCDitem(filepath):
     CCDitem["NCBIN FPGAColumns"]=2**ncolbfpga
     CCDitem["NCBIN CCDColumns"] = CCDitem["NCBIN"] & 0b11111111
     del CCDitem["NCBIN"]
-    CCDitem["DigGain"] = CCDitem["GAIN"] & 0b1111
+    CCDitem["GAIN Truncation"] = CCDitem["GAIN"] & 0b1111
     CCDitem["TimingFlag"] = CCDitem["GAIN"] >> 8 & 1
-    CCDitem["SigMode"] = CCDitem["GAIN"] >> 12 & 1
+    SignalMode = CCDitem["GAIN"] >> 12 & 1
+    if SignalMode == 0:
+        CCDitem["GAIN Mode"] = 'High'
+    elif SignalMode == 1:
+        CCDitem["GAIN Mode"] = 'Low'        
     del CCDitem["GAIN"]
     CCDitem["WinModeFlag"] = CCDitem["WDW"] >> 7 & 1
     CCDitem["WinMode"] = CCDitem["WDW"] & 0b111
@@ -476,7 +487,7 @@ def read_txtfile_create_CCDitem(filepath):
     del CCDitem["ID"]
 
     print(
-        "The following values may be incorrect:  NColBinFPGA, NColBinCCD DigGain TimingFlag SigMode inModeFlag WinMode"
+        "The following values may be incorrect:  TimingFlag  inModeFlag WinMode"
     )
 
 
@@ -527,17 +538,22 @@ def read_CCDitems_no_images(rac_dir, labtemp=999):
         except:
             CCDitem["NCBIN FPGAColumns"] = 2**CCDitem["NColBinFPGA"]
 
+        try:
+            CCDitem["GAIN Trunctation"]
+        except:
+            CCDitem["GAIN Trunctation"] = CCDitem["DigGain"]
 
-        if CCDitem["GAIN Mode"] == "High":
-            CCDitem["DigGain"] = 0
-        elif CCDitem["GAIN Mode"] == "Low":
-            CCDitem["DigGain"] = 1
-        else:
-            raise Exception("GAIN mode set to strange value")
 
-        CCDitem["SigMode"] = 0
-        # This should be read in, 0 should be high in output LM 200604
-        #       CCDitem['']=CCDitem['']
+        try:
+            CCDitem["GAIN Mode"]
+            # 0 is high in output LM 200604. This is opposite to what it is in input.
+        except:
+            if CCDitem["SigMode"] == 0:
+                CCDitem["GAIN Mode"] = 'High'
+            elif CCDitem["SigMode"] == 1:
+                CCDitem["GAIN Mode"] = 'Low'
+
+
         CCDitem["read_from"] = "rac"
         try:
             CCDitem["EXP Nanoseconds"]

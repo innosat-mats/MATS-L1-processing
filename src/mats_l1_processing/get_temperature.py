@@ -64,9 +64,14 @@ def add_temperature_info(CCDitem, temperaturedata, relativetimedata, temperature
             raise Exception("the CCD lacks defined temperature")
 
         CCDitem["temperature_HTR"] = HTR8A
-        ADC_temp_in_mV = int(CCDitem["TEMP"]) / 32768 * 2048
-        ADC_temp_in_degreeC = 1.0 / 0.85 * ADC_temp_in_mV - 296
-        CCDitem["temperature_ADC"] = ADC_temp_in_degreeC
+        
+        try: 
+            CCDitem["temperature_ADC"]
+        except:
+            raise Warning("ADC temperature had not been read in - adding it")
+            ADC_temp_in_mV = int(CCDitem["TEMP"]) / 32768 * 2048
+            ADC_temp_in_degreeC = 1.0 / 0.85 * ADC_temp_in_mV - 296
+            CCDitem["temperature_ADC"] = ADC_temp_in_degreeC
 
     elif (
         CCDitem["read_from"] == "imgview" or CCDitem["read_from"] == "KTH"
