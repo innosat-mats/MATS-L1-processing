@@ -55,6 +55,11 @@ def test_CCDunit():
     with open('testdata/CCDunit_IR1_example.pkl', 'wb') as f:
         pickle.dump(CCDunit_IR1, f)
 
+    intrument = Instrument("tests/calibration_data_test.toml")
+    CCDunit_IR1=intrument.get_CCD("UV1")
+    with open('testdata/CCDunit_UV1_example.pkl', 'wb') as f:
+        pickle.dump(CCDunit_IR1, f)
+
 def test_forward_backward(): 
     """
     This tests the forward and backward calibration. 
