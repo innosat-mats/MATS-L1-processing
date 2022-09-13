@@ -2,7 +2,7 @@ import pytest
 
 from mats_l1_processing.read_and_calibrate_all_files_parallel import main
 from mats_l1_processing.instrument import Instrument, CCD
-from mats_l1_processing.L1_calibration_functions import inverse_model_real,inverse_model_table
+from mats_l1_processing.L1_calibration_functions import inverse_model_real,inverse_model_table,make_binary,combine_flags
 
 import pickle
 import numpy as np
@@ -136,6 +136,30 @@ def test_non_linearity_binned():
     image_linear_real,error_flag = inverse_model_real(CCDitem,30e3)
     assert np.abs(image_linear_real-image_linear_table)<1e-3
 
+def test_error_algebra():
+    error_flag_zero= np.zeros([20,30], dtype=np.uint16)
+    error_flag_one=np.zeros([20,30], dtype=np.uint16)
+    error_flag_one[0,0] = 1
+
+    error_flag=combine_flags([make_binary(error_flag_zero,1), make_binary(error_flag_one,1)])
+    assert error_flag[0,0] == '01'
+    assert error_flag[0,1] == '00'
+
+    error_flag=combine_flags([make_binary(error_flag_zero,2), make_binary(error_flag_one,1)])
+    assert error_flag[0,0] == '001'
+    assert error_flag[0,1] == '000'
+    
+    error_flag_one[0,0] = 3
+
+    error_flag=combine_flags([make_binary(error_flag_zero,2).astype('<U16'), make_binary(error_flag_one,2)])
+    assert error_flag[0,0] == '0011'
+    assert error_flag[0,1] == '0000'
+
+
+
+
+
+
 if __name__ == "__main__":
 
     test_calibrate()    
@@ -145,3 +169,4 @@ if __name__ == "__main__":
     test_non_linearity_fullframe()
     test_non_linearity_binned()
     test_calibrate()
+    test_error_algebra()

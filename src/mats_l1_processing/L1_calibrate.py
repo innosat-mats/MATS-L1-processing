@@ -15,6 +15,8 @@ from mats_l1_processing.L1_calibration_functions import (
     compensate_flatfield,
     get_linearized_image,
     get_linearized_image_parallelized,
+    combine_flags,
+    make_binary,
 )
 
 # from L1_calibration_functions import get_true_image_old, desmear_true_image_old
@@ -34,6 +36,7 @@ def calibrate_all_items(CCDitems, instrument, plot=False):
             image_desmeared,
             image_dark_sub,
             image_flatf_comp,
+            errors,
         ) = L1_calibrate(CCDitem, instrument)
 
         if plot == True:
@@ -51,12 +54,13 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
     CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
 
     #  Hack to have no compensation for bad colums at the time. TODO later.
+    error_bad_column = np.zeros(CCDitem["IMAGE"].shape,dtype=int)
     if not (CCDitem["NBC"] == 0):
         CCDitem["NBC"] = 0
         CCDitem["BC"] = np.array([])
         error_bad_column = np.ones(CCDitem["IMAGE"].shape)
-        
-
+    
+    error_bad_column = make_binary(error_bad_column,1)
 
     image_lsb = CCDitem["IMAGE"]
     
@@ -84,6 +88,12 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
 
     # Step 7 Remove ghost imaging. TBD.
 
+    error_ghost =  make_binary(np.zeros(CCDitem["IMAGE"].shape,dtype=int),1)
+
     # Step 8 Transform from LSB to electrons and then to photons. TBD.
 
-    return image_lsb, image_bias_sub, image_desmeared, image_dark_sub, image_flatf_comp
+    error_absolute =  make_binary(np.zeros(CCDitem["IMAGE"].shape,dtype=int),1)
+
+    errors = combine_flags([error_bad_column,error_flags_bias,error_flags_linearity,error_flags_desmear,error_flags_dark,error_flags_flatfield,error_ghost,error_absolute])
+
+    return image_lsb, image_bias_sub, image_desmeared, image_dark_sub, image_flatf_comp, errors

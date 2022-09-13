@@ -24,32 +24,51 @@ import time
 from mats_l1_processing.instrument import CCD
 
 
-
-# Utility functions
-
-def combine_flags(flag1, flag2, flag3=None, flag4=None):
-    """Combines binary flags into one binary flag array. Minimum 2 flags , maximum 4
+def make_binary(flag,bits):
+    """Takes in numpy array with (e.g.) dtype=int and returns a numpy 
+    array with binary strings.
 
     Args:
-        flag1, flag2 (np.array of integers):
-        flag3, flag4  (optional, np.array of integers):
+        flag (np.array, dtype=int): numpy array containing the flag
+        bits (int): number of error bits represented in the array
 
     Returns: 
         
-        flags (np array) flags containing all the above flags in a binary array.
-        1st bit gives the value of flag1, second bits gives the value of flag2
-     
+        a binary representation of the flag array
+
+    """
+
+    binary_repr_vector = np.vectorize(np.binary_repr)
+    
+    return binary_repr_vector(flag,bits)
+
+
+# Utility functions
+
+def combine_flags(flags):
+    """Combines binary flags into one binary flag array.
+    Args:
+        flags (list of np.array of strings ('U<1','U<2','U<4','U<8')):
+
+    Returns: 
+        
+        total_flag (np.array of stings ('U<16')) the combined flag 
 
     """
     
-    flags=flag1*2**0+flag2*2**1
-    if flag3 !=None:
-        flags=flags+flag3*2**2
-        if flag4 !=None:
-            flags=flags+flag4*2**3
-        
+    import numpy as np
+
+
     
-    return flags
+    imsize = flags[0].shape
+
+    total_flag = np.zeros(imsize,dtype='<U16')
+    for i in range(total_flag.shape[0]):
+        for j in range(total_flag.shape[1]):
+            for k in range(len(flags)):
+                total_flag[i,j] = total_flag[i,j]+flags[k][i,j]
+    
+    return total_flag
 #%% 
 ## non-linearity-stuff ##
 
@@ -231,7 +250,8 @@ def get_linearized_image(CCDitem, image_bias_sub):
                 else:
                     image_linear[i,j] = image_bias_sub[i,j]
                 
-
+    error_flag = make_binary(error_flag,2)
+    
     return image_linear,error_flag
 
 def loop_over_rows(CCDitem,image_bias_sub):
@@ -284,10 +304,12 @@ def compensate_flatfield(CCDitem, image=None):
     # rows,colums Note that nrow always seems to be implemented as +1 already, whereas NCOL does not, hence the missing '+1' in the column calculation /LM201204
 
 
-    flag= np.zeros(image.shape, dtype=np.uint16)
-    flag[image_flatf_comp<0] = 1 # Flag for negative value
+    error_flag= np.zeros(image.shape, dtype=np.uint16)
+    error_flag[image_flatf_comp<0] = 1 # Flag for negative value
     
-    return image_flatf_comp, flag
+    error_flag = make_binary(error_flag,2)
+
+    return image_flatf_comp, error_flag
 
 
 def calculate_flatfield(CCDitem):
@@ -342,15 +364,15 @@ def subtract_dark(CCDitem, image=None):
     # rows,colums Note that nrow always seems to be implemented as +1 already, whereas NCOL does not, hence the missing '+1' in the column calculation /LM201204
     
     #If image becomes negative set flag
-    error_flag_negative= np.zeros(image.shape, dtype=np.uint16)
+    error_flag_negative = np.zeros(image.shape, dtype=np.uint16)
     error_flag_negative[image_dark_sub<0] = 1
     error_flag_temperature=np.zeros(image.shape, dtype=np.uint16)
     if CCDitem["temperature"]<-50. or CCDitem["temperature"]>30.: # Filter out cases where the temperature seems wrong. 
         error_flag_temperature.fill(1)
     
-    flags=combine_flags(error_flag_negative, error_flag_temperature)
-   
-    return image_dark_sub, flags
+    error_flag = combine_flags([make_binary(error_flag_negative,1), make_binary(error_flag_temperature,1)])
+
+    return image_dark_sub, error_flag
 
 
 def calculate_dark(CCDitem):
@@ -799,10 +821,12 @@ def get_true_image(header, image="No picture"):
         )
 
     #If image becomes negative set flag
-    flag = np.zeros(true_image.shape, dtype=np.uint16)
-    flag[true_image<0] = 1
+    error_flag = np.zeros(true_image.shape, dtype=np.uint16)
+    error_flag[true_image<0] = 1
     
-    return true_image, flag
+    error_flag = make_binary(error_flag,1)
+
+    return true_image, error_flag
 
 
 def get_true_image_reverse(header, true_image="No picture"):
@@ -936,10 +960,12 @@ def desmear_true_image(header, image="No picture"):
     # row 0 here is the first row to read out from the chip
     
     # Flag for negative values
-    flag= np.zeros(image.shape, dtype=np.uint16)
-    flag[image<0] = 1
+    error_flag= np.zeros(image.shape, dtype=np.uint16)
+    error_flag[image<0] = 1
 
-    return image, flag
+    error_flag = make_binary(error_flag,2)
+
+    return image, error_flag
 
 
 def desmear_true_image_reverse(header, image="No picture"):
