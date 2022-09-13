@@ -88,12 +88,14 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
 
     # Step 7 Remove ghost imaging. TBD.
 
-    error_ghost =  make_binary(np.zeros(CCDitem["IMAGE"].shape,dtype=int),1)
+    error_ghost =  make_binary(np.zeros(CCDitem["IMAGE"].shape,dtype=int),2)
 
     # Step 8 Transform from LSB to electrons and then to photons. TBD.
 
-    error_absolute =  make_binary(np.zeros(CCDitem["IMAGE"].shape,dtype=int),1)
+    error_absolute =  make_binary(np.zeros(CCDitem["IMAGE"].shape,dtype=int),2)
 
-    errors = combine_flags([error_bad_column,error_flags_bias,error_flags_linearity,error_flags_desmear,error_flags_dark,error_flags_flatfield,error_ghost,error_absolute])
+    error_spare = make_binary(np.zeros(CCDitem["IMAGE"].shape,dtype=int),2) #spare error field
+
+    errors = combine_flags([error_bad_column,error_flags_bias,error_flags_linearity,error_flags_desmear,error_flags_dark,error_flags_flatfield,error_ghost,error_absolute,error_spare])
 
     return image_lsb, image_bias_sub, image_desmeared, image_dark_sub, image_flatf_comp, errors
