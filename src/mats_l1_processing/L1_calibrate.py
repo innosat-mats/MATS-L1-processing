@@ -27,7 +27,7 @@ from mats_l1_processing.L1_calibration_functions import (
 
 def calibrate_all_items(CCDitems, instrument, plot=False):
     import matplotlib.pyplot as plt
-    from LindasCalibrationFunctions import plot_CCDimage
+    from mats_l1.processing.experimental_utils import plot_CCDimage
 
     for CCDitem in CCDitems:
         (

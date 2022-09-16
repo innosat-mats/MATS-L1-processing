@@ -12,11 +12,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from mats_l1_processing.read_in_functions import readprotocol 
-from mats_l1_processing.LindasCalibrationFunctions import read_all_files_in_protocol
+from mats_l1_processing.experimental_utils import read_all_files_in_protocol
 from mats_l1_processing.L1_calibration_functions import get_true_image, desmear_true_image, subtract_dark, compensate_flatfield
 from mats_l1_processing.L1_calibration_functions import calculate_flatfield, calculate_dark, desmear_true_image_reverse, get_true_image_reverse, bin_image_using_predict_and_get_true_image, bin_image_with_BC 
 from mats_l1_processing.instrument import Instrument, CCD
-#from LindasCalibrationFunctions import plot_CCDimage 
+#from experimental_utils import plot_CCDimage 
 
 def frameplot(pic,fig,axis,title='',clim=999):
 
