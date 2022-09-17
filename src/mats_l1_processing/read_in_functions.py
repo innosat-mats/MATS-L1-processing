@@ -20,27 +20,6 @@ from PIL import Image
 # import imagereader
 
 
-def plot_full_temperature_info(temperaturedata, relativetimedata):
-    HTR1A = temperaturedata[:, 0]
-    HTR1B = temperaturedata[:, 1]
-    HTR2A = temperaturedata[:, 2]
-    HTR2B = temperaturedata[:, 3]
-    HTR8A = temperaturedata[:, 4]
-    HTR8B = temperaturedata[:, 5]
-
-    plt.plot(relativetimedata / 60.0, HTR1A,
-             label="splitter plate, regulation")
-    plt.plot(relativetimedata / 60.0, HTR1B, label="splitter plate, measuring")
-    plt.plot(relativetimedata / 60.0, HTR2A, label="limb house, regulation")
-    plt.plot(relativetimedata / 60.0, HTR2B, label="limb house, measuring")
-    plt.plot(relativetimedata / 60.0, HTR8A, label="UV2 CCDn")
-    plt.plot(relativetimedata / 60.0, HTR8B, label="UV1 CCDn")
-    plt.xlabel("Time since start of instrument [min]")
-    plt.ylabel("Temperature [C]")
-    plt.legend()
-    plt.show()
-    plt.savefig("HTRmeasurements.jpg")
-
 
 def add_temperature_info_to_CCDitems(CCDitems, read_from, directory, labtemp=999):
     from mats_l1_processing.get_temperature import create_temperature_info_array, add_temperature_info
@@ -207,23 +186,8 @@ def add_and_rename_CCDitem_info(CCDitem):
     return CCDitem
 
 
-def readprotocol(filename):
-    import pandas as pd
-
-    df = pd.read_csv(filename, sep=" ", comment="#",
-                     skipinitialspace=True, skiprows=())
-    return df
 
 
-def searchlist(list, key, value):
-    found = False
-    for item in list:
-        if item[key] == value:
-            found = True
-            return item
-
-    if not found:
-        print("Warning: Item not found")
 
 
 def read_CCDitem_image(item, rac_dir, extract_images=True, labtemp=999):
@@ -249,7 +213,7 @@ def read_CCDitem_image(item, rac_dir, extract_images=True, labtemp=999):
     return errorflag
 
 
-def find_CCDitem_matching_protocol_entry(CCD_image_data, PicID):
+def find_CCDitem_matching_PicID(CCD_image_data, PicID):
     # reads data from one image (itemnumber) in the rac file
 
     if PicID.count("_") == 1:  # new way of naming as of June 2020 in protocol
@@ -301,13 +265,13 @@ def read_CCDitem_rac_or_imgview(dirname, PicID, read_from):
 def read_CCDitem(rac_dir, PicID, labtemp=999):
     # reads data from one image (itemnumber) in the rac file
     import pandas as pd
-#    from mats_l1_processing.read_in_functions import read_CCDitem_image, find_CCDitem_matching_protocol_entry, add_and_rename_CCDitem_info
+#    from mats_l1_processing.read_in_functions import read_CCDitem_image, find_CCDitem_matching_PicID, add_and_rename_CCDitem_info
     from .get_temperature import add_rac_temp_data
 
     df = pd.read_csv(rac_dir + "CCD.csv", skiprows=[0])
     CCD_image_data = df.to_dict("records")
 
-    CCDitem = find_CCDitem_matching_protocol_entry(CCD_image_data, PicID)
+    CCDitem = find_CCDitem_matching_PicID(CCD_image_data, PicID)
     errorflag = read_CCDitem_image(CCDitem, rac_dir)
     if errorflag:
         raise Exception("Image"+CCDitem['Image File Name'] + "not found")
@@ -325,15 +289,6 @@ def read_CCDitems(directory):
     CCDitems = read_all_files_in_directory(read_from, directory)
     return CCDitems
 
-
-def ismember(a, b):
-    bind = {}
-    for i, elt in enumerate(b):
-        if elt not in bind:
-            bind[elt] = i
-    return [
-        bind.get(itm, None) for itm in a
-    ]  # None can be replaced by any other "not in b" value
 
 
 def channel_num_to_str(ccdsel):

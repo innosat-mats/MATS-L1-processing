@@ -13,7 +13,7 @@ import numpy as np
 from PIL import Image
 from mats_l1_processing.L1_calibration_functions import (read_flatfield,CCD)
 from mats_l1_processing.experimental_utils import plot_CCDimage,read_all_files_in_protocol    
-from mats_l1_processing.read_in_functions import readprotocol 
+from mats_l1_processing.experimental_utils import readprotocol 
 import matplotlib.pyplot as plt
 #from scipy import signal
 from scipy import ndimage

@@ -1318,10 +1318,10 @@ def compensate_bad_columns(header, image="No picture"):
 
 
 def read_flatfield(CCDunit, mode, flatfield_directory):
-    from mats_l1_processing.LindasCalibrationFunctions import (
+    from mats_l1_processing.items_units_functions import (
         read_files_in_protocol_as_ItemsUnits,
     )
-    from mats_l1_processing.read_in_functions import readprotocol
+    from mats_l1_processing.experimental_utils import readprotocol
 
     # Note that 1 and 0 are switched  for signal mode
 

@@ -13,10 +13,6 @@ Functions for data analysis of during the MATS calibration
 import matplotlib.pyplot as plt
 
 
-def printvar(my_var):
-    my_var_name = [k for k, v in locals().iteritems() if v == my_var][0]
-    print(my_var_name, ": ", my_var)
-
 
 def read_files_in_protocol_as_ItemsUnits(df, imagedir, numberofimagesinunit, read_from):
     # reads files in a protocol as ItemsUnits
@@ -49,19 +45,19 @@ def read_files_in_protocol_as_ItemsUnits(df, imagedir, numberofimagesinunit, rea
 
 
 
-def selectimage(df, shutter, imagedir, ExpTime, channel):
-    # select a file to create an item unit from
-    df_select = df[df.Shutter == shutter]
-    ItemsUList = read_files_in_protocol_as_ItemsUnits(df_select, imagedir)
-    mylist = list(
-        filter(
-            lambda x: (
-                x.imageItem["TEXPMS"] == ExpTime and x.imageItem["channel"] == channel
-            ),
-            ItemsUList,
-        )
-    )
-    return mylist[0]
+# def selectimage(df, shutter, imagedir, ExpTime, channel):
+#     # select a file to create an item unit from
+#     df_select = df[df.Shutter == shutter]
+#     ItemsUList = read_files_in_protocol_as_ItemsUnits(df_select, imagedir)
+#     mylist = list(
+#         filter(
+#             lambda x: (
+#                 x.imageItem["TEXPMS"] == ExpTime and x.imageItem["channel"] == channel
+#             ),
+#             ItemsUList,
+#         )
+#     )
+#     return mylist[0]
 
 
 
@@ -80,12 +76,6 @@ def selectimage(df, shutter, imagedir, ExpTime, channel):
 #     return imagenew
 
 
-def UniqueValuesInKey(listofdicts, keystr):
-    uniqueValues = list()
-    for x in listofdicts:
-        if x[keystr] not in uniqueValues:
-            uniqueValues.append(x[keystr])
-    return uniqueValues
 
 
 def matrixmean(mat1, mat2, mat3="none", mat4="none"):
@@ -178,6 +168,8 @@ class ItemsUnitCreate:
         return sp
 
 
+
+
 # class ItemsUnitCreateFromRac:
 #     def __init__(self, df, dirname):
 #         import numpy as np
@@ -227,55 +219,3 @@ class ItemsUnitCreate:
 #             raise Exception(str(len(df_D)) + " dark pictures in dataframe")
 #         self.subpic = self.image - self.dark
 
-    def plot(self, fig, axis, whichpic=2, title="", clim=999):
-        # whichpic 0 is image, whichpic 1 is dark  whichpic 2 is subpic
-
-        if whichpic == 0:
-            pic = self.dark
-        elif whichpic == 1:
-            pic = self.image
-        elif whichpic == 2:
-            pic = self.subpic
-        else:
-            raise Exception("whichpic must be 1 2 or 3")
-
-        sp = axis.imshow(pic, cmap=plt.cm.jet)
-        axis.set_title(title)
-        if clim == 999:
-            #            sp.set_clim([0,4000])
-            mean = pic.mean()
-            std = pic.std()
-            sp.set_clim([mean - 1 * std, mean + 1 * std])
-        else:
-            sp.set_clim(clim)
-
-        fig.colorbar(sp, ax=axis)
-
-        return sp
-    
-
-
-
-
-
-
-def filter_on_time(CCDitems, starttime=None, stoptime=None):
-    I = []
-    for i in range(len(CCDitems)):
-        image_time = pd.to_datetime(
-            CCDitems[i]["EXP Date"], format="%Y-%m-%dT%H:%M:%S.%fZ"
-        )
-        if (starttime != None) and (stoptime != None):
-            if (image_time > starttime) and (image_time < endtime):
-                I.append(i)
-        elif (starttime != None) and (stoptime == None):
-            if image_time > starttime:
-                I.append(i)
-        elif (starttime == None) and (stoptime != None):
-            if image_time < starttime:
-                I.append(i)
-        else:
-            Warning("Start or end time invalid")
-
-    CCDitems = [CCDitems[i] for i in I]
-    return CCDitems

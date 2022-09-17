@@ -19,7 +19,7 @@ from scipy.interpolate import CubicSpline
 import scipy.optimize as opt
 import pwlf
 import toml
-from mats_l1_processing.LindasCalibrationFunctions import filter_on_time
+from mats_l1_processing.experimental_utils import filter_on_time
 import pickle
 import mats_l1_processing.instrument as instrument
 from mats_l1_processing.read_in_functions import channel_num_to_str, add_and_rename_CCDitem_info
