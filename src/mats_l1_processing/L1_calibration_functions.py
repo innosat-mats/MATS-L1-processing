@@ -330,11 +330,6 @@ def calculate_flatfield(CCDitem):
     return image_flatf_fact
 
 
-def subtract_dark_opposite_order(image, CCDitem):
-    image_dark_sub = subtract_dark(CCDitem, image)
-    return image_dark_sub
-
-
 def subtract_dark(CCDitem, image=None):
     """Subtracts the dark current from the image.
 
@@ -828,11 +823,11 @@ def get_true_image(header, image=None):
     return true_image, error_flag
 
 
-def get_true_image_reverse(header, true_image="No picture"):
+def get_true_image_reverse(header, true_image=None):
     # add readout offset (pixel blank value) and bad colums stuff,
     # by reversing get_true_image
 
-    if type(true_image) is str:
+    if true_image is None:  
         true_image = header["IMAGE"]
 
     ncolbinC = int(header["NCBIN CCDColumns"])
@@ -922,12 +917,8 @@ def binning_bc(Ncol, Ncolskip, NcolbinFPGA, NcolbinCCD, BadColumns):
     return n_read, n_coadd
 
 
-def desmear_true_image_opposite_order(image, header):
-    image = desmear_true_image(header, image)
-    return image
 
-
-def desmear_true_image(header, image="No picture"):
+def desmear_true_image(header, image=None):
     """Subtracts the smearing (due to no shutter) from the image.
 
     Args:
@@ -939,7 +930,7 @@ def desmear_true_image(header, image="No picture"):
         flag (np.array, dtype = uint16): error flag to indicate that the de-smearing gave a negative value as a reslut    
         """
     
-    if type(image) is str:
+    if image is None:
         image = header["IMAGE"]
 
     nrow = int(header["NROW"])
@@ -967,11 +958,11 @@ def desmear_true_image(header, image="No picture"):
     return image, error_flag
 
 
-def desmear_true_image_reverse(header, image="No picture"):
+def desmear_true_image_reverse(header, image=None):
     # add readout offset (pixel blank value) and bad colums stuff,
     # by reversing get_true_image
 
-    if type(image) is str:
+    if image is None:
         image = header["IMAGE"]
 
     nrow = int(header["NROW"])
