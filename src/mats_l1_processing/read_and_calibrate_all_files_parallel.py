@@ -14,7 +14,7 @@ Main function, loops though all images in a folder an calibrates them
 from mats_l1_processing.experimental_utils import plotCCDitem
 
 
-from mats_l1_processing.read_in_functions import read_all_files_in_directory
+from mats_l1_processing.read_in_functions import read_CCDitems
 import matplotlib.pyplot as plt
 
 from mats_l1_processing.L1_calibrate import L1_calibrate
@@ -33,11 +33,10 @@ def main(directory, calibration_file, calibrate=True, plot=False):
     directory -- input directory
     """
 
-    read_from = "rac"  # read from extracted rac file
     
     instrument = Instrument(calibration_file)
     
-    CCDitems = read_all_files_in_directory(read_from, directory)  # read in data
+    CCDitems = read_CCDitems(directory)  # read in data
 
     # calibrate and/or plot the images
     #if calibrate:

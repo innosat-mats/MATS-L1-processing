@@ -45,20 +45,27 @@ def add_temperature_info_to_CCDitems(CCDitems, read_from, directory, labtemp=999
 def read_all_files_in_root_directory(read_from, root_directory):
     # Reads in file from differnt sub directories depending on what read_from is set to.
     if read_from == "rac":
-        CCDitems = read_all_files_in_directory(
-            read_from, root_directory+'RacFiles_out/')
+        CCDitems = read_CCDitems(root_directory+'RacFiles_out/')
     elif read_from == "rac_operational":
-        CCDitems = read_all_files_in_directory(
-            read_from, root_directory)
+        CCDitems = read_CCDitems(root_directory, read_from)
     elif read_from == "imgview":
-        CCDitems = read_all_files_in_directory(
-            read_from, root_directory+'PayloadImages/')
+        CCDitems = read_CCDitems(root_directory+'PayloadImages/', read_from)
     else:
-        raise Exception("read_from needs to = rac,rac_operational or imgview ")
+        raise Exception("read_from needs to = rac_operational or imgview ")
     return CCDitems
 
 
-def read_all_files_in_directory(read_from, directory):
+def read_CCDitems(directory, read_from='rac'):
+    """ Reads in all CCDitems the given directory. Assumes a rac file if no argument is given. 
+    This function has been renamed 20220919, old name was read_all_files_in_directory
+    
+    Args:
+        optional argument read_from, can be 'rac' (default). 'imgview' or 'rac_operational'
+
+    Returns: 
+        list of CCDitems
+    """    
+    
     from .get_temperature import add_rac_temp_data
     from database_generation.read_in_imgview_functions import read_CCDitem_from_imgview
     import os
@@ -283,11 +290,6 @@ def read_CCDitem(rac_dir, PicID, labtemp=999):
 
     return CCDitem
 
-
-def read_CCDitems(directory):
-    read_from = 'rac'
-    CCDitems = read_all_files_in_directory(read_from, directory)
-    return CCDitems
 
 
 
