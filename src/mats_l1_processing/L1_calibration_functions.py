@@ -781,12 +781,11 @@ def get_true_image_opposite_order(image, header):
     return true_image
 
 
-def get_true_image(header, image="No picture"):
+def get_true_image(header, image=None):
     # calculate true image by removing readout offset (pixel blank value) and
     # compensate for bad colums
 
-    # #FIXME: can send in image for backward compatibility (most times this if statement is true)
-    if type(image) is str:
+    if image is None:  
         image = header["IMAGE"]
 
     # Both 0 and 1 means that no binning has been done on CCD (depricated)
