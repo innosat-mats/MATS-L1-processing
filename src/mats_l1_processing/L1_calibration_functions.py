@@ -24,6 +24,63 @@ import time
 from mats_l1_processing.instrument import CCD
 
 
+def flip_and_shift(CCDitem, image=None):
+    """ Flips the image to account for odd number of mirrors in the light path. 
+    Shift the images to account for the misalignment
+    Args:
+        CCDitem
+        optional image 
+
+    Returns: 
+        
+        image that has been flipped and shifted
+        error_flag
+
+    """
+    if image is None:
+        image = CCDitem["IMAGE"]
+    
+    if CCDitem['channel']=='IR2' or CCDitem['channel']=='IR4':
+        image=np.fliplr(image)
+    
+
+    if CCDitem['channel']=='IR1':
+        x_pos=-75
+        y_pos=47
+    elif CCDitem['channel']=='IR2':
+        x_pos=144
+        y_pos=76      
+    elif CCDitem['channel']=='IR3':
+        x_pos=37
+        y_pos=66
+    elif CCDitem['channel']=='IR4':
+        x_pos=0
+        y_pos=0
+    elif CCDitem['channel']=='UV1':
+        raise Warning('Curtrently no alignment of UV1')
+        x_pos=0
+        y_pos=0
+    elif CCDitem['channel']=='UV2':
+        x_pos=156
+        y_pos=192
+    elif CCDitem['channel']=='NADIR':
+        x_pos=0 # No shifting of NADIR channel
+        y_pos=0
+    else:
+        raise Exception('Unknown channel name', CCDitem['channel'])
+    
+    x_minimum=-75
+    y_minimum=0
+    x_rel=x_pos-x_minimum
+    y_rel=y_pos-y_minimum
+    
+    
+    image_common_fov = np.empty((800,3000))
+    image_common_fov[:] = np.nan
+    image_common_fov[y_rel:y_rel+image.shape[0], x_rel:x_rel+image.shape[1]]=image
+    
+    return image_common_fov, image
+
 def make_binary(flag,bits):
     """Takes in numpy array with (e.g.) dtype=int and returns a numpy 
     array with binary strings.

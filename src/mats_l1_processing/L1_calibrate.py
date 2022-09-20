@@ -17,6 +17,7 @@ from mats_l1_processing.L1_calibration_functions import (
     get_linearized_image_parallelized,
     combine_flags,
     make_binary,
+    flip_and_shift
 )
 
 # from L1_calibration_functions import get_true_image_old, desmear_true_image_old
@@ -36,6 +37,7 @@ def calibrate_all_items(CCDitems, instrument, plot=False):
             image_desmeared,
             image_dark_sub,
             image_flatf_comp,
+            image_common_fov,
             errors,
         ) = L1_calibrate(CCDitem, instrument)
 
@@ -84,13 +86,22 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
     # Step 6 Remove flat field of the particular CCD.
 
     image_flatf_comp, error_flags_flatfield = compensate_flatfield(CCDitem, image_dark_sub)
-    CCDitem["image_calibrated"] = image_flatf_comp
+    
+    # Flip and shift image
+    image_common_fov, error_flags_flipnshift = flip_and_shift(CCDitem, image_flatf_comp)
+    
+
+    
+    #Shift image
+    
 
     # Step 7 Remove ghost imaging. TBD.
 
     error_ghost =  make_binary(np.zeros(CCDitem["IMAGE"].shape,dtype=int),2)
 
     # Step 8 Transform from LSB to electrons and then to photons. TBD.
+    
+    CCDitem["image_calibrated"] = image_flatf_comp
 
     error_absolute =  make_binary(np.zeros(CCDitem["IMAGE"].shape,dtype=int),2)
 
@@ -98,4 +109,4 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
 
     errors = combine_flags([error_bad_column,error_flags_bias,error_flags_linearity,error_flags_desmear,error_flags_dark,error_flags_flatfield,error_ghost,error_absolute,error_spare])
     
-    return image_lsb, image_bias_sub, image_desmeared, image_dark_sub, image_flatf_comp, errors
+    return image_lsb, image_bias_sub, image_desmeared, image_dark_sub, image_flatf_comp, image_common_fov, errors
