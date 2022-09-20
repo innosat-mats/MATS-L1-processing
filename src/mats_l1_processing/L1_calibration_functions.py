@@ -57,7 +57,7 @@ def flip_and_shift(CCDitem, image=None):
         x_pos=0
         y_pos=0
     elif CCDitem['channel']=='UV1':
-        raise Warning('Curtrently no alignment of UV1')
+        #raise Warning('Currently no alignment of UV1')
         x_pos=0
         y_pos=0
     elif CCDitem['channel']=='UV2':
@@ -71,8 +71,10 @@ def flip_and_shift(CCDitem, image=None):
     
     x_minimum=-75
     y_minimum=0
-    x_rel=x_pos-x_minimum
-    y_rel=y_pos-y_minimum
+    x_maximum=156
+    y_maximum=192
+    x_rel=x_maximum-x_pos
+    y_rel=y_maximum-y_pos
     
     
     image_common_fov = np.empty((800,3000))
