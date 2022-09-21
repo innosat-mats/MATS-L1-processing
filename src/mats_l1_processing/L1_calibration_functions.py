@@ -52,7 +52,7 @@ def flip_and_shift(CCDitem, image=None):
         y_pos=76      
     elif CCDitem['channel']=='IR3':
         x_pos=37
-        y_pos=66
+        y_pos=66 
     elif CCDitem['channel']=='IR4':
         x_pos=0
         y_pos=0
@@ -69,15 +69,15 @@ def flip_and_shift(CCDitem, image=None):
     else:
         raise Exception('Unknown channel name', CCDitem['channel'])
     
-    x_minimum=-75
-    y_minimum=0
+    #x_minimum=-75
+    #y_minimum=0
     x_maximum=156
     y_maximum=192
     x_rel=x_maximum-x_pos
     y_rel=y_maximum-y_pos
     
     
-    image_common_fov = np.empty((800,3000))
+    image_common_fov = np.empty((720,2300))
     image_common_fov[:] = np.nan
     image_common_fov[y_rel:y_rel+image.shape[0], x_rel:x_rel+image.shape[1]]=image
     
