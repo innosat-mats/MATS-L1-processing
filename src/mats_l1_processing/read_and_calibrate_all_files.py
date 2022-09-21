@@ -47,6 +47,7 @@ def main(directory, calibration_file, calibrate=True, plot=False):
                 image_desmeared,
                 image_dark_sub,
                 image_flatf_comp,
+                image_calibrated,
                 image_common_fov,
                 errors,
             ) = L1_calibrate(CCDitem, instrument)
