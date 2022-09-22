@@ -6,23 +6,61 @@ Created on Wed Sep 21 08:46:04 2022
 @author: lindamegner
 Level 1b calibration functions
 """
+from math import degrees
 import numpy as np
 
-def shift_image(CCDitem, image=None):
+def get_full_CCD_pixels():
+    #returms number of pixels in a full-frame readout of the CCD
+    return 2048,511
 
-    
+def get_center_CCD_pixels():
+    #returns the number of pixels from center of CCD to lower left corner
+    return 1024,256
+
+def get_origo_CCD():
+    x_origo, y_origo = get_center_CCD_pixels()
+    dphi,dtheta = get_CCD_resolution(1,1)
+
+    return -x_origo*dphi,-y_origo*dtheta
+
+def get_CCD_resolution(rows_binned = 1,total_columns_binned = 1):
     """ 
-    Shift the images to account for the misalignment. 
-    Or rather put the image on a common field of view with all other channels.
+    Get angular resolution of MATS CCD
     Args:
-        CCDitem
-        optional image 
+        rows_binned (int): number of rows binned on the CCD
+        total_columns_binned: number of total columns binned (on-chip and fpga)
+        
 
     Returns: 
-        
-        image that has been flipped and shifted
-        error_flag
+        dphi: horizontal resolution of pixels in degrees
+        dtheta: vertical resolution of pixels in degrees
+    """
+    FOV_X = 6
+    FOV_Y = 1.5
 
+    x_full,y_full = get_full_CCD_pixels()
+    
+    DTHETA = FOV_Y/y_full
+    DPHI = FOV_X/x_full
+
+    dtheta = DTHETA*rows_binned
+    dphi = DPHI*total_columns_binned
+
+    return dphi,dtheta
+    
+
+
+def get_shift(CCDitem,unit='pixels',skip_comp=False):
+    """ 
+    Get the shift to apply to each channel
+    Args:
+        CCDitem (obj): A CCDitem object
+        unit (str): unit to return shift in degrees or pixels (default: pixels)
+        skip_comp (bool): whether to compansate for skipped rows/columns (default: False)
+
+    Returns: 
+        x: shift in horizontal direction (in CCD pixels)
+        y: shift in vertical direction (in CCD pixels)
     """
 
     if CCDitem['channel']=='IR1':
@@ -49,9 +87,51 @@ def shift_image(CCDitem, image=None):
         y_pos=0
     else:
         raise Exception('Unknown channel name', CCDitem['channel'])
-    
-    #x_minimum=-75
-    #y_minimum=0
+
+    if skip_comp:
+        #FIXME: how does flip_flop affect this??
+        x_pos = x_pos+CCDitem['NCSKIP']
+        y_pos = y_pos+CCDitem['NROWSKIP']
+
+    if unit == 'pixels':
+        return x_pos,y_pos
+    elif unit == 'degrees':    
+        dphi,dtheta = get_CCD_resolution(1,1)
+        return x_pos*dphi,y_pos*dtheta
+    else:
+        raise ValueError('invalid output grid unit')
+
+def grid_image(CCDitem):
+    x_pos,y_pos = get_shift(CCDitem,unit='degrees',skip_comp=True)
+    x_origo_full_frame,y_origo_full_frame = get_origo_CCD()
+    dphi,dtheta = get_CCD_resolution(CCDitem['NRBIN'],CCDitem['NCBIN FPGAColumns']+CCDitem['NCBIN CCDColumns'])
+
+    x_origo = x_pos+x_origo_full_frame+dphi/2
+    y_origo = y_pos+y_origo_full_frame+dtheta/2
+
+    x_grid = np.arange(0,CCDitem['NCOL']+1)*dphi+x_origo
+    y_grid = np.arange(0,CCDitem['NROW'])*dtheta+y_origo
+
+    return x_grid,y_grid
+
+def shift_image(CCDitem, image=None):
+    """ 
+    Shift the images to account for the misalignment. 
+    Or rather put the image on a common field of view with all other channels.
+    Args:
+        CCDitem
+        optional image 
+
+    Returns: 
+        
+        image that has been shifted
+        error_flag
+
+    """
+
+
+    x_pos,y_pos = get_shift(CCDitem)
+
     x_maximum=156
     y_maximum=192
     x_rel=x_maximum-x_pos
