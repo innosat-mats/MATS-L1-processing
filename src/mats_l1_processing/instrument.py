@@ -253,6 +253,47 @@ class CCD:
             )
         else:
             self.ampcorrection = 1
+        
+        # Absolute and relative calibration constants
+        
+        df = pd.read_csv(calibration_data["calibration"]["calibration_constants"], sep=" ", comment="#",
+                         skipinitialspace=True, skiprows=()) 
+        if self.channel=='IR1':
+            self.cal_fact=df["rel_ir1"][0]*df["abs_ir"][0]
+        elif self.channel=='IR2':
+            self.cal_fact=df["rel_ir2"][0]*df["abs_ir"][0]
+        elif self.channel=='IR3':
+            self.cal_fact=df["rel_ir3"][0]*df["abs_ir"][0]
+        elif self.channel=='IR4':
+            self.cal_fact=df["rel_ir4"][0]*df["abs_ir"][0]
+        elif self.channel=='UV1':
+            self.cal_fact=df["rel_uv1"][0]*df["abs_uv"][0]
+        elif self.channel=='UV2':
+            self.cal_fact=df["rel_uv2"][0]*df["abs_uv"][0]
+        elif self.channel=='NADIR':
+            self.cal_fact=df["abs_nadir"][0]
+        # Read in without pandas
+        # with open(calibration_data["calibration"]["calibration_constants"]) as f:
+        #     h = [float(x) for x in next(f).split()] # read first line
+        #     if self.channel=='IR1':
+        #         self.cal_fact=h[0]
+        #     elif self.channel=='IR2':
+        #         self.cal_fact=h[1] 
+        #     elif self.channel=='IR3':
+        #         self.cal_fact=h[2]
+        #     elif self.channel=='IR4':
+        #         self.cal_fact=h[3]
+        #     elif self.channel=='UV1':
+        #         self.cal_fact=h[4]
+        #     elif self.channel=='UV2':
+        #         self.cal_fact=h[5]
+        #     elif self.channel=='NADIR':
+        #         self.cal_fact=h[6]
+                
+
+
+        
+        
 
     def darkcurrent(self, T, mode):  # electrons/s
         """Get an average dark current for a channel. 

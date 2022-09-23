@@ -12,7 +12,7 @@ from mats_l1_processing.L1_calibration_functions import (
     desmear_true_image,
     CCD,
     subtract_dark,
-    compensate_flatfield,
+    flatfield_calibration,
     get_linearized_image,
     get_linearized_image_parallelized,
     combine_flags,
@@ -85,8 +85,9 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
     # TBD: Decide on threshold fro when to use pixel correction (little dark current) and when to use average image correction (large dark current).
     image_dark_sub, error_flags_dark = subtract_dark(CCDitem, image_desmeared)
 
-    # Step 6 Remove flat field of the particular CCD.
-    image_flatf_comp, error_flags_flatfield = compensate_flatfield(CCDitem, image_dark_sub)
+    # Step 6 The true calibration: All pixels are scaled by the i.e. absolute 
+    #and relative calibration factor and their flat_field factor.
+    image_flatf_comp, error_flags_flatfield = flatfield_calibration(CCDitem, image_dark_sub)
     
     # Flip image for IR2 and IR4
     image_calibrated= flip_image(CCDitem, image_flatf_comp)

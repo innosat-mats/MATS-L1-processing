@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 from mats_l1_processing.experimental_utils import readprotocol 
 from mats_l1_processing.experimental_utils import read_all_files_in_protocol
-from mats_l1_processing.L1_calibration_functions import get_true_image, desmear_true_image, subtract_dark, compensate_flatfield
+from mats_l1_processing.L1_calibration_functions import get_true_image, desmear_true_image, subtract_dark, flatfield_calibration
 from mats_l1_processing.L1_calibration_functions import calculate_flatfield, calculate_dark, desmear_true_image_reverse, get_true_image_reverse, bin_image_using_predict_and_get_true_image, bin_image_with_BC 
 from mats_l1_processing.instrument import Instrument, CCD
 #from experimental_utils import plot_CCDimage 
@@ -112,7 +112,7 @@ def backward(input_image,CCDitem, b=1, d=2, plotme=True):
 
     image_dark_sub, flags=subtract_dark(CCDitem,image_desmeared.copy())
         
-    image_flatf_comp, flags=compensate_flatfield(CCDitem,image_dark_sub.copy())
+    image_flatf_comp, flags=flatfield_calibration(CCDitem,image_dark_sub.copy())
     #plotmean=photons*CCDitem['NCBIN CCDColumns']*CCDitem['NCBIN FPGAColumns']*CCDitem['NRBIN']
     #clims=[plotmean-np.sqrt(plotmean), plotmean+np.sqrt(plotmean)]
 

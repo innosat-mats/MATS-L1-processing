@@ -17,14 +17,14 @@ from pathlib import Path
 import toml
 
 
-def make_flatfield(channel, signalmode, calibration_file, plot=True):
+def make_flatfield(channel, signalmode, instrument, calibration_data, plot=True):
     # makes flatfield using both a cold flatfield without baffle and a room temp flatfield with baffle.
 
 
 
-    CCDunit=CCD(channel,calibration_file)
+    CCDunit=instrument.get_CCD(channel)
 
-    calibration_data=toml.load(calibration_file)
+
 
     if signalmode == "HSM":
         flatfield_wo_baffle = read_flatfield(
@@ -106,17 +106,21 @@ def make_flatfield(channel, signalmode, calibration_file, plot=True):
 
     # Scale flatfield without baffle so that the group of pixels that
     # are close to the main axis of the instrument gets the mean value of 1.
-    # Since the poining axis has not yet been determined we for now scale
-    # so that the avarage value of the entire flatfield is 1.
+    # This area is set below:
 
-    flatfield_wo_baffle_scaled = flatfield_wo_baffle / np.mean(flatfield_wo_baffle)
+    area_ymin = 350
+    area_ymax = 400
+    area_xmin= 524
+    area_xmax= 1523    
+
+    flatfield_wo_baffle_scaled = flatfield_wo_baffle / np.mean(flatfield_wo_baffle[area_ymin:area_ymax, area_xmin + 1 : area_xmax + 1])
 
     fig, ax = plt.subplots(8, 1, figsize=(5, 22))
 
     # Now scale the average of the middle part of the flatfield with baffle
     # to be the same as the average of flatfield_wo_baffle_scaled .
 
-    # The values of the below shall be given by Jörgs lego analysis
+    # # The values of the below shall be given by Jörgs lego analysis
     FirstRow = 100
     LastRow = 400
     FirstCol = 200

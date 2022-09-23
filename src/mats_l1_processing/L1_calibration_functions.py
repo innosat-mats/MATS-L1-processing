@@ -286,7 +286,7 @@ def get_linearized_image_parallelized(CCDitem, image_bias_sub):
 
 ## Flatfield ##
 
-def compensate_flatfield(CCDitem, image=None):
+def flatfield_calibration(CCDitem, image=None):
     """Compensates for flatfield.
 
     Args:
@@ -303,17 +303,20 @@ def compensate_flatfield(CCDitem, image=None):
     if image is None:  
         image = CCDitem["IMAGE"]
     image_flatf_fact = calculate_flatfield(CCDitem)
-    mean = image_flatf_fact[
-        CCDitem["NRSKIP"] : CCDitem["NRSKIP"] + CCDitem["NROW"],
-        CCDitem["NCSKIP"] : CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
-    ].mean()
-    shape = image_flatf_fact[
-        CCDitem["NRSKIP"] : CCDitem["NRSKIP"] + CCDitem["NROW"],
-        CCDitem["NCSKIP"] : CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
-    ].shape
+    # mean = image_flatf_fact[
+    #     CCDitem["NRSKIP"] : CCDitem["NRSKIP"] + CCDitem["NROW"],
+    #     CCDitem["NCSKIP"] : CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
+    # ].mean()
+    # shape = image_flatf_fact[
+    #     CCDitem["NRSKIP"] : CCDitem["NRSKIP"] + CCDitem["NROW"],
+    #     CCDitem["NCSKIP"] : CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
+    # ].shape
 
+
+    # TODO Absolute relative calibration factors  shoudl be added here
+    # Add temperature dependence on flatfield
     image_flatf_comp = (
-        image
+        image*CCDitem["CCDunit"].cal_fact
         / image_flatf_fact[
             CCDitem["NRSKIP"] : CCDitem["NRSKIP"] + CCDitem["NROW"],
             CCDitem["NCSKIP"] : CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
@@ -331,19 +334,34 @@ def compensate_flatfield(CCDitem, image=None):
 
 
 def calculate_flatfield(CCDitem):
+    """Calculates the flatfield factor for binned images, otherwise simply returns 
+    the flatfield of the channel. This factor should be diveded with to comensate for flatfield.
+
+    Args:
+        CCDitem:  dictonary containing CCD image and information
+
+
+    Returns: 
+        image_flatf_fact: np.array of the same size as the binned image, 
+        which should be divided with to compensate for flatfield
+    """
     try:
         CCDunit = CCDitem["CCDunit"]
     except:
         raise Exception("No CCDunit defined for the CCDitem")
     image_flatf = CCDunit.flatfield(CCDitem["GAIN Mode"])
-    # TODO absolute calibration should be done here. For now just scaling to mean of flatfield picture; thaat is i ALL of theCCD is used this should not change the mean value.
-    meanff = np.mean(image_flatf)  # Note that this is the mean of the full flatfield , not of the part of the image used.
+
+    # area_ymin = 350
+    # area_ymax = 400
+    # area_xmin = 524
+    # area_xmax = 1523    
+    # meanff = np.mean(image_flatf[area_ymin:area_ymax, area_xmin + 1 : area_xmax + 1])  # Note that this is the mean of the full flatfield , not of the part of the image used.
     if (
         CCDitem["NCBIN CCDColumns"] > 1 or CCDitem["NCBIN FPGAColumns"] > 1
     ):  # Or row binning
         image_flatf = meanbin_image_with_BC(CCDitem, image_flatf)
     image_flatf_fact = image_flatf  # /meanff #Already scaled wheen binned and
-    # TODO Add temperature dependence on flatfield
+
 
     return image_flatf_fact
 

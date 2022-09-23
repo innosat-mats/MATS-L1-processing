@@ -141,7 +141,7 @@ def readprotocol(filename):
     import pandas as pd
 
     df = pd.read_csv(filename, sep=" ", comment="#",
-                     skipinitialspace=True, skiprows=())
+                     skipinitialspace=True, skiprows=())  
     return df
 
 
