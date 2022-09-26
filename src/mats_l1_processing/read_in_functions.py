@@ -183,6 +183,7 @@ def add_and_rename_CCDitem_info(CCDitem):
     
         
     CCDitem["channel"] = channel_num_to_str(CCDitem["CCDSEL"])
+    CCDitem["flipped"] = False
 
     # Add temperature info fom OBC, the temperature info from the rac files are better since they are based on the thermistos on hte UV channels
 

@@ -35,6 +35,7 @@ def flip_image(CCDitem, image=None):
     
     if CCDitem['channel']=='IR2' or CCDitem['channel']=='IR4':
         image=np.fliplr(image)
+        CCDitem['flipped'] = True
 
     return image
 
