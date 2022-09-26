@@ -38,7 +38,7 @@ def calibrate_all_items(CCDitems, instrument, plot=False):
             image_bias_sub,
             image_desmeared,
             image_dark_sub,
-            image_flatf_comp,
+            image_flatf_calib,
             image_calibrated,
             image_common_fov,
             errors,
@@ -50,7 +50,7 @@ def calibrate_all_items(CCDitems, instrument, plot=False):
             plot_CCDimage(image_bias_sub, fig, ax[1], "Bias subtracted")
             plot_CCDimage(image_desmeared, fig, ax[2], " Desmeared LSB")
             plot_CCDimage(image_dark_sub, fig, ax[3], " Dark current subtracted LSB")
-            plot_CCDimage(image_flatf_comp, fig, ax[4], " Flat field compensated LSB")
+            plot_CCDimage(image_flatf_calib, fig, ax[4], " Flat field compensated LSB")
             fig.suptitle(CCDitem["channel"])
 
 
@@ -87,10 +87,10 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
 
     # Step 6 The true calibration: All pixels are scaled by the i.e. absolute 
     #and relative calibration factor and their flat_field factor.
-    image_flatf_comp, error_flags_flatfield = flatfield_calibration(CCDitem, image_dark_sub)
+    image_flatf_calib, error_flags_flatfield = flatfield_calibration(CCDitem, image_dark_sub)
     
     # Flip image for IR2 and IR4
-    image_calibrated= flip_image(CCDitem, image_flatf_comp)
+    image_calibrated= flip_image(CCDitem, image_flatf_calib)
     
     #Shift image, i.e. put image on common field of view
     image_common_fov, error_flags_flipnshift = shift_image(CCDitem, image_calibrated)
@@ -100,7 +100,7 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
 
     # Step 8 Transform from LSB to electrons and then to photons. TBD.
     
-    CCDitem["image_calibrated"] = image_flatf_comp
+    CCDitem["image_calibrated"] = image_flatf_calib
 
     error_absolute =  make_binary(np.zeros(CCDitem["IMAGE"].shape,dtype=int),2)
 
@@ -108,4 +108,4 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
 
     errors = combine_flags([error_bad_column,error_flags_bias,error_flags_linearity,error_flags_desmear,error_flags_dark,error_flags_flatfield,error_ghost,error_absolute,error_spare])
     
-    return image_lsb, image_bias_sub, image_desmeared, image_dark_sub, image_flatf_comp, image_calibrated, image_common_fov, errors
+    return image_lsb, image_bias_sub, image_desmeared, image_dark_sub, image_flatf_calib, image_calibrated, image_common_fov, errors

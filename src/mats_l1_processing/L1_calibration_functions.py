@@ -315,7 +315,7 @@ def flatfield_calibration(CCDitem, image=None):
 
     # TODO Absolute relative calibration factors  shoudl be added here
     # Add temperature dependence on flatfield
-    image_flatf_comp = (
+    image_flatf_calib = (
         image*CCDitem["CCDunit"].cal_fact
         / image_flatf_fact[
             CCDitem["NRSKIP"] : CCDitem["NRSKIP"] + CCDitem["NROW"],
@@ -326,11 +326,11 @@ def flatfield_calibration(CCDitem, image=None):
 
 
     error_flag= np.zeros(image.shape, dtype=np.uint16)
-    error_flag[image_flatf_comp<0] = 1 # Flag for negative value
+    error_flag[image_flatf_calib<0] = 1 # Flag for negative value
     
     error_flag = make_binary(error_flag,2)
 
-    return image_flatf_comp, error_flag
+    return image_flatf_calib, error_flag
 
 
 def calculate_flatfield(CCDitem):

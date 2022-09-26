@@ -46,7 +46,7 @@ def main(directory, calibration_file, calibrate=True, plot=False):
                 image_bias_sub,
                 image_desmeared,
                 image_dark_sub,
-                image_flatf_comp,
+                image_flatf_calib,
                 image_calibrated,
                 image_common_fov,
                 errors,
@@ -61,7 +61,7 @@ def main(directory, calibration_file, calibrate=True, plot=False):
                     image_dark_sub, fig, ax[3], " Dark current subtracted LSB"
                 )
                 plot_CCDimage(
-                    image_flatf_comp, fig, ax[4], " Flat field compensated LSB"
+                    image_flatf_calib, fig, ax[4], " Flat field compensated LSB"
                 )
                 fig.suptitle(CCDitem["channel"])
 
