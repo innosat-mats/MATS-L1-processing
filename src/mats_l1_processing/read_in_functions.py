@@ -66,7 +66,7 @@ def read_CCDitems(directory, read_from='rac'):
         list of CCDitems
     """    
     
-    from .get_temperature import add_rac_temp_data
+    from mats_l1_processing.get_temperature import add_rac_temp_data
     from database_generation.read_in_imgview_functions import read_CCDitem_from_imgview
     import os
     import pandas as pd
