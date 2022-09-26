@@ -14,13 +14,9 @@ The MATLAB script can be found here: https://github.com/OleMartinChristensen/MAT
 """
 
 import numpy as np
-import scipy.io
-import toml
 import scipy.optimize as opt
-import pickle
 from mats_l1_processing.instrument import nonLinearity as NL
 from joblib import Parallel, delayed
-import time 
 from mats_l1_processing.instrument import CCD
 
 
