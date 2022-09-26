@@ -15,13 +15,17 @@ def get_full_CCD_pixels():
 
 def get_center_CCD_pixels():
     #returns the number of pixels from center of CCD to lower left corner
-    return 1024,256
+    return 1023,255
 
-def get_origo_CCD():
+def get_origo_CCD(unit='degrees'):
     x_origo, y_origo = get_center_CCD_pixels()
-    dphi,dtheta = get_CCD_resolution(1,1)
-
-    return -x_origo*dphi,-y_origo*dtheta
+    if unit == 'pixels':
+        return x_origo,y_origo
+    elif unit == 'degrees': 
+        dtheta,dphi = get_CCD_resolution(1,1)
+        return -x_origo*dphi,-y_origo*dtheta
+    else:
+        raise ValueError('Invalid output unit')
 
 def get_CCD_resolution(rows_binned = 1,total_columns_binned = 1):
     """ 
@@ -32,8 +36,9 @@ def get_CCD_resolution(rows_binned = 1,total_columns_binned = 1):
         
 
     Returns: 
-        dphi: horizontal resolution of pixels in degrees
         dtheta: vertical resolution of pixels in degrees
+        dphi: horizontal resolution of pixels in degrees
+
     """
     FOV_X = 6
     FOV_Y = 1.5
@@ -46,7 +51,7 @@ def get_CCD_resolution(rows_binned = 1,total_columns_binned = 1):
     dtheta = DTHETA*rows_binned
     dphi = DPHI*total_columns_binned
 
-    return dphi,dtheta
+    return dtheta,dphi
     
 
 
@@ -89,28 +94,37 @@ def get_shift(CCDitem,unit='pixels',skip_comp=False):
         raise Exception('Unknown channel name', CCDitem['channel'])
 
     if skip_comp:
-        #FIXME: how does flip_flop affect this??
-        x_pos = x_pos+CCDitem['NCSKIP']
+        if CCDitem['channel']=='IR2' or CCDitem['channel']=='IR4':
+            x_pos = x_pos + get_full_CCD_pixels()[0] - CCDitem['NCSKIP']
+        else:
+            x_pos = x_pos+CCDitem['NCOL']
         y_pos = y_pos+CCDitem['NROWSKIP']
 
     if unit == 'pixels':
         return x_pos,y_pos
     elif unit == 'degrees':    
-        dphi,dtheta = get_CCD_resolution(1,1)
+        dtheta,dphi = get_CCD_resolution(1,1)
         return x_pos*dphi,y_pos*dtheta
     else:
         raise ValueError('invalid output grid unit')
 
-def grid_image(CCDitem):
-    x_pos,y_pos = get_shift(CCDitem,unit='degrees',skip_comp=True)
-    x_origo_full_frame,y_origo_full_frame = get_origo_CCD()
-    dphi,dtheta = get_CCD_resolution(CCDitem['NRBIN'],CCDitem['NCBIN FPGAColumns']+CCDitem['NCBIN CCDColumns'])
-
+def grid_image(CCDitem,unit):
+    x_pos,y_pos = get_shift(CCDitem,unit=unit,skip_comp=True)
+    x_origo_full_frame,y_origo_full_frame = get_origo_CCD(unit=unit)
+    if unit == 'degrees':
+        dtheta,dphi = get_CCD_resolution(CCDitem['NRBIN'],CCDitem['NCBIN FPGAColumns']+CCDitem['NCBIN CCDColumns'])
+    elif unit == 'pixels':
+        dtheta = CCDitem['NRBIN']
+        dphi = CCDitem['NCBIN FPGAColumns']+CCDitem['NCBIN CCDColumns']
+    else:
+        raise ValueError('Invalid output unit')
+    #fixme check even and odd numbers for dphi
+    
     x_origo = x_pos+x_origo_full_frame+dphi/2
     y_origo = y_pos+y_origo_full_frame+dtheta/2
 
-    x_grid = np.arange(0,CCDitem['NCOL']+1)*dphi+x_origo
-    y_grid = np.arange(0,CCDitem['NROW'])*dtheta+y_origo
+    x_grid = np.arange(0,CCDitem['NCOL']+1)*dphi-x_origo
+    y_grid = np.arange(0,CCDitem['NROW'])*dtheta-y_origo
 
     return x_grid,y_grid
 

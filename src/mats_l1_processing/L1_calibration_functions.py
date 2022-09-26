@@ -360,6 +360,7 @@ def calculate_flatfield(CCDitem):
         CCDitem["NCBIN CCDColumns"] > 1 or CCDitem["NCBIN FPGAColumns"] > 1
     ):  # Or row binning
         image_flatf = meanbin_image_with_BC(CCDitem, image_flatf)
+    
     image_flatf_fact = image_flatf  # /meanff #Already scaled wheen binned and
 
 
@@ -407,6 +408,19 @@ def subtract_dark(CCDitem, image=None):
 
 
 def calculate_dark(CCDitem):
+    """
+    Calculates dark image from Gabriels measurements. The function reads 
+    gabriels dark current images using temperature and gain mode as an input. 
+    The function converts from electrons to counts and returns a correctly
+    binned dark current image in counts.  
+
+    Args:
+        CCDitem:  dictonary containing CCD image and information
+
+    Returns: 
+        dark_calc_image: Dark current image for given CCD item
+    """
+
     try:
         CCDunit = CCDitem["CCDunit"]
     except:
