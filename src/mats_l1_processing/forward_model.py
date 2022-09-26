@@ -112,7 +112,7 @@ def backward(input_image,CCDitem, b=1, d=2, plotme=True):
 
     image_dark_sub, flags=subtract_dark(CCDitem,image_desmeared.copy())
         
-    image_flatf_calib, flags=flatfield_calibration(CCDitem,image_dark_sub.copy())
+    image_calib_nonflipped, flags=flatfield_calibration(CCDitem,image_dark_sub.copy())
     #plotmean=photons*CCDitem['NCBIN CCDColumns']*CCDitem['NCBIN FPGAColumns']*CCDitem['NRBIN']
     #clims=[plotmean-np.sqrt(plotmean), plotmean+np.sqrt(plotmean)]
 
@@ -121,7 +121,7 @@ def backward(input_image,CCDitem, b=1, d=2, plotme=True):
    
     
 
-    return image, image_bias_sub, image_desmeared, image_dark_sub, image_flatf_calib
+    return image, image_bias_sub, image_desmeared, image_dark_sub, image_calib_nonflipped
 
 def forward_and_backward(CCDitem, photons, plot=True):
     #clims=[-2,2]
@@ -144,7 +144,7 @@ def forward_and_backward(CCDitem, photons, plot=True):
 
 
 
-    image, image_bias_sub, image_desmeared, image_dark_sub, image_flatf_calib=backward(simage_bias,CCDitem, plotme=False)
+    image, image_bias_sub, image_desmeared, image_dark_sub, image_calib_nonflipped=backward(simage_bias,CCDitem, plotme=False)
 
     if plot:
         b=1
@@ -161,15 +161,15 @@ def forward_and_backward(CCDitem, photons, plot=True):
         frameplot(image_dark_sub,fig, ax[1,b], ' Dark current subtracted.')     
         frameplot(simage_flatf_binned-image_dark_sub,fig, ax[1,d], 'simage-image')
     
-        frameplot(image_flatf_calib,fig, ax[0,b], ' Flat field compensated.')     
-        frameplot(simage_raw_binned-image_flatf_calib,fig, ax[0,d], 'simage-image')
+        frameplot(image_calib_nonflipped,fig, ax[0,b], ' Flat field compensated.')     
+        frameplot(simage_raw_binned-image_calib_nonflipped,fig, ax[0,d], 'simage-image')
     
         fig.suptitle('Forward model followed by backward i.e calibration')
 
     #Test to see that the backward removes what forward added:
     assert np.sum(np.abs(simage_dark_binned-image_desmeared)) < image.size*1.e-12  
     assert np.sum(np.abs(simage_flatf_binned-image_dark_sub)) < image.size*1.e-12  
-    assert np.sum(np.abs(simage_raw_binned-image_flatf_calib)) < image.size*1.e-12  
+    assert np.sum(np.abs(simage_raw_binned-image_calib_nonflipped)) < image.size*1.e-12  
                    
 # =============================================================================
 # Main
