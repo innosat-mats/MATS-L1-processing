@@ -44,7 +44,7 @@ instrument = Instrument(calibration_file)
 for channel in channels:
     for sigmode in sigmodes:
         
-        flatfield_morphed=flatfield.make_flatfield(channel, sigmode,instrument, calibration_data, plot=False)
+        flatfield_morphed=flatfield.make_flatfield(channel, sigmode,calibration_file, plot=False)
         Path("output").mkdir(parents=True, exist_ok=True)
         np.savetxt('output/flatfield_'+channel+'_'+sigmode+'.csv', flatfield_morphed)
         np.save('output/flatfield_'+channel+'_'+sigmode+'.npy', flatfield_morphed)

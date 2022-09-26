@@ -17,14 +17,14 @@ from pathlib import Path
 import toml
 
 
-def make_flatfield(channel, signalmode, instrument, calibration_data, plot=True):
+def make_flatfield(channel, signalmode, calibration_file, plot=True):
     # makes flatfield using both a cold flatfield without baffle and a room temp flatfield with baffle.
 
 
 
-    CCDunit=instrument.get_CCD(channel)
+    CCDunit=CCD(channel,calibration_file)
 
-
+    calibration_data=toml.load(calibration_file)
 
     if signalmode == "HSM":
         flatfield_wo_baffle = read_flatfield(
