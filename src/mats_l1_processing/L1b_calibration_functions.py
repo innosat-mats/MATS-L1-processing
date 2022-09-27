@@ -31,6 +31,8 @@ def get_origo_CCD(unit='degrees'):
 
     """    
     x_origo, y_origo = get_center_CCD_pixels()
+    x_origo = x_origo + 0.5 
+    y_origo = y_origo + 0.5
     if unit == 'pixels':
         return x_origo,y_origo
     elif unit == 'degrees': 
@@ -52,8 +54,8 @@ def get_CCD_resolution(rows_binned = 1,total_columns_binned = 1):
         dphi: horizontal resolution of pixels in degrees
 
     """
-    FOV_X = 6
-    FOV_Y = 1.5
+    FOV_X = 6.06
+    FOV_Y = 1.52
 
     x_full,y_full = get_full_CCD_pixels()
     
@@ -123,7 +125,7 @@ def get_shift(CCDitem,skip_comp=False):
     return x_pos,y_pos
 
 def grid_image(CCDitem,unit):
-    x_pos,y_pos = get_shift(CCDitem,skip_comp=True) #get shift for first pixel
+    x_pos,y_pos = get_shift(CCDitem,skip_comp=True) #get shift for first CCD pixel
 
     x_origo_full_frame,y_origo_full_frame = get_origo_CCD(unit='pixels')
     
@@ -134,13 +136,9 @@ def grid_image(CCDitem,unit):
         dphi = CCDitem['NCBIN FPGAColumns']+CCDitem['NCBIN CCDColumns']
     else:
         raise ValueError('Invalid output unit')
-    #fixme check even and odd numbers for dphi
     
-    x_origo = x_pos+x_origo_full_frame+dphi/2
-    y_origo = y_pos+y_origo_full_frame+dtheta/2
-
-    x_grid = np.arange(0,CCDitem['NCOL']+1)*dphi-x_origo
-    y_grid = np.arange(0,CCDitem['NROW'])*dtheta-y_origo
+    x_grid = np.arange(0,CCDitem['NCOL']+1)*dphi+x_pos+dphi/2-x_origo_full_frame
+    y_grid = np.arange(0,CCDitem['NROW'])*dtheta+y_pos+dtheta/2-y_origo_full_frame
 
     return x_grid,y_grid
 
