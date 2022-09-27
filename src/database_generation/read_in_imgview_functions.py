@@ -585,3 +585,124 @@ def read_CCDitems_no_images(rac_dir, labtemp=999):
 
 
     return CCD_image_data
+
+
+# def readimg(filename): Old version, very similar to the above
+
+#     data_arr = np.fromfile(filename, dtype="uint16")
+#     # convert header to binary
+#     header_bin = np.asarray(
+#         [bin(data_arr[i]) for i in range(0, 12)]
+#     )  # this is a string
+#     # change format of header_bin elements to be formatted like matlab char array
+#     # print(header_bin)
+#     for i in range(0, len(header_bin)):
+#         header_bin[i] = header_bin[i][2:].zfill(16)
+#     # print(header_bin)
+#     # read header
+#     Frame_count = int(header_bin[0], 2)
+#     NRow = int(header_bin[1], 2)
+#     NRowBinCCD = int(header_bin[2][10:16], 2)
+#     NRowSkip = int(header_bin[3][8:16], 2)
+#     NCol = int(header_bin[4], 2)
+#     NColBinFPGA = int(header_bin[5][2:8], 2)
+#     NColBinCCD = int(header_bin[5][8:16], 2)
+#     NColSkip = int(header_bin[6][5:16], 2)
+#     N_flush = int(header_bin[7], 2)
+#     Texposure_MSB = int(header_bin[8], 2)
+#     Texposure_LSB = int(header_bin[9], 2)
+#     Gain = int(header_bin[10], 2)
+#     SignalMode = Gain & 4096
+#     Temperature_read = int(header_bin[11], 2)
+#     # print(len(header_bin[4]))
+#     # read image
+#     if len(data_arr) < NRow * (NCol + 1) / (
+#         2 ** (NColBinFPGA)
+#     ):  # check for differences in python 2 and 3
+#         img_flag = 0
+#         image = 0
+#         Noverflow = 0
+#         BlankLeadingValue = 0
+#         BlankTrailingValue = 0
+#         ZeroLevel = 0
+
+#         Reserved1 = 0
+#         Reserved2 = 0
+
+#         Version = 0
+#         VersionDate = 0
+#         NBadCol = 0
+#         BadCol = 0
+#         Ending = "Wrong size"
+#     else:
+#         img_flag = 1
+#         image = np.reshape(
+#             np.double(data_arr[11 + 1 : NRow * (NCol + 1) + 12]), (NRow, NCol + 1)
+#         )  # LM201102 Corrected bug where4 NCol and NRow were switched
+#         # image = np.matrix(image).getH()
+
+#         # Trailer
+#         trailer_bin = np.asarray(
+#             [bin(data_arr[i]) for i in range(NRow * (NCol + 1) + 12, len(data_arr))]
+#         )
+#         for i in range(0, len(trailer_bin)):
+#             trailer_bin[i] = trailer_bin[i][2:].zfill(16)
+#         Noverflow = int(trailer_bin[0], 2)
+#         BlankLeadingValue = int(trailer_bin[1], 2)
+#         BlankTrailingValue = int(trailer_bin[2], 2)
+#         ZeroLevel = int(trailer_bin[3], 2)
+
+#         Reserved1 = int(trailer_bin[4], 2)
+#         Reserved2 = int(trailer_bin[5], 2)
+
+#         Version = int(trailer_bin[6], 2)
+#         VersionDate = int(trailer_bin[7], 2)
+#         NBadCol = int(trailer_bin[8], 2)
+#         BadCol = []
+#         Ending = int(trailer_bin[-1], 2)
+
+#         if NBadCol > 0:
+#             BadCol = np.zeros(NBadCol)
+#             for k_bc in range(0, NBadCol):
+#                 BadCol[k_bc] = int(
+#                     trailer_bin[9 + k_bc], 2
+#                 )  # check if this actually works
+
+#     # for yet unknown reasons the header entries are in some cases stripped by the last few digits
+#     # this causes an incorrect conversion to decimal values (since part of the binary string is missing)
+#     # as of 2019-08-22 this behaviour could be reproduced on a different machine, but not explained
+#     # checking for the correct size of the binary strings avoids issues arising from wrongly converted data
+
+#     if len(header_bin[1]) < 16:
+#         raise Exception("Binary string shortened")
+
+#     # original matlab code uses structured array, as of 20-03-2019 implementation as dictionary seems to be more useful choice
+#     # decision might depend on further (computational) use of data, which is so far unknown to me
+#     header = {}
+#     header["Size"] = len(data_arr)
+#     header["Frame_count"] = Frame_count
+#     header["NRow"] = NRow
+#     header["NRowBinCCD"] = NRowBinCCD
+#     header["NRowSkip"] = NRowSkip
+#     header["NCol"] = NCol
+#     header["NCBIN FPGAColumns"] = 2**NColBinFPGA
+#     header["NCBIN CCDColumns"] = NColBinCCD
+#     header["NColSkip"] = NColSkip
+#     header["N_flush"] = N_flush
+#     header["Texposure"] = Texposure_LSB + Texposure_MSB * 2 ** 16
+#     header["Gain"] = Gain & 255
+#     header["SignalMode"] = SignalMode
+#     header["Temperature_read"] = Temperature_read
+#     header["Noverflow"] = Noverflow
+#     header["BlankLeadingValue"] = BlankLeadingValue
+#     header["BlankTrailingValue"] = BlankTrailingValue
+#     header["ZeroLevel"] = ZeroLevel
+#     header["Reserved1"] = Reserved1
+#     header["Reserved2"] = Reserved2
+#     header["Version"] = Version
+#     header["VersionDate"] = VersionDate
+#     header["NBadCol"] = NBadCol
+#     header["BadCol"] = BadCol
+#     header["Ending"] = Ending
+
+#     return image, header, img_flag

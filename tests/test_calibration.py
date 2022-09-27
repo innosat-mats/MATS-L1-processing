@@ -163,10 +163,10 @@ def test_error_algebra():
 if __name__ == "__main__":
 
     test_calibrate()    
-    # test_readfunctions()
-    # test_CCDunit()
-    # test_forward_backward()
-    # test_non_linearity_fullframe()
-    # test_non_linearity_binned()
-    # test_calibrate()
-    # test_error_algebra()
+    test_readfunctions()
+    test_CCDunit()
+    test_forward_backward()
+    test_non_linearity_fullframe()
+    test_non_linearity_binned()
+    test_calibrate()
+    test_error_algebra()

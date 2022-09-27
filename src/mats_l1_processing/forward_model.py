@@ -12,9 +12,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from mats_l1_processing.experimental_utils import readprotocol 
-from mats_l1_processing.experimental_utils import read_all_files_in_protocol
+from mats_l1_processing.experimental_utils import read_all_files_in_protocol, get_true_image_reverse, desmear_true_image_reverse
 from mats_l1_processing.L1_calibration_functions import get_true_image, desmear_true_image, subtract_dark, flatfield_calibration
-from mats_l1_processing.L1_calibration_functions import calculate_flatfield, calculate_dark, desmear_true_image_reverse, get_true_image_reverse, bin_image_using_predict_and_get_true_image, bin_image_with_BC 
+from mats_l1_processing.L1_calibration_functions import calculate_flatfield, calculate_dark,  bin_image_using_predict_and_get_true_image 
 from mats_l1_processing.instrument import Instrument, CCD
 #from experimental_utils import plot_CCDimage 
 

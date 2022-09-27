@@ -284,7 +284,7 @@ def get_linearized_image_parallelized(CCDitem, image_bias_sub):
 ## Flatfield ##
 
 def flatfield_calibration(CCDitem, image=None):
-    """Compensates for flatfield.
+    """Calibrates the image for eacvh pixel, ie, absolute relativ calibration and flatfield compensation 
 
     Args:
         CCDitem:  dictonary containing CCD image and information
@@ -448,121 +448,21 @@ def calculate_dark(CCDitem):
     return dark_calc_image
 
 
-def predict_image(reference_image, hsm_header, lsm_image, lsm_header, header):
-    """
-    this is a function to predict an image read out from the CCD with a given set
-    of parameters, based on a reference image (of size 511x2048)
-    """
-    ncol = int(header["NCol"]) + 1
-    nrow = int(header["NRow"])
-
-    nrowskip = int(header["NRowSkip"])
-    ncolskip = int(header["NColSkip"])
-
-    nrowbin = int(header["NRowBinCCD"])
-    ncolbinC = int(header["NCBIN CCDColumns"])
-    ncolbinF = int(header["NCBIN FPGAColumns"])
-
-    if int(header["SignalMode"]) > 0:
-        blank = int(lsm_header["BlankTrailingValue"])
-    else:
-        blank = int(hsm_header["BlankTrailingValue"])
-
-    blank_off = blank - 128
-    zerolevel = int(header["ZeroLevel"])
-
-    gain = 2 ** (int(header["Gain"]) & 255)
-
-    bad_columns = header["BadCol"]
-    print("bad", bad_columns)
-
-    if nrowbin == 0:  # no binning means beaning of one
-        nrowbin = 1
-
-    if ncolbinC == 0:  # no binning means beaning of one
-        ncolbinC = 1
-
-    if ncolbinF == 0:  # no binning means beaning of one
-        ncolbinF = 1
-
-    ncolbintotal = ncolbinC * ncolbinF
-
-    if int(header["SignalMode"]) > 0:
-        reference_image = get_true_image(lsm_header, lsm_image)
-        reference_image = desmear_true_image(lsm_header, reference_image)
-    else:
-        reference_image = get_true_image(hsm_header, reference_image)
-        reference_image = desmear_true_image(hsm_header, reference_image)
-
-    # bad column analysis
-    n_read, n_coadd = binning_bc(ncol, ncolskip, ncolbinF, ncolbinC, header["BadCol"])
-
-    image = np.zeros((nrow, ncol))
-    image[:, :] = 128  # offset
-
-    finished_row = 0
-    finished_col = 0
-    for j_r in range(0, nrow):  # check indexing again
-        for j_c in range(0, ncol):
-            for j_br in range(0, nrowbin):  # account for row binning on CCD
-                if j_br == 0:
-                    image[j_r, j_c] = (
-                        image[j_r, j_c] + n_read[j_c] * blank_off
-                    )  # here we add the blank value, only once per binned row
-                    # (LM201025 n_read is the number a superbin has been devided into to be read. Why n_read when we are doing row binning. Shouldnt n_read always be one here? No, not if that supercolumn had a BC and was read out in two bits.
-                for j_bc in range(0, ncolbintotal):  # account for column binning
-                    # LM201030: Go through all unbinned columns(both from FPGA and onchip) that belongs to one superpixel(j_r,j_c) and if the column is not Bad, add the signal of that unbinned pixel to the superpixel (j_r,j_c)
-                    # out of reference image range
-                    if (j_r) * nrowbin + j_br + nrowskip > 511:
-                        break
-                    elif (j_c) * ncolbinC * ncolbinF + j_bc + ncolskip > 2048:
-                        break
-
-                    # removed +1 after bad_columns, unclear why it was added
-                    # TODO
-                    #   print('mycolumn: ',(j_c)*ncolbinC*ncolbinF + j_bc + ncolskip)
-                    #   print('j_br: ',j_br, ' j_c=', j_c, ' j_bc=', j_bc)
-                    #                    if j_r==0 and j_br==0 and j_bc==0:
-                    #                        print('start bin mycolumn=',(j_c)*ncolbinC*ncolbinF + j_bc + ncolskip)
-
-                    if ncolbinC > 1 and (
-                        j_c
-                    ) * ncolbinC * ncolbinF + j_bc + ncolskip in (
-                        bad_columns
-                    ):  # KTH:should be here +1 becuase Ncol is +1
-                        # 201106 LM removed +1. Checked by using picture: recv_image, recv_header = readimgpath('/Users/lindamegner/MATS/retrieval/Level1/data/2019-02-08 rand6/', 32, 0)
-
-                        # if j_r==0 and j_br==0:
-                        #     print('skipping BC mycolumn=',(j_c)*ncolbinC*ncolbinF + j_bc + ncolskip)
-                        #     print('mycolumn: ',(j_c)*ncolbinC*ncolbinF + j_bc + ncolskip)
-                        #     print('j_br: ',j_br, ' j_c=', j_c, ' j_bc=', j_bc)
-                        # image[j_r, j_c] =-999
-                        continue
-                    else:
-
-                        # add only the actual signal from every pixel (minus blank)
-                        image[j_r, j_c] = (
-                            image[j_r, j_c]  # remove blank
-                            # LM201103 fixed bug renmoved -1 from th
-                            # + reference_image[(j_r-1)*nrowbin+j_br+nrowskip-1,(j_c-1)*ncolbinC*ncolbinF+j_bc+ncolskip-1] #row and column value evaluation, -1 to adjust for python indexing
-                            + reference_image[
-                                (j_r) * nrowbin + j_br + nrowskip,
-                                (j_c) * ncolbinC * ncolbinF + j_bc + ncolskip,
-                            ]  # row and column value evaluation
-                            * 1  # scaling factor
-                        )
-
-    image = image / gain
-    pred_header = header
-    pred_header["BlankTrailingValue"] = blank
-
-    return image, pred_header
-
 
 def meanbin_image_with_BC(header, reference_image="999"):
     """
     this is a function to bin an image withouyt any offset or blanks. Bad columns are skipped.
-    code is modified from Georgis predict_image
+    code is modified from Georgis predict_image and is very similar to bin_image_using_predict.
+    However this code is used for an image which has no offset, for instance when binning the 
+    flatfield image where offsets and dark currents already have been subtracted. 
+
+    Args:
+        CCDitem:  dictonary containing CCD image and information
+        reference_image (optional): numpy array image
+
+    Returns: 
+        mean_image: image mean-binned (not summed-binned) according to the info in CCDitem 
+    
     """
 
     ncol = int(header["NCOL"]) + 1
@@ -634,81 +534,6 @@ def meanbin_image_with_BC(header, reference_image="999"):
     mean_image = image / nr_of_entries
     return mean_image
 
-
-def bin_image_with_BC(header, reference_image="999"):
-    """
-    this is a function to bin an image withouyt any offset or blanks. Bad columns are skipped.
-    code is modified from Georgis predict_image
-    """
-
-    ncol = int(header["NCOL"]) + 1
-    nrow = int(header["NROW"])
-
-    nrowskip = int(header["NRSKIP"])
-    ncolskip = int(header["NCSKIP"])
-
-    nrowbin = int(header["NRBIN"])
-    ncolbinC = int(header["NCBIN CCDColumns"])
-    ncolbinF = int(header["NCBIN FPGAColumns"])
-
-    bad_columns = header["BC"]
-
-    if nrowbin == 0:  # no binning means beaning of one
-        nrowbin = 1
-
-    if ncolbinC == 0:  # no binning means beaning of one
-        ncolbinC = 1
-
-    if ncolbinF == 0:  # no binning means beaning of one
-        ncolbinF = 1
-
-    ncolbintotal = ncolbinC * ncolbinF
-
-    if reference_image == "999":
-        reference_image = header["IMAGE"]
-
-    # bad column analysis
-    #   n_read, n_coadd = binning_bc(ncol, ncolskip, ncolbinF, ncolbinC, header['BC'])
-
-    image = np.zeros((nrow, ncol))  # no offset
-    nr_of_entries = np.zeros((nrow, ncol))
-
-    for j_r in range(0, nrow):  # check indexing again
-        for j_c in range(0, ncol):
-            for j_br in range(0, nrowbin):  # account for row binning on CCD
-                for j_bc in range(0, ncolbintotal):  # account for column binning
-                    # LM201030: Go through all unbinned columns(both from FPGA and onchip) that belongs to one superpixel(j_r,j_c) and if the column is not Bad, add the signal of that unbinned pixel to the superpixel (j_r,j_c)
-                    # out of reference image range
-                    if (j_r) * nrowbin + j_br + nrowskip > 511:
-                        break
-                    elif (j_c) * ncolbinC * ncolbinF + j_bc + ncolskip > 2048:
-                        break
-
-                    # removed +1 after bad_columns, unclear why it was added
-                    # TODO
-                    if (
-                        ncolbinC > 1
-                        and (j_c) * ncolbinC * ncolbinF + j_bc + ncolskip in bad_columns
-                    ):  # +1 becuase Ncol is +1
-                        continue
-                    else:
-
-                        # add only the actual signal from every pixel (minus blank)
-                        image[j_r, j_c] = (
-                            image[j_r, j_c]  # remove blank
-                            # LM201103 fixed bug renmoved -1 from th
-                            # + reference_image[(j_r-1)*nrowbin+j_br+nrowskip-1,(j_c-1)*ncolbinC*ncolbinF+j_bc+ncolskip-1] #row and column value evaluation, -1 to adjust for python indexing
-                            + reference_image[
-                                (j_r) * nrowbin + j_br + nrowskip,
-                                (j_c) * ncolbinC * ncolbinF + j_bc + ncolskip,
-                            ]  # row and column value evaluation
-                            * 1  # scaling factor
-                        )
-
-                        # nr_of_entries[j_r, j_c] = nr_of_entries[j_r, j_c]+1
-
-    # mean_image=image/nr_of_entries
-    return image
 
 
 def bin_image_using_predict(header, reference_image="999"):
@@ -807,20 +632,6 @@ def bin_image_using_predict_and_get_true_image(header, reference_image="999"):
     return simage_raw_binned
 
 
-def winmode_correct(CCDitem):
-    if (CCDitem["WinMode"]) <= 4:
-        winfactor = 2 ** CCDitem["WinMode"]
-    elif (CCDitem["WinMode"]) == 7:
-        winfactor = 1
-    else:
-        raise Exception("Undefined Window")
-    image_lsb = winfactor * CCDitem["IMAGE"]
-    return image_lsb
-
-
-def get_true_image_opposite_order(image, header):
-    true_image = get_true_image(header, image)
-    return true_image
 
 
 def get_true_image(header, image=None):
@@ -870,63 +681,8 @@ def get_true_image(header, image=None):
     return true_image, error_flag
 
 
-def get_true_image_reverse(header, true_image=None):
-    # add readout offset (pixel blank value) and bad colums stuff,
-    # by reversing get_true_image
-
-    if true_image is None:  
-        true_image = header["IMAGE"]
-
-    ncolbinC = int(header["NCBIN CCDColumns"])
-    if ncolbinC == 0:
-        ncolbinC = 1
-
-    # bad column analysis
-    n_read, n_coadd = binning_bc(
-        int(header["NCOL"]) + 1,
-        int(header["NCSKIP"]),
-        int(header["NCBIN FPGAColumns"]),
-        ncolbinC,
-        header["BC"],
-    )
-
-    # go through the columns
-    for j_c in range(0, int(header["NCOL"]) + 1):
-        # compensate for bad columns
-        true_image[0 : int(header["NROW"]) + 1, j_c] = true_image[
-            0 : int(header["NROW"] + 1), j_c
-        ] / (int(header["NCBIN FPGAColumns"]) * ncolbinC / n_coadd[j_c])
-
-        # add blank values and readout offsets
-        true_image[0 : int(header["NROW"]) + 1, j_c] = (
-            true_image[0 : int(header["NROW"] + 1), j_c]
-            + n_read[j_c] * (header["TBLNK"] - 128)
-            + 128
-        )
-
-    # add gain
-    image = true_image / 2 ** (
-        int(header["GAIN Truncation"])
-    )  # Check with Molflow if this is corrected for already in  Level 0. 
-    return image
 
 
-def get_true_image_from_compensated(image, header):
-
-    # calculate true image by removing readout offset, pixel blank value and
-    # normalising the signal level according to readout time
-
-    # remove gain
-    true_image = image * 2 ** (int(header["Gain"]) & 255)
-
-    for j_c in range(0, int(header["NCol"]) + 1):  # LM201102 Big fix +1 added
-        true_image[0 : header["NRow"], j_c] = (
-            true_image[0 : header["NRow"], j_c]
-            - header["NCBIN FPGAColumns"] * (header["BlankTrailingValue"] - 128)
-            - 128
-        )
-
-    return true_image
 
 
 def binning_bc(Ncol, Ncolskip, NcolbinFPGA, NcolbinCCD, BadColumns):
@@ -1005,39 +761,6 @@ def desmear_true_image(header, image=None):
     return image, error_flag
 
 
-def desmear_true_image_reverse(header, image=None):
-    # add readout offset (pixel blank value) and bad colums stuff,
-    # by reversing get_true_image
-
-    if image is None:
-        image = header["IMAGE"]
-
-    nrow = int(header["NROW"])
-    ncol = int(header["NCOL"]) + 1
-    # calculate extra time per row
-    T_row_extra, T_delay = calculate_time_per_row(header)
-    T_exposure = (
-        float(header["TEXPMS"]) / 1000.0
-    )  # check for results when shifting from python 2 to 3
-
-    TotTime = 0
-    # row 0 here is the first row to read out from the chip
-    # # #Code version 1 (copy the nonsmeared image) to desmear, the result should be the same as code version 1
-    # tmpimage=image.copy()
-    # for irow in range(1,nrow):
-    #     for krow in range(0,irow):
-    #         image[irow,0:ncol]=image[irow,0:ncol] + tmpimage[krow,0:ncol]*((T_row_extra)/T_exposure)
-    #         TotTime=TotTime+T_row_extra
-
-    # Code version 2 (loop backwards)to desmear, the result should be the same as code version 2
-    for irow in range(nrow - 1, 0, -1):
-        for krow in range(0, irow):
-            image[irow, 0:ncol] = image[irow, 0:ncol] + image[krow, 0:ncol] * (
-                T_row_extra / T_exposure
-            )
-            TotTime = TotTime + T_row_extra
-
-    return image
 
 
 def calculate_time_per_row(header):
@@ -1131,229 +854,6 @@ def calculate_time_per_row(header):
     return T_row_extra, T_delay
 
 
-def compare_image(image1, image2, header):
-
-    # this is a function to compare two images of the same size
-    # one comparison is a linear fit of columns, the other comparison is a linear fit
-    # of rows, the third is a linear fit of the whole image
-
-    sz1 = image1.shape
-    sz2 = image2.shape
-
-    if sz1[0] != sz2[0] or sz1[1] != sz2[1]:
-        print("sizes of input images do not match")
-
-    nrow = sz1[0]
-    ncol = sz1[1]
-
-    nrowskip = int(header["NRSKIP"])
-    ncolskip = int(header["NCSKIP"])
-
-    nrowbin = int(header["NRBIN"])
-    ncolbinC = int(header["NCBIN"])
-    ncolbinF = int(header["NCBIN FPGAColumns"])
-
-    if nrowskip + nrowbin * nrow > 511:
-        nrow = np.floor((511 - nrowskip) / nrowbin)
-
-    if ncolskip + ncolbinC * ncolbinF * ncol > 2047:
-        nrow = np.floor((2047 - ncolskip) / (ncolbinC * ncolbinF))
-    print(nrow, image1.shape)
-    image1 = image1[0 : nrow - 1, 0 : ncol - 1]
-    image2 = image2[0 : nrow - 1, 0 : ncol - 1]
-
-    r_scl = np.zeros(nrow)
-    r_off = np.zeros(nrow)
-    r_std = np.zeros(nrow)
-
-    for jj in range(0, nrow - 1):
-        x = np.concatenate(
-            (
-                np.ones((ncol - 1, 1)),
-                np.expand_dims(
-                    image1[
-                        jj,
-                    ]
-                    .conj()
-                    .transpose(),
-                    axis=1,
-                ),
-            ),
-            axis=1,
-        )  # -1 to adjust to python indexing?
-        y = (
-            image2[
-                jj,
-            ]
-            .conj()
-            .transpose()
-        )
-        bb, ab, aa, cc = np.linalg.lstsq(x, y)
-
-        ft = np.squeeze([a * bb[1] for a in x[:, 1]]) + bb[0]
-        # ft=np.multiply(x[:,1]*bb[1]) + bb[0]
-
-        adf = np.abs(np.squeeze(y) - np.squeeze(ft))
-        sigma = np.std(np.squeeze(y) - np.squeeze(ft))
-
-        inside = np.where(adf < 2 * sigma)
-        bb, ab, aa, cc = np.linalg.lstsq(
-            x[
-                inside[1],
-            ],
-            y[inside[1]],
-        )
-
-        ft = np.squeeze([a * bb[1] for a in x[:, 1]]) + bb[0]
-
-        r_scl[jj] = bb[1]
-        r_off[jj] = bb[0]
-        r_std[jj] = np.std(y[0] - ft[0])
-
-    c_scl = np.zeros(nrow)
-    c_off = np.zeros(nrow)
-    c_std = np.zeros(nrow)
-
-    for jj in range(0, ncol - 1):
-
-        x = np.concatenate(
-            (np.ones((nrow - 1, 1)), np.expand_dims(image1[:, jj], axis=1)), axis=1
-        )
-        y = image2[:, jj]
-        bb, ab, aa, cc = np.linalg.lstsq(x, y)
-
-        ft = np.squeeze([a * bb[1] for a in x[:, 1]]) + bb[0]
-
-        adf = np.abs(np.squeeze(y) - np.squeeze(ft))
-        sigma = np.std(np.squeeze(y) - np.squeeze(ft))
-
-        inside = np.where(adf < 2 * sigma)
-        bb, ab, aa, cc = np.linalg.lstsq(
-            x[
-                inside[1],
-            ],
-            y[inside[1]],
-        )
-
-        ft = np.squeeze([a * bb[1] for a in x[:, 1]]) + bb[0]
-
-        c_scl[jj] = bb[1]
-        c_off[jj] = bb[0]
-        c_std[jj] = np.std(y[0] - ft[0])
-
-    nsz = (nrow - 1) * (ncol - 1)
-    la_1 = np.reshape(image1, (nsz, 1))
-    la_2 = np.reshape(image2, (nsz, 1))
-
-    x = np.concatenate((np.ones((nsz, 1)), la_1), axis=1)
-    y = la_2
-    bb, ab, aa, cc = np.linalg.lstsq(x, y)
-
-    ft = np.squeeze([a * bb[1] for a in x[:, 1]]) + bb[0]
-
-    adf = np.abs(np.squeeze(y) - np.squeeze(ft))
-    sigma = np.std(np.squeeze(y) - np.squeeze(ft))
-
-    inside = np.where(adf < 2 * sigma)
-    bb, ab, aa, cc = np.linalg.lstsq(
-        x[
-            inside[1],
-        ],
-        y[inside[1]],
-    )
-
-    ft = np.squeeze([a * bb[1] for a in x[:, 1]]) + bb[0]
-
-    t_off = bb[0]
-    t_scl = bb[1]
-    t_std = np.std(y[0] - ft[0])
-
-    rows = 0
-
-    return t_off, t_scl, t_std
-
-
-def compensate_bad_columns(header, image="No picture"):
-
-    if type(image) is str:
-        image = header["IMAGE"].copy()
-
-    # LM 200127 This does not need to be used since it is already done in the OBC says Georgi.
-
-    # this is a function to compensate bad columns if in the image
-
-    ncol = int(header["NCOL"]) + 1
-    nrow = int(header["NROW"])
-
-    ncolskip = int(header["NCSKIP"])
-
-    ncolbinC = int(header["NCBIN CCDColumns"])
-    ncolbinF = int(header["NCBIN FPGAColumns"])
-
-    # change to Leading if Trailing does not work properly
-    blank = int(header["TBLNK"])
-
-    gain = 2 ** (
-        int(header["GAIN Truncation"])
-    )  
-    if ncolbinC == 0:  # no binning means binning of one
-        ncolbinC = 1
-
-    if ncolbinF == 0:  # no binning means binning of one
-        ncolbinF = 1
-
-    # bad column analysis
-
-    n_read, n_coadd = binning_bc(
-        ncol, ncolskip, ncolbinF, ncolbinC, np.asarray(header["BC"])
-    )
-
-    if ncolbinC > 1:
-        for j_c in range(0, ncol):
-            if ncolbinC * ncolbinF != n_coadd[j_c]:
-                # remove gain adjustment
-                image[0 : nrow - 1, j_c] = image[0 : nrow - 1, j_c] * gain
-
-                # remove added superpixel value due to bad columns and read out offset
-                image[0 : nrow - 1, j_c] = (
-                    image[0 : nrow - 1, j_c] - n_read[j_c] * (blank - 128) - 128
-                )
-
-                # multiply by number of binned column to actual number readout ratio
-                image[0 : nrow - 1, j_c] = image[0 : nrow - 1, j_c] * (
-                    (ncolbinC * ncolbinF) / n_coadd[j_c]
-                )
-
-                # add number of FPGA binned
-                image[0 : nrow - 1, j_c] = (
-                    image[0 : nrow - 1, j_c] + ncolbinF * (blank - 128) + 128
-                )
-
-                # add gain adjustment back
-                image[0 : nrow - 1, j_c] = image[0 : nrow - 1, j_c] / gain
-
-                # print('Col: ',j_c,', n_read: ',n_read[j_c],', n_coadd: ',n_coadd[j_c],', binned pixels: ',ncolbinC*ncolbinF)
-
-    return image
-
-
-#
-# def get_true_image_from_compensated(image, header):
-#
-#    #calculate true image by removing readout offset, pixel blank value and
-#    #normalising the signal level according to readout time
-#
-#    #remove gain
-#    true_image = image * 2**(int(header['DigGain']) & 255)
-#
-#    for j_c in range(0,int(header['NCol'])):
-#        true_image[0:header['NRow'], j_c] = ( true_image[0:header['NRow'],j_c] -
-#                  header['NCBIN FPGAColumns'] * (header['BlankTrailingValue']-128) - 128 )
-#
-#
-#    return true_image
-
-
 def read_flatfield(CCDunit, mode, flatfield_directory):
     from mats_l1_processing.items_units_functions import (
         read_files_in_protocol_as_ItemsUnits,
@@ -1405,149 +905,5 @@ def read_flatfield(CCDunit, mode, flatfield_directory):
     return flatfield
 
 
-def readimg(filename):
-
-    data_arr = np.fromfile(filename, dtype="uint16")
-    # convert header to binary
-    header_bin = np.asarray(
-        [bin(data_arr[i]) for i in range(0, 12)]
-    )  # this is a string
-    # change format of header_bin elements to be formatted like matlab char array
-    # print(header_bin)
-    for i in range(0, len(header_bin)):
-        header_bin[i] = header_bin[i][2:].zfill(16)
-    # print(header_bin)
-    # read header
-    Frame_count = int(header_bin[0], 2)
-    NRow = int(header_bin[1], 2)
-    NRowBinCCD = int(header_bin[2][10:16], 2)
-    NRowSkip = int(header_bin[3][8:16], 2)
-    NCol = int(header_bin[4], 2)
-    NColBinFPGA = int(header_bin[5][2:8], 2)
-    NColBinCCD = int(header_bin[5][8:16], 2)
-    NColSkip = int(header_bin[6][5:16], 2)
-    N_flush = int(header_bin[7], 2)
-    Texposure_MSB = int(header_bin[8], 2)
-    Texposure_LSB = int(header_bin[9], 2)
-    Gain = int(header_bin[10], 2)
-    SignalMode = Gain & 4096
-    Temperature_read = int(header_bin[11], 2)
-    # print(len(header_bin[4]))
-    # read image
-    if len(data_arr) < NRow * (NCol + 1) / (
-        2 ** (NColBinFPGA)
-    ):  # check for differences in python 2 and 3
-        img_flag = 0
-        image = 0
-        Noverflow = 0
-        BlankLeadingValue = 0
-        BlankTrailingValue = 0
-        ZeroLevel = 0
-
-        Reserved1 = 0
-        Reserved2 = 0
-
-        Version = 0
-        VersionDate = 0
-        NBadCol = 0
-        BadCol = 0
-        Ending = "Wrong size"
-    else:
-        img_flag = 1
-        image = np.reshape(
-            np.double(data_arr[11 + 1 : NRow * (NCol + 1) + 12]), (NRow, NCol + 1)
-        )  # LM201102 Corrected bug where4 NCol and NRow were switched
-        # image = np.matrix(image).getH()
-
-        # Trailer
-        trailer_bin = np.asarray(
-            [bin(data_arr[i]) for i in range(NRow * (NCol + 1) + 12, len(data_arr))]
-        )
-        for i in range(0, len(trailer_bin)):
-            trailer_bin[i] = trailer_bin[i][2:].zfill(16)
-        Noverflow = int(trailer_bin[0], 2)
-        BlankLeadingValue = int(trailer_bin[1], 2)
-        BlankTrailingValue = int(trailer_bin[2], 2)
-        ZeroLevel = int(trailer_bin[3], 2)
-
-        Reserved1 = int(trailer_bin[4], 2)
-        Reserved2 = int(trailer_bin[5], 2)
-
-        Version = int(trailer_bin[6], 2)
-        VersionDate = int(trailer_bin[7], 2)
-        NBadCol = int(trailer_bin[8], 2)
-        BadCol = []
-        Ending = int(trailer_bin[-1], 2)
-
-        if NBadCol > 0:
-            BadCol = np.zeros(NBadCol)
-            for k_bc in range(0, NBadCol):
-                BadCol[k_bc] = int(
-                    trailer_bin[9 + k_bc], 2
-                )  # check if this actually works
-
-    # for yet unknown reasons the header entries are in some cases stripped by the last few digits
-    # this causes an incorrect conversion to decimal values (since part of the binary string is missing)
-    # as of 2019-08-22 this behaviour could be reproduced on a different machine, but not explained
-    # checking for the correct size of the binary strings avoids issues arising from wrongly converted data
-
-    if len(header_bin[1]) < 16:
-        raise Exception("Binary string shortened")
-
-    # original matlab code uses structured array, as of 20-03-2019 implementation as dictionary seems to be more useful choice
-    # decision might depend on further (computational) use of data, which is so far unknown to me
-    header = {}
-    header["Size"] = len(data_arr)
-    header["Frame_count"] = Frame_count
-    header["NRow"] = NRow
-    header["NRowBinCCD"] = NRowBinCCD
-    header["NRowSkip"] = NRowSkip
-    header["NCol"] = NCol
-    header["NCBIN FPGAColumns"] = 2**NColBinFPGA
-    header["NCBIN CCDColumns"] = NColBinCCD
-    header["NColSkip"] = NColSkip
-    header["N_flush"] = N_flush
-    header["Texposure"] = Texposure_LSB + Texposure_MSB * 2 ** 16
-    header["Gain"] = Gain & 255
-    header["SignalMode"] = SignalMode
-    header["Temperature_read"] = Temperature_read
-    header["Noverflow"] = Noverflow
-    header["BlankLeadingValue"] = BlankLeadingValue
-    header["BlankTrailingValue"] = BlankTrailingValue
-    header["ZeroLevel"] = ZeroLevel
-    header["Reserved1"] = Reserved1
-    header["Reserved2"] = Reserved2
-    header["Version"] = Version
-    header["VersionDate"] = VersionDate
-    header["NBadCol"] = NBadCol
-    header["BadCol"] = BadCol
-    header["Ending"] = Ending
-
-    return image, header, img_flag
 
 
-def readimgpath(path, file_number, plot):
-    import time
-    import matplotlib.pyplot as plt
-
-    filename = "%sF_0%02d/D_0%04d" % (path, np.floor(file_number / 100), file_number)
-    # when using Microsoft Windows as Operating system replace / in the string with \\
-    image, header, img_flag = readimg(filename)
-
-    if plot > 0:
-        # do the plotting
-        plt.figure()
-        mean_img = np.mean(image)
-
-        plt.imshow(
-            image, cmap="jet", vmin=mean_img - 100, vmax=mean_img + 100, aspect="auto"
-        )
-        plt.title("CCD image")
-        plt.xlabel("Pixels")
-        plt.ylabel("Pixels")
-        plt.show()  # equivalent to hold off
-
-        print(header)
-        time.sleep(0.1)
-
-    return image, header
