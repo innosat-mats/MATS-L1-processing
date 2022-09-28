@@ -19,11 +19,16 @@ def test_shift_and_grid():
     assert get_shift(CCDitem) == (-75,47)
     
     CCDitem["NCSKIP"] = 1
-    assert get_shift(CCDitem) == (-74,47)
+    assert get_shift(CCDitem,skip_comp=True) == (-74,47)
 
     CCDitem["NROWSKIP"] = 1
-    assert get_shift(CCDitem) == (-74,48)
+    assert get_shift(CCDitem,skip_comp=True) == (-74,48)
     
     return
 
 
+
+
+if __name__ == "__main__":
+
+    test_shift_and_grid()
