@@ -309,9 +309,7 @@ def flatfield_calibration(CCDitem, image=None):
     #     CCDitem["NCSKIP"] : CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
     # ].shape
 
-
-    # TODO Absolute relative calibration factors  shoudl be added here
-    # Add temperature dependence on flatfield
+   
     image_calib_nonflipped = (
         image*CCDitem["CCDunit"].cal_fact
         / image_flatf_fact[
@@ -423,14 +421,18 @@ def calculate_dark(CCDitem):
     except:
         raise Exception("No CCDunit defined for the CCDitem")
     #    CCDunit=CCD(CCDitem['channel'])
-    totdarkcurrent = (
-        CCDunit.darkcurrent2D(CCDitem["temperature"], CCDitem["GAIN Mode"])
-        * int(CCDitem["TEXPMS"])
-        / 1000.0
-    )  # tot dark current in electrons
-    # totbinpix = int(CCDitem["NCBIN CCDColumns"]) * int(
-    #    CCDitem["NCBIN FPGAColumns"]
-    # ) 
+    
+    #First estimate dark current using 0D algorithm
+    totdarkcurrent= (CCDunit.darkcurrent(CCDitem["temperature"], CCDitem["GAIN Mode"]) 
+        * int(CCDitem["TEXPMS"])/1000.0)# tot dark current in electrons
+    #Then based on how large the dark current is , decide on whether to use 0D or 2D subtraction
+    if totdarkcurrent.mean() > CCDunit.dc_2D_limit:
+        totdarkcurrent = (
+            CCDunit.darkcurrent2D(CCDitem["temperature"], CCDitem["GAIN Mode"])
+            * int(CCDitem["TEXPMS"])
+            / 1000.0
+            )  
+
     dark_calc_image = (
         CCDunit.ampcorrection
         * totdarkcurrent

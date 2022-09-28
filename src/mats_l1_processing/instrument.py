@@ -157,7 +157,14 @@ class CCD:
         self.OHB_marker_tag = OHB_marker_tag
 
         calibration_data = toml.load(calibration_file)
+        
+        # Limit to choose 1D or 2D dark current subtraction
+        self.dc_2D_limit=calibration_data["darkcurrent"]["dc_2D_limit"]
+        if self.dc_2D_limit!=0: 
+            # Raising hte below error since thresholds are yet to be decided  upon LM 20220928
+            raise NotImplementedError('Only threshold of zero supported')
 
+        # Read in Gabriels calibration data from a .mat file
         filename = (
             calibration_data["darkcurrent"]["folder"]
             + "FM0"
@@ -184,8 +191,8 @@ class CCD:
         self.ro_std_LSM = mat["ro_std_LSM"]
         self.alpha_avr_LSM = mat["alpha_avr_LSM"]
         self.alpha_std_LSM = mat["alpha_std_LSM"]
-
-        # 1D dark current subtraction stuff
+        
+        # 0D dark current subtraction stuff
         self.log_a_avr_HSM = mat["log_a_avr_HSM"]
         self.log_a_std_HSM = mat["log_a_std_HSM"]
         self.log_b_avr_HSM = mat["log_b_avr_HSM"]
@@ -582,7 +589,7 @@ class Instrument:
         UV2: (CCD): MATS CCD channel
         NADIR: (CCD): MATS CCD channel
         KTH_test_channel (CCD): MATS CCD channel
-
+        calibration_file: string containing the info in the calibration file
         """
 
     def __init__(self, calibration_file, channel=None):
@@ -594,6 +601,10 @@ class Instrument:
             channel (str, list, optional): name of channel, a list of channel names or empty which creates a oject with the 6 standard channels.            
 
         """
+
+        f = open(calibration_file)
+        self.calibration_file=f.read()
+        f.close()
 
         self.IR1 = None
         self.IR2 = None
