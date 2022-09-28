@@ -862,14 +862,12 @@ def read_flatfield(CCDunit, mode, flatfield_directory):
     )
     from mats_l1_processing.experimental_utils import readprotocol
 
-    # Note that 1 and 0 are switched  for signal mode
-
-    if mode == 0:  # HSM
+    if mode == 'HSM': 
         directory = flatfield_directory
         # protocol='flatfields_200330_SigMod1_LMprotocol.txt'
         protocol = "readin_flatfields_SigMod1.txt"
 
-    elif mode == 1:  # LSM
+    elif mode == 'LSM':  # LSM
         directory = flatfield_directory
 
         protocol = "readin_flatfields_SigMod0.txt"

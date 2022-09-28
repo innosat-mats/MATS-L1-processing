@@ -26,14 +26,9 @@ def make_flatfield(channel, signalmode, calibration_file, plot=True):
 
     calibration_data=toml.load(calibration_file)
 
-    if signalmode == "HSM":
-        flatfield_wo_baffle = read_flatfield(
-            CCDunit, 0, calibration_data["flatfield"]["flatfieldfolder_cold_unprocessed"]
-        )
-    elif signalmode == "LSM":
-        flatfield_wo_baffle = read_flatfield(
-            CCDunit, 1, calibration_data["flatfield"]["flatfieldfolder_cold_unprocessed"]
-        )
+
+    CCDunit, signalmode, calibration_data["flatfield"]["flatfieldfolder_cold_unprocessed"]
+
 
     directory = calibration_data["flatfield"][
         "baffle_flatfield"
