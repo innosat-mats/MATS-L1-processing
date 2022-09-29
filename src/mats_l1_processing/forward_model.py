@@ -61,7 +61,8 @@ def forward(photons,CCDitem, f=0, plotme=True):
     CCDitem_nobin['NCBIN FPGAColumns']=1
     CCDitem_nobin['NRBIN']=1    
     image_flatf_fact=calculate_flatfield(CCDitem_nobin.copy())      
-    simage_flatf=simage_raw*image_flatf_fact
+    simage_flatf=simage_raw*image_flatf_fact*CCDitem["CCDunit"].calib_denominator(CCDitem["GAIN Mode"])
+
     #simage_flatf=simage_raw*image_flatf_fact[CCDitem['NRSKIP']:CCDitem['NRSKIP']+CCDitem['NROW'],
     #                                     CCDitem['NCSKIP']:CCDitem['NCSKIP']+CCDitem['NCOL']+1]
 
@@ -178,7 +179,7 @@ def forward_and_backward(CCDitem, photons, plot=True):
 
 
 
-'''
+
 
 # Read in a CCDitem 
 
@@ -213,4 +214,3 @@ CCDitem['CCDunit']=intrument.get_CCD("IR1")
 
 forward_and_backward(CCDitem,  photons=1000, plot=True)
 
-'''
