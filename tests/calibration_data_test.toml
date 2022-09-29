@@ -26,5 +26,5 @@ title = "Level 1 calibration files for testing this package"
     sumwell = 'calibration_data/linearity/final/linearity_col'
     tables = 'calibration_data/linearity/tables/20220906/'
 [calibration]
-	calibration_constants = "/Users/lindamegner/MATS/retrieval/git/MATS-L1-processing/calibration_data/calibration_constants.txt"
+	calibration_constants = 'calibration_data/calibration/calibration_constants.txt'
 
