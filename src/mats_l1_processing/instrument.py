@@ -268,7 +268,8 @@ class CCD:
         
         # Absolute and relative calibration constants
         
-        df = pd.read_csv(calibration_data["calibration"]["calibration_constants"], sep=" ", comment="#",
+        
+        df = pd.read_csv(calibration_data["abs_rel_calib"]["abs_rel_calib_constants"], comment="#",
                          skipinitialspace=True, skiprows=()) 
         if self.channel=='IR1':
             self.cal_fact=df["rel_ir1"][0]*df["abs_ir"][0]
