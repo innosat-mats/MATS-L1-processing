@@ -215,43 +215,48 @@ class CCD:
         self.log_b_img_err_HSM = mat["log_b_img_err_HSM"]
 
         # Flatfields
-        self.flatfield_HSM = np.load(
-            calibration_data["flatfield"]["flatfieldfolder"]
-            + "flatfield_"
-            + channel
-            + "_HSM.npy"
-        )
-        self.flatfield_LSM = np.load(
-            calibration_data["flatfield"]["flatfieldfolder"]
-            + "flatfield_"
-            + channel
-            + "_LSM.npy"
-        )
+        if channel=="NADIR":
+            self.flatfield_HSM =np.ones(self.log_a_img_avr_HSM.shape)
+            self.flatfield_LSM =np.ones(self.log_a_img_avr_LSM.shape)
+        else:
+            self.flatfield_HSM = np.load(
+                calibration_data["flatfield"]["flatfieldfolder"]
+                + "flatfield_"
+                + channel
+                + "_HSM.npy"
+            )
+            self.flatfield_LSM = np.load(
+                calibration_data["flatfield"]["flatfieldfolder"]
+                + "flatfield_"
+                + channel
+                + "_LSM.npy"
+            )
 
         # Non-linearity
-        with open(calibration_data["linearity"]["pixel"]
-            + "_" + str(self.channelnumber)
-            + ".pkl", 'rb') as fp:
-
-            self.non_linearity_pixel = pickle.load(fp)
-
-        with open(calibration_data["linearity"]["sumrow"]
-            + "_" + str(self.channelnumber)
-            + ".pkl", 'rb') as fp:
-
-            self.non_linearity_sumrow = pickle.load(fp)
-
-        with open(calibration_data["linearity"]["sumwell"]
-            + "_" + str(self.channelnumber)
-            + ".pkl", 'rb') as fp:
-
-            self.non_linearity_sumwell = pickle.load(fp)
-        
-        if 'tables' in calibration_data["linearity"]:
-            self.tablefolder = calibration_data["linearity"]["tables"]
-            self.tables = pd.read_csv(self.tablefolder + 'tables.csv')
-        else:
-            self.tables = None
+        if channel!="NADIR":
+            with open(calibration_data["linearity"]["pixel"]
+                + "_" + str(self.channelnumber)
+                + ".pkl", 'rb') as fp:
+    
+                self.non_linearity_pixel = pickle.load(fp)
+    
+            with open(calibration_data["linearity"]["sumrow"]
+                + "_" + str(self.channelnumber)
+                + ".pkl", 'rb') as fp:
+    
+                self.non_linearity_sumrow = pickle.load(fp)
+    
+            with open(calibration_data["linearity"]["sumwell"]
+                + "_" + str(self.channelnumber)
+                + ".pkl", 'rb') as fp:
+    
+                self.non_linearity_sumwell = pickle.load(fp)
+            
+            if 'tables' in calibration_data["linearity"]:
+                self.tablefolder = calibration_data["linearity"]["tables"]
+                self.tables = pd.read_csv(self.tablefolder + 'tables.csv')
+            else:
+                self.tables = None
 
         # Amplification correction for UV channels
         if self.channel == "UV1" or self.channel == "UV2":
@@ -622,7 +627,7 @@ class Instrument:
             self.IR4 = CCD("IR4",calibration_file)
             self.UV1 = CCD("UV1",calibration_file)
             self.UV2 = CCD("UV2",calibration_file)
-            self.NADIR = CCD("IR1",calibration_file)
+            self.NADIR = CCD("NADIR",calibration_file)
             
         elif type(channel) == str:
             setattr(self, channel, CCD("channel",calibration_file))

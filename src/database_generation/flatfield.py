@@ -1,7 +1,6 @@
 import mats_l1_processing
 import numpy as np
 from PIL import Image
-from mats_l1_processing.L1_calibration_functions import read_flatfield
 from mats_l1_processing.instrument import CCD
 from mats_l1_processing.experimental_utils import (
     plot_CCDimage,
@@ -17,6 +16,58 @@ from pathlib import Path
 import toml
 
 
+
+def read_flatfield(CCDunit, mode, flatfield_directory):
+    from mats_l1_processing.items_units_functions import (
+        read_files_in_protocol_as_ItemsUnits,
+    )
+    from mats_l1_processing.experimental_utils import readprotocol
+
+    if mode == 'HSM': 
+        directory = flatfield_directory
+        # protocol='flatfields_200330_SigMod1_LMprotocol.txt'
+        protocol = "readin_flatfields_SigMod1.txt"
+
+    elif mode == 'LSM':  # LSM
+        directory = flatfield_directory
+
+        protocol = "readin_flatfields_SigMod0.txt"
+    else:
+        print("Undefined mode")
+
+    read_from = "rac"
+    df_protocol = readprotocol(directory + protocol)
+    # df_only2 = df_protocol[(df_protocol.index-2) % 3 != 0]
+
+    # The below reads all images in protocol - very inefficient. Should be only one file read in LM200810
+    CCDItemsUnits = read_files_in_protocol_as_ItemsUnits(
+        df_protocol, directory, 3, read_from
+    )
+    # Pick the rignt image, thsi should be hard coded in the end
+
+    
+    if CCDunit.channel == "NADIR":  # Hack since we dont have any nadir flat fields yet.
+        # Cannot be zero due to zero devision in calculate_flatfield. Should be fixed.
+        raise Warning('No flatfields measurements of the NADIR channel')
+        flatfield = np.zero((511, 2048))+0.01
+
+    else:
+        CCDItemsUnitsSelect = list(
+            filter(lambda x: (x.imageItem["channel"] == CCDunit.channel), CCDItemsUnits)
+        )
+
+        if len(CCDItemsUnitsSelect) > 1:
+            print("Several possible pictures found")
+        try:
+            flatfield = CCDItemsUnitsSelect[
+                0
+            ].subpic  # This is where it gets read in. The dark (including offsets and balnks) have already been subracted.
+        except:
+            print("No flatfield CCDItemUnit found - undefined flatfield")
+
+    return flatfield
+
+
 def make_flatfield(channel, signalmode, calibration_file, plot=True):
     # makes flatfield using both a cold flatfield without baffle and a room temp flatfield with baffle.
 
@@ -26,8 +77,7 @@ def make_flatfield(channel, signalmode, calibration_file, plot=True):
 
     calibration_data=toml.load(calibration_file)
 
-
-    CCDunit, signalmode, calibration_data["flatfield"]["flatfieldfolder_cold_unprocessed"]
+    flatfield_wo_baffle = read_flatfield(CCDunit, signalmode, calibration_data["flatfield"]["flatfieldfolder_cold_unprocessed"])
 
 
     directory = calibration_data["flatfield"][

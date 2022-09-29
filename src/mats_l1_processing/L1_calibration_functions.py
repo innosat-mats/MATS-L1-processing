@@ -246,24 +246,36 @@ def inverse_model_table(table,value):
     return table[0,int(value)], table[1,int(value)]
 
 def get_linearized_image(CCDitem, image_bias_sub):
+    """ Linearizes the image. At the moment not done for NADIR.
+
+    Args:
+        CCDitem:  dictonary containing CCD image and information
+        image: np.array The image that will be linearised
+    Returns: 
+        image_linear (np.array, dtype=float64): linearised number of counts
+        flag (np.array, dtype = uint16): flag to indicate problems with the linearisation
+    """        
     image_linear = np.zeros(image_bias_sub.shape)
     error_flag = np.zeros(image_bias_sub.shape, dtype=np.uint16)
-
-    table = CCDitem['CCDunit'].get_table(CCDitem)
-    if table is not None:
-        for i in range(image_bias_sub.shape[0]):
-            for j in range(image_bias_sub.shape[1]): 
-                if image_bias_sub[i,j] > 0:
-                    image_linear[i,j],error_flag[i,j] = inverse_model_table(table,image_bias_sub[i,j])
-                else:
-                    image_linear[i,j] = image_bias_sub[i,j]
+    
+    if CCDitem["channel"]=='NADIR': # No linearisation of NADIR at the moment
+        image_linear =image_bias_sub
     else:
-        for i in range(image_bias_sub.shape[0]):
-            for j in range(image_bias_sub.shape[1]): 
-                if image_bias_sub[i,j] > 0:
-                    image_linear[i,j],error_flag[i,j] = inverse_model_real(CCDitem,image_bias_sub[i,j])
-                else:
-                    image_linear[i,j] = image_bias_sub[i,j]
+        table = CCDitem['CCDunit'].get_table(CCDitem)
+        if table is not None:
+            for i in range(image_bias_sub.shape[0]):
+                for j in range(image_bias_sub.shape[1]): 
+                    if image_bias_sub[i,j] > 0:
+                        image_linear[i,j],error_flag[i,j] = inverse_model_table(table,image_bias_sub[i,j])
+                    else:
+                        image_linear[i,j] = image_bias_sub[i,j]
+        else:
+            for i in range(image_bias_sub.shape[0]):
+                for j in range(image_bias_sub.shape[1]): 
+                    if image_bias_sub[i,j] > 0:
+                        image_linear[i,j],error_flag[i,j] = inverse_model_real(CCDitem,image_bias_sub[i,j])
+                    else:
+                        image_linear[i,j] = image_bias_sub[i,j]
                 
     error_flag = make_binary(error_flag,2)
     
@@ -854,55 +866,6 @@ def calculate_time_per_row(header):
     T_row_extra = (T_row_read + T_row_shift * nrowbin) / 1e9
 
     return T_row_extra, T_delay
-
-
-def read_flatfield(CCDunit, mode, flatfield_directory):
-    from mats_l1_processing.items_units_functions import (
-        read_files_in_protocol_as_ItemsUnits,
-    )
-    from mats_l1_processing.experimental_utils import readprotocol
-
-    if mode == 'HSM': 
-        directory = flatfield_directory
-        # protocol='flatfields_200330_SigMod1_LMprotocol.txt'
-        protocol = "readin_flatfields_SigMod1.txt"
-
-    elif mode == 'LSM':  # LSM
-        directory = flatfield_directory
-
-        protocol = "readin_flatfields_SigMod0.txt"
-    else:
-        print("Undefined mode")
-
-    read_from = "rac"
-    df_protocol = readprotocol(directory + protocol)
-    # df_only2 = df_protocol[(df_protocol.index-2) % 3 != 0]
-
-    # The below reads all images in protocol - very inefficient. Should be only one file read in LM200810
-    CCDItemsUnits = read_files_in_protocol_as_ItemsUnits(
-        df_protocol, directory, 3, read_from
-    )
-    # Pick the rignt image, thsi should be hard coded in the end
-
-    if CCDunit.channel == "NADIR":  # Hack since we dont have any nadir flat fields yet.
-        # Cannot be zero due to zero devision in calculate_flatfield. Should be fixed.
-        flatfield = np.zeros((511, 2048)) + 0.01
-
-    else:
-        CCDItemsUnitsSelect = list(
-            filter(lambda x: (x.imageItem["channel"] == CCDunit.channel), CCDItemsUnits)
-        )
-
-        if len(CCDItemsUnitsSelect) > 1:
-            print("Several possible pictures found")
-        try:
-            flatfield = CCDItemsUnitsSelect[
-                0
-            ].subpic  # This is where it gets read in. The dark (including offsets and balnks) have already been subracted.
-        except:
-            print("No flatfield CCDItemUnit found - undefined flatfield")
-
-    return flatfield
 
 
 
