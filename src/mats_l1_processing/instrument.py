@@ -415,7 +415,7 @@ class CCD:
         else: 
             df_table = self.tables.loc[(self.tables['CCDSEL'] == CCDitem['CCDSEL']) & (self.tables['NRBIN'] == CCDitem['NRBIN']) & (self.tables['NCBIN CCDColumns'] == CCDitem['NCBIN CCDColumns']) & (self.tables['GAIN Mode'] == CCDitem['GAIN Mode'])]
         
-            if df_table is not None:
+            if len(df_table)>0:
                 table = np.load(self.tablefolder + df_table.iloc[0]['Tablefile'] +'.npy')
             else:
                 table = None
