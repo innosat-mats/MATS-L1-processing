@@ -323,7 +323,7 @@ def flatfield_calibration(CCDitem, image=None):
 
    
     image_calib_nonflipped = (
-        image*CCDitem["CCDunit"].cal_fact
+        image/CCDitem["CCDunit"].calib_denominator(CCDitem["GAIN Mode"])
         / image_flatf_fact[
             CCDitem["NRSKIP"] : CCDitem["NRSKIP"] + CCDitem["NROW"],
             CCDitem["NCSKIP"] : CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
