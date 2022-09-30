@@ -312,22 +312,11 @@ def flatfield_calibration(CCDitem, image=None):
     if image is None:  
         image = CCDitem["IMAGE"]
     image_flatf_fact = calculate_flatfield(CCDitem)
-    # mean = image_flatf_fact[
-    #     CCDitem["NRSKIP"] : CCDitem["NRSKIP"] + CCDitem["NROW"],
-    #     CCDitem["NCSKIP"] : CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
-    # ].mean()
-    # shape = image_flatf_fact[
-    #     CCDitem["NRSKIP"] : CCDitem["NRSKIP"] + CCDitem["NROW"],
-    #     CCDitem["NCSKIP"] : CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
-    # ].shape
 
    
     image_calib_nonflipped = (
         image/CCDitem["CCDunit"].calib_denominator(CCDitem["GAIN Mode"])
-        / image_flatf_fact[
-            CCDitem["NRSKIP"] : CCDitem["NRSKIP"] + CCDitem["NROW"],
-            CCDitem["NCSKIP"] : CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
-        ]
+        / image_flatf_fact
     )
     # rows,colums Note that nrow always seems to be implemented as +1 already, whereas NCOL does not, hence the missing '+1' in the column calculation /LM201204
 
@@ -349,7 +338,7 @@ def calculate_flatfield(CCDitem):
 
 
     Returns: 
-        image_flatf_fact: np.array of the same size as the binned image, 
+        image_flatf: np.array of the same size as the binned image, with factors 
         which should be divided with to compensate for flatfield
     """
     try:
@@ -364,14 +353,15 @@ def calculate_flatfield(CCDitem):
     # area_xmax = 1523    
     # meanff = np.mean(image_flatf[area_ymin:area_ymax, area_xmin + 1 : area_xmax + 1])  # Note that this is the mean of the full flatfield , not of the part of the image used.
     if (
-        CCDitem["NCBIN CCDColumns"] > 1 or CCDitem["NCBIN FPGAColumns"] > 1
-    ):  # Or row binning
+        (CCDitem["NCSKIP"] > 1)
+        or (CCDitem["NCSKIP"] > 1)
+        or (CCDitem["NCBIN CCDColumns"] > 1)
+        or (CCDitem["NCBIN FPGAColumns"] > 1)
+        or (CCDitem["NRBIN"] > 1)
+        ):  
         image_flatf = meanbin_image_with_BC(CCDitem, image_flatf)
-    
-    image_flatf_fact = image_flatf  # /meanff #Already scaled wheen binned and
 
-
-    return image_flatf_fact
+    return image_flatf
 
 
 def subtract_dark(CCDitem, image=None):
@@ -390,18 +380,12 @@ def subtract_dark(CCDitem, image=None):
     if image is None:
         image = CCDitem["IMAGE"]
         
-    dark_fullpic = calculate_dark(CCDitem)
+    dark_img = calculate_dark(CCDitem)
 
-    
-    image_dark_sub = (
-        image
-        - dark_fullpic[
-            CCDitem["NRSKIP"] : CCDitem["NRSKIP"] + CCDitem["NROW"],
-            CCDitem["NCSKIP"] : CCDitem["NCSKIP"] + CCDitem["NCOL"] + 1,
-        ]
-    )
-    # rows,colums Note that nrow always seems to be implemented as +1 already, whereas NCOL does not, hence the missing '+1' in the column calculation /LM201204
-    
+
+    image_dark_sub = image-dark_img
+        
+ 
     #If image becomes negative set flag
     error_flag_negative = np.zeros(image.shape, dtype=np.uint16)
     error_flag_negative[image_dark_sub<0] = 1
@@ -419,13 +403,13 @@ def calculate_dark(CCDitem):
     Calculates dark image from Gabriels measurements. The function reads 
     gabriels dark current images using temperature and gain mode as an input. 
     The function converts from electrons to counts and returns a correctly
-    binned dark current image in counts.  
+    binned dark current image in unit counts.  
 
     Args:
         CCDitem:  dictonary containing CCD image and information
 
     Returns: 
-        dark_calc_image: Dark current image for given CCD item
+        dark_calc_image: Full frame dark current image for given CCD item. 
     """
 
     try:
@@ -451,45 +435,74 @@ def calculate_dark(CCDitem):
         / CCDunit.alpha_avr(CCDitem["GAIN Mode"])
     )
 
+
     if (
-        (CCDitem["NCBIN CCDColumns"] > 1)
+        (CCDitem["NCSKIP"] > 1)
+        or (CCDitem["NCSKIP"] > 1)
+        or (CCDitem["NCBIN CCDColumns"] > 1)
         or (CCDitem["NCBIN FPGAColumns"] > 1)
         or (CCDitem["NRBIN"] > 1)
-    ):  # Or row binning
-        dark_calc_image = bin_image_using_predict_and_get_true_image(
-            CCDitem, dark_calc_image
-        )
-    return dark_calc_image
+        ):  #
+        dark_img = bin_image_with_BC(CCDitem, dark_calc_image)
+    else:
+        dark_img= dark_calc_image
+
+    return dark_img
 
 
 
-def meanbin_image_with_BC(header, reference_image="999"):
+def bin_image_with_BC(CCDitem, image_nonbinned=None):
     """
-    this is a function to bin an image withouyt any offset or blanks. Bad columns are skipped.
-    code is modified from Georgis predict_image and is very similar to bin_image_using_predict.
-    However this code is used for an image which has no offset, for instance when binning the 
-    flatfield image where offsets and dark currents already have been subtracted. 
+    This is a function to bin an image without any offset or blanks. 
 
     Args:
         CCDitem:  dictonary containing CCD image and information
-        reference_image (optional): numpy array image
+        image_nonbinned (optional): numpy array image
 
     Returns: 
-        mean_image: image mean-binned (not summed-binned) according to the info in CCDitem 
+        binned_image: binned image (by summing) 
+
+    """
+    if image_nonbinned is None:
+        image_nonbinned = CCDitem["IMAGE"]    
     
+    totbin=int(CCDitem["NRBIN"])*int(CCDitem["NCBIN CCDColumns"])*int(CCDitem["NCBIN FPGAColumns"])
+    
+    sumbinned_image=totbin*meanbin_image_with_BC(CCDitem, image_nonbinned)
+    
+    return sumbinned_image
+
+def meanbin_image_with_BC(CCDitem, image_nonbinned=None):
+    """
+    This is a function to mean-bin an image without any offset or blanks. Bad columns are skipped.
+    This code is used for an image which has already been treated with regards to offset and BC(get_true_image)
+    For instance when binning the flatfield image. Code is modified from Georgis predict_image 
+
+
+    Args:
+        CCDitem:  dictonary containing CCD image and information
+        image_nonbinned (optional): numpy array image
+
+    Returns: 
+        meanbinned_image: binned image (by taking the average) according to the info in CCDitem 
+
     """
 
-    ncol = int(header["NCOL"]) + 1
-    nrow = int(header["NROW"])
+            
+    if image_nonbinned is None:
+        image_nonbinned = CCDitem["IMAGE"]
 
-    nrowskip = int(header["NRSKIP"])
-    ncolskip = int(header["NCSKIP"])
+    ncol = int(CCDitem["NCOL"]) + 1
+    nrow = int(CCDitem["NROW"])
 
-    nrowbin = int(header["NRBIN"])
-    ncolbinC = int(header["NCBIN CCDColumns"])
-    ncolbinF = int(header["NCBIN FPGAColumns"])
+    nrowskip = int(CCDitem["NRSKIP"])
+    ncolskip = int(CCDitem["NCSKIP"])
 
-    bad_columns = header["BC"]
+    nrowbin = int(CCDitem["NRBIN"])
+    ncolbinC = int(CCDitem["NCBIN CCDColumns"])
+    ncolbinF = int(CCDitem["NCBIN FPGAColumns"])
+
+    bad_columns = CCDitem["BC"]
 
     if nrowbin == 0:  # no binning means beaning of one
         nrowbin = 1
@@ -501,12 +514,8 @@ def meanbin_image_with_BC(header, reference_image="999"):
         ncolbinF = 1
 
     ncolbintotal = ncolbinC * ncolbinF
+    ntotbin=ncolbintotal*nrowbin
 
-    if reference_image == "999":
-        reference_image = header["IMAGE"]
-
-    # bad column analysis
-    #   n_read, n_coadd = binning_bc(ncol, ncolskip, ncolbinF, ncolbinC, header['BC'])
 
     image = np.zeros((nrow, ncol))  # no offset
     nr_of_entries = np.zeros((nrow, ncol))
@@ -522,8 +531,6 @@ def meanbin_image_with_BC(header, reference_image="999"):
                     elif (j_c) * ncolbinC * ncolbinF + j_bc + ncolskip > 2048:
                         break
 
-                    # removed +1 after bad_columns, unclear why it was added
-                    # TODO
                     if (
                         ncolbinC > 1
                         and (j_c) * ncolbinC * ncolbinF + j_bc + ncolskip in bad_columns
@@ -531,24 +538,25 @@ def meanbin_image_with_BC(header, reference_image="999"):
                         continue
                     else:
 
-                        # add only the actual signal from every pixel (minus blank)
+                        # add only the actual signal from every pixel 
                         image[j_r, j_c] = (
-                            image[j_r, j_c]  # remove blank
-                            # LM201103 fixed bug renmoved -1 from th
-                            # + reference_image[(j_r-1)*nrowbin+j_br+nrowskip-1,(j_c-1)*ncolbinC*ncolbinF+j_bc+ncolskip-1] #row and column value evaluation, -1 to adjust for python indexing
-                            + reference_image[
+                            image[j_r, j_c]  
+                            + image_nonbinned[
                                 (j_r) * nrowbin + j_br + nrowskip,
                                 (j_c) * ncolbinC * ncolbinF + j_bc + ncolskip,
-                            ]  # row and column value evaluation
-                            * 1  # scaling factor
+                            ]  
                         )
 
                         nr_of_entries[j_r, j_c] = nr_of_entries[j_r, j_c] + 1
 
-    mean_image = image / nr_of_entries
-    return mean_image
+    meanbinned_image = image / nr_of_entries
+    return meanbinned_image
 
 
+
+
+
+    
 
 def bin_image_using_predict(header, reference_image="999"):
     """
@@ -700,14 +708,21 @@ def get_true_image(header, image=None):
 
 
 def binning_bc(Ncol, Ncolskip, NcolbinFPGA, NcolbinCCD, BadColumns):
+    """
+     Routine to estimate the correction factors for column binning with bad columns
+     
+     
+    Args:
+        Ncol, Ncolskip, NcolbinFPGA, NcolbinCCD, BadColumns.
+        as per ICD. BadColumns - array containing the index of bad columns
+                  (the index of first column is 0)
 
-    # a routine to estimate the correction factors for column binning with bad columns
+    Returns: 
+        n_read: array, containing the number of individually read superpixels
+               attributing to the given superpixel
+               n_coadd:  - array, containing the number of co-added individual pixels
 
-    # n_read - array, containing the number of individually read superpixels
-    #           attributing to the given superpixel
-    # n_coadd - array, containing the number of co-added individual pixels
-    # Input - as per ICD. BadColumns - array containing the index of bad columns
-    #           (the index of first column is 0)
+    """
 
     n_read = np.zeros(Ncol)
     n_coadd = np.zeros(Ncol)

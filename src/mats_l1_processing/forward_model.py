@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from mats_l1_processing.experimental_utils import readprotocol 
 from mats_l1_processing.experimental_utils import read_all_files_in_protocol, get_true_image_reverse, desmear_true_image_reverse
 from mats_l1_processing.L1_calibration_functions import get_true_image, desmear_true_image, subtract_dark, flatfield_calibration
-from mats_l1_processing.L1_calibration_functions import calculate_flatfield, calculate_dark,  bin_image_using_predict_and_get_true_image 
+from mats_l1_processing.L1_calibration_functions import calculate_flatfield, calculate_dark,  bin_image_using_predict_and_get_true_image , bin_image_with_BC
 from mats_l1_processing.instrument import Instrument, CCD
 #from experimental_utils import plot_CCDimage 
 
@@ -43,7 +43,7 @@ def forward(photons,CCDitem, f=0, plotme=True):
     # TOD0 Step 8 Transform from photons to electrons and then to LSB.   
 
     #if CCDitem['NCBIN CCDColumns']>1 or CCDitem['NCBIN FPGAColumns']>1 or CCDitem['NRBIN']>1 : 
-    simage_raw_binned=bin_image_using_predict_and_get_true_image(CCDitem.copy(), simage_raw.copy())
+    simage_raw_binned=bin_image_with_BC(CCDitem.copy(), simage_raw.copy())
    # simage_raw_binned=get_true_image(CCDitem.copy(),simage_raw_binned)  
     
     #plotmean=photons*CCDitem['NCBIN CCDColumns']*CCDitem['NCBIN FPGAColumns']*CCDitem['NRBIN']
@@ -66,7 +66,7 @@ def forward(photons,CCDitem, f=0, plotme=True):
     #simage_flatf=simage_raw*image_flatf_fact[CCDitem['NRSKIP']:CCDitem['NRSKIP']+CCDitem['NROW'],
     #                                     CCDitem['NCSKIP']:CCDitem['NCSKIP']+CCDitem['NCOL']+1]
 
-    simage_flatf_binned=bin_image_using_predict_and_get_true_image(CCDitem.copy(), simage_flatf.copy())
+    simage_flatf_binned=bin_image_with_BC(CCDitem.copy(), simage_flatf.copy())
     #simage_flatf_binned=get_true_image(CCDitem.copy(),simage_flatf_binned)
     
     #dark

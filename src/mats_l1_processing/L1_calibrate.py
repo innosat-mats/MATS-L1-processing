@@ -75,9 +75,12 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
 
     # step 3: correct for non-linearity (image is converted into float??)
 
-    image_linear,error_flags_linearity = get_linearized_image(CCDitem, image_bias_sub)
+    #image_linear,error_flags_linearity = get_linearized_image(CCDitem, image_bias_sub)
+    image_linear = image_bias_sub
+    error_flags_linearity =error_flags_bias
 
-    #image_linear = image_bias_sub
+
+    #image_linear
 
     # Step 4: Desmear
     image_desmeared, error_flags_desmear= desmear_true_image(CCDitem, image_linear)
