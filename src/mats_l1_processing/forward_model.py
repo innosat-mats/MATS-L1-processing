@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from mats_l1_processing.experimental_utils import readprotocol 
 from mats_l1_processing.experimental_utils import read_all_files_in_protocol, get_true_image_reverse, desmear_true_image_reverse
 from mats_l1_processing.L1_calibration_functions import get_true_image, desmear_true_image, subtract_dark, flatfield_calibration
-from mats_l1_processing.L1_calibration_functions import calculate_flatfield, calculate_dark,  bin_image_using_predict_and_get_true_image , bin_image_with_BC
+from mats_l1_processing.L1_calibration_functions import calculate_flatfield, calculate_dark, bin_image_with_BC
 from mats_l1_processing.instrument import Instrument, CCD
 #from experimental_utils import plot_CCDimage 
 
@@ -56,38 +56,21 @@ def forward(photons,CCDitem, f=0, plotme=True):
     
     
     #flatfield
-    CCDitem_nobin=CCDitem.copy()
-    CCDitem_nobin['NCBIN CCDColumns']=1 
-    CCDitem_nobin['NCBIN FPGAColumns']=1
-    CCDitem_nobin['NRBIN']=1    
-    image_flatf_fact=calculate_flatfield(CCDitem_nobin.copy())      
-    simage_flatf=simage_raw*image_flatf_fact*CCDitem["CCDunit"].calib_denominator(CCDitem["GAIN Mode"])
+    image_flatf_fact=calculate_flatfield(CCDitem.copy())     
 
-    #simage_flatf=simage_raw*image_flatf_fact[CCDitem['NRSKIP']:CCDitem['NRSKIP']+CCDitem['NROW'],
-    #                                     CCDitem['NCSKIP']:CCDitem['NCSKIP']+CCDitem['NCOL']+1]
+    simage_flatf_binned=simage_raw_binned*image_flatf_fact*CCDitem["CCDunit"].calib_denominator(CCDitem["GAIN Mode"])
 
-    simage_flatf_binned=bin_image_with_BC(CCDitem.copy(), simage_flatf.copy())
-    #simage_flatf_binned=get_true_image(CCDitem.copy(),simage_flatf_binned)
-    
     #dark
     # TBD: Decide on threshold fro when to use pixel correction (little dark current) and when to use average image correction (large dark current). 
     # TBD: The temperature needs to be decided in a better way then taken from the ADC as below.
     # Either read from rac files of temperature sensors or estimated from the top of the image
     
-    simage_dark=simage_flatf+calculate_dark(CCDitem_nobin.copy())
+    simage_dark_binned=simage_flatf_binned+calculate_dark(CCDitem.copy())
     #dark_fullpic=calculate_dark(CCDitem.copy())    
     #simage_dark=simage_flatf+dark_fullpic[CCDitem['NRSKIP']:CCDitem['NRSKIP']+CCDitem['NROW'],
     #                                      CCDitem['NCSKIP']:CCDitem['NCSKIP']+CCDitem['NCOL']+1]
 
-    # Binning and bad columns
-    simage_dark_binned=bin_image_using_predict_and_get_true_image(CCDitem.copy(), simage_dark.copy())
-    # testfig=plt.figure()
-    # testax=testfig.gca()
-    # hej=simage_binned-simage_dark
-    # plot(hej, testfig, testax, title='in-out')
-   
-    #simage_dark_binned=get_true_image(CCDitem.copy(),simage_dark_binned)
-    
+
     
     #add smear
     simage_smear=desmear_true_image_reverse(CCDitem.copy(), simage_dark_binned.copy())
@@ -97,7 +80,7 @@ def forward(photons,CCDitem, f=0, plotme=True):
     simage_bias=get_true_image_reverse(CCDitem.copy(),simage_smear.copy())
 
     
-    return simage_raw,simage_raw_binned, simage_flatf, simage_flatf_binned, simage_dark, simage_dark_binned, simage_smear, simage_bias
+    return simage_raw,simage_raw_binned,  simage_flatf_binned, simage_dark_binned, simage_smear, simage_bias
         
        
     
@@ -130,7 +113,7 @@ def forward_and_backward(CCDitem, photons, plot=True):
 
 
     
-    simage_raw,simage_raw_binned, simage_flatf, simage_flatf_binned, simage_dark, simage_dark_binned, simage_smear, simage_bias=forward(photons,CCDitem, plotme=False)
+    simage_raw,simage_raw_binned, simage_flatf_binned, simage_dark_binned, simage_smear, simage_bias=forward(photons,CCDitem, plotme=False)
 
     if plot:
         fig,ax=plt.subplots(5,3)
@@ -176,7 +159,7 @@ def forward_and_backward(CCDitem, photons, plot=True):
 # Main
 # =============================================================================
 
-
+"""
 
 
 
@@ -214,3 +197,4 @@ CCDitem['CCDunit']=intrument.get_CCD("IR1")
 
 forward_and_backward(CCDitem,  photons=1000, plot=True)
 
+"""
