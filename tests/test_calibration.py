@@ -196,8 +196,7 @@ def test_calibration_output():
 if __name__ == "__main__":
 
     
-    test_calibration_output()
-    # test_calibrate()    
+    test_calibration_output() 
     # test_readfunctions()
     # test_CCDunit()
     # test_forward_backward()

@@ -468,11 +468,13 @@ def bin_image_with_BC(CCDitem, image_nonbinned=None):
 
     return sumbinned_image
 
+
+
 def meanbin_image_with_BC(CCDitem, image_nonbinned=None):
     """
     This is a function to mean-bin an image (taking nskip into account) without any offset or blanks. Bad columns are skipped.
     This code is used for an image which has already been treated with regards to offset and BC(get_true_image)
-    For instance when binning the flatfield image. Code is modified from Georgis predict_image 
+    For instance when binning the flatfield image. 
 
 
     Args:
@@ -489,76 +491,38 @@ def meanbin_image_with_BC(CCDitem, image_nonbinned=None):
         image_nonbinned = CCDitem["IMAGE"]
         
     #Check if image needs to be binned or shifted    
+    nbin_c=int(CCDitem["NCBIN CCDColumns"])*int(CCDitem["NCBIN FPGAColumns"]) 
+    nbin_r=int(CCDitem["NRBIN"])
+    ncol = int(CCDitem["NCOL"]) + 1
+    nrow = int(CCDitem["NROW"])
+    
     totbin=int(CCDitem["NRBIN"])*int(CCDitem["NCBIN CCDColumns"])*int(CCDitem["NCBIN FPGAColumns"])  
     if (totbin>1 or CCDitem["NCSKIP"] >0 or CCDitem["NRSKIP"]>0):
+        image=image_nonbinned[CCDitem["NRSKIP"]:CCDitem["NRSKIP"]+nbin_r*nrow, 
+                              CCDitem["NCSKIP"]:CCDitem["NCSKIP"]+nbin_c*ncol]
 
-
-        ncol = int(CCDitem["NCOL"]) + 1
-        nrow = int(CCDitem["NROW"])
+        #Set bad columns to nan
+        for i in CCDitem["BC"]:
+            image[:,i]=np.nan
+            
+        nchunks_r=int(image.shape[0])/nbin_r
+        if not nchunks_r.is_integer():
+            raise Exception('the size of the image and the binning size are incompatible')
+        nchunks_r=int(nchunks_r)
+        
+        nchunks_c=int(image.shape[1])/nbin_c
+        if not nchunks_c.is_integer():
+            raise Exception('the size of the image and the binning size are incompatible')
+        nchunks_c=int(nchunks_c)
+   
+        meanbinned_image= np.nanmean(np.nanmean(image.reshape(nchunks_r,nbin_r,nchunks_c,nbin_c),3),1)
     
-        nrowskip = int(CCDitem["NRSKIP"])
-        ncolskip = int(CCDitem["NCSKIP"])
-    
-        nrowbin = int(CCDitem["NRBIN"])
-        ncolbinC = int(CCDitem["NCBIN CCDColumns"])
-        ncolbinF = int(CCDitem["NCBIN FPGAColumns"])
-    
-        bad_columns = CCDitem["BC"]
-    
-        if nrowbin == 0:  # no binning means beaning of one
-            nrowbin = 1
-    
-        if ncolbinC == 0:  # no binning means beaning of one
-            ncolbinC = 1
-    
-        if ncolbinF == 0:  # no binning means beaning of one
-            ncolbinF = 1
-    
-        ncolbintotal = ncolbinC * ncolbinF
-    
-    
-        image = np.zeros((nrow, ncol))  # no offset
-        nr_of_entries = np.zeros((nrow, ncol))
-    
-        for j_r in range(0, nrow):  # check indexing again
-            for j_c in range(0, ncol):
-                for j_br in range(0, nrowbin):  # account for row binning on CCD
-                    for j_bc in range(0, ncolbintotal):  # account for column binning
-                        # LM201030: Go through all unbinned columns(both from FPGA and onchip) that belongs to one superpixel(j_r,j_c) and if the column is not Bad, add the signal of that unbinned pixel to the superpixel (j_r,j_c)
-                        # out of reference image range
-                        if (j_r) * nrowbin + j_br + nrowskip > 511:
-                            break
-                        elif (j_c) * ncolbinC * ncolbinF + j_bc + ncolskip > 2048:
-                            break
-    
-                        if (
-                            ncolbinC > 1
-                            and (j_c) * ncolbinC * ncolbinF + j_bc + ncolskip in bad_columns
-                        ):  # +1 becuase Ncol is +1
-                            continue
-                        else:
-    
-                            # add only the actual signal from every pixel 
-                            image[j_r, j_c] = (
-                                image[j_r, j_c]  
-                                + image_nonbinned[
-                                    (j_r) * nrowbin + j_br + nrowskip,
-                                    (j_c) * ncolbinC * ncolbinF + j_bc + ncolskip,
-                                ]  
-                            )
-    
-                            nr_of_entries[j_r, j_c] = nr_of_entries[j_r, j_c] + 1
-    
-        meanbinned_image = image / nr_of_entries
-    
+            
     
     else:
         meanbinned_image=image_nonbinned
-
     
-    return meanbinned_image
-
-
+    return meanbinned_image        
 
 
 
