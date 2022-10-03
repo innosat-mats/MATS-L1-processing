@@ -155,18 +155,53 @@ def test_error_algebra():
     assert error_flag[0,0] == '0011'
     assert error_flag[0,1] == '0000'
 
+def test_calibration_output():
+    
+    from mats_l1_processing.L1_calibration_functions import (
+        get_true_image,
+        desmear_true_image,
+        subtract_dark,
+        flatfield_calibration
+    )
+    
+   # from mats_l1_processing.read_in_functions import read_CCDitems    
+    # directory='testdata/binning_test_20200812/RacFiles_out/'
+    # CCDitems = read_CCDitems(directory) 
+    # instrument = Instrument("tests/calibration_data_test.toml")
+    
+    with open('testdata/CCDitem_NSKIP_example.pkl', 'rb') as f:
+        CCDitem = pickle.load(f)
+    
+    
+    image_bias_sub,error_flags_bias = get_true_image(CCDitem)
+
+    image_linear = image_bias_sub
 
 
+    image_desmeared, error_flags_desmear= desmear_true_image(CCDitem, image_linear)
 
+    image_dark_sub, error_flags_dark = subtract_dark(CCDitem, image_desmeared)
+
+    image_calib_nonflipped, error_flags_flatfield = flatfield_calibration(CCDitem, image_dark_sub)
+    
+    with open('/Users/lindamegner/MATS/retrieval/git/MATS-L1-processing/testdata/calibration_output.pkl', 'rb') as f:
+            [image_bias_sub_old, image_desmeared_old, image_dark_sub_old, image_calib_nonflipped_old]=pickle.load(f)
+    
+    assert np.abs(image_bias_sub_old-image_bias_sub).all()<1e-3
+    assert np.abs(image_desmeared_old-image_desmeared).all()<1e-3
+    assert np.abs(image_dark_sub_old-image_dark_sub).all()<1e-3
+    assert np.abs(image_calib_nonflipped_old-image_calib_nonflipped).all()<1e-3
 
 
 if __name__ == "__main__":
 
-    test_calibrate()    
-    test_readfunctions()
-    test_CCDunit()
-    test_forward_backward()
-    test_non_linearity_fullframe()
-    test_non_linearity_binned()
-    test_calibrate()
-    test_error_algebra()
+    
+    test_calibration_output()
+    # test_calibrate()    
+    # test_readfunctions()
+    # test_CCDunit()
+    # test_forward_backward()
+    # test_non_linearity_fullframe()
+    # test_non_linearity_binned()
+    # test_calibrate()
+    # test_error_algebra()
