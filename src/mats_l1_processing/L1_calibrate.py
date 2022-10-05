@@ -17,7 +17,8 @@ from mats_l1_processing.L1_calibration_functions import (
     get_linearized_image_parallelized,
     combine_flags,
     make_binary,
-    flip_image
+    flip_image,
+    handle_bad_columns
 )
 
 from mats_l1_processing.L1b_calibration_functions import shift_image
@@ -58,14 +59,7 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
 
     CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
 
-    #  Hack to have no compensation for bad colums at the time. TODO later.
-    error_bad_column = np.zeros(CCDitem["IMAGE"].shape,dtype=int)
-    if not (CCDitem["NBC"] == 0):
-        CCDitem["NBC"] = 0
-        CCDitem["BC"] = np.array([])
-        error_bad_column = np.ones(CCDitem["IMAGE"].shape)
-    
-    error_bad_column = make_binary(error_bad_column,1)
+    error_bad_column=handle_bad_columns(CCDitem)
 
     image_lsb = CCDitem["IMAGE"]
     

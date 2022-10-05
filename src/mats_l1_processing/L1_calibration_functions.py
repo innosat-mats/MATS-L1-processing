@@ -293,6 +293,41 @@ def get_linearized_image_parallelized(CCDitem, image_bias_sub):
     image_linear_list,error_flag = Parallel(n_jobs=4)(delayed( loop_over_rows)(CCDitem,image_bias_sub[i]) for i in range(image_bias_sub.shape[0]))
     return np.array(image_linear_list),np.array(error_flag)
 
+
+## Bad columns ##
+
+def handle_bad_columns(CCDitem, handle_BC=False):
+    """ Handles bad columns. For now just set them to non-bad. 
+    Args:
+        CCDitem:  dictonary containing CCD image and information
+        handle_BC (optional): switch to tell whether to treat BC or not
+
+    Returns: 
+        image_dark_sub (np.array, dtype=float64): true number of counts
+        flags (np.array, dtype = uint16): 2 flags to indicate problems with the darc subtractions. 
+            Binary array: 1st bit idicates that the dark subtraction renedered a negative value as result, second bit indiates a temperature out of normal range.
+    """     
+    
+    
+    if not handle_BC:  #  No treatment of bad colums at the time. TODO later.
+
+        error_bad_column = np.zeros(CCDitem["IMAGE"].shape,dtype=np.uint16)
+        if not (CCDitem["NBC"] == 0):
+            CCDitem["NBC"] = 0
+            CCDitem["BC"] = np.array([])
+            error_bad_column = np.ones(CCDitem["IMAGE"].shape)
+        error_bad_column = make_binary(error_bad_column,1)  
+    
+    
+    else:
+        #We man have to do somthing more here too but or now just flag all
+        #superbins that only consist of bad columns LM 221005
+        binnedimage, error_bad_column=meanbin_image_with_BC(CCDitem, error_flag_out=True)
+
+    
+    return error_bad_column
+
+
 ## Flatfield ##
 
 def flatfield_calibration(CCDitem, image=None):
@@ -470,19 +505,26 @@ def bin_image_with_BC(CCDitem, image_nonbinned=None):
 
 
 
-def meanbin_image_with_BC(CCDitem, image_nonbinned=None):
+def meanbin_image_with_BC(CCDitem, image_nonbinned=None, error_flag_out=False):
     """
-    This is a function to mean-bin an image (taking nskip into account) without any offset or blanks. Bad columns are skipped.
-    This code is used for an image which has already been treated with regards to offset and BC(get_true_image)
-    For instance when binning the flatfield image. 
+    This function bins a image, taking bad coulmns into account, and returns a 
+    binned image where the subpixels are the mean of the subbins. 
+    If all subins are bvad columns (NaNs) Nan is returned for the superbin. 
+    This fucntion is thus also an easy way to check if all subpixels in a 
+    superpixel are bad (NaN).
+
 
 
     Args:
         CCDitem:  dictonary containing CCD image and information
         image_nonbinned (optional): numpy array image
+        error_flag_out (optional): . Option to return error fflag. Defaulte False
 
     Returns: 
         meanbinned_image: binned image (by taking the average) according to the info in CCDitem 
+        OPTIONAL error_flag  (np.array, dtype = uint16): returned if error_flag is True. 
+            Indicates that all subpixels in superpixel are BC and therefore set to  NaNs.
+
 
     """
 
@@ -522,8 +564,14 @@ def meanbin_image_with_BC(CCDitem, image_nonbinned=None):
     else:
         meanbinned_image=image_nonbinned
     
-    return meanbinned_image        
-
+    if error_flag_out:
+        error_flag= np.zeros(meanbinned_image.shape, dtype=np.uint16)
+        error_flag[np.isnan(meanbinned_image)] = 1 # Flag for negative value   
+        error_flag = make_binary(error_flag,1)
+        return meanbinned_image, error_flag  
+      
+    else:
+        return meanbinned_image
 
 
 

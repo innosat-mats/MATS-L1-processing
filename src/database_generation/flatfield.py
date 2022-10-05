@@ -271,6 +271,7 @@ def make_flatfield(channel, signalmode, calibration_file, plot=True):
         #    myax.set_aspect('auto')
 
         fig.suptitle(channel+' '+signalmode)
+
         Path("output").mkdir(parents=True, exist_ok=True)
         fig.savefig("output/MorphedFlatfield_" + channel + ".jpg")
 
