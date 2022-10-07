@@ -624,7 +624,7 @@ class Instrument:
 
     def __init__(self, calibration_file, channel=None):
 
-        """Init method for CCD class
+        """Init method for Instrument class
 
         Args:
             calibration_file (str): calibration file containing paths to calibration data

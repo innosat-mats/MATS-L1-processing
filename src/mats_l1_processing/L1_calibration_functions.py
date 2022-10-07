@@ -128,7 +128,27 @@ def optimize_function(x,CCD,nrowbin,ncolbin,value):
     return np.abs(y_model-value)
 
 def test_for_saturation(CCDunit,nrowbin,ncolbin,value):
+    ''' 
+    Tests if a value is in the saturated are of a CCD
+
+    Author: Ole Martin Christensen
     
+    Args:
+        CCDunit (obj): CCDunit object which describes the physical CCD
+        nrowbin (int): number of rows binned
+        ncolbin (int): number of columns binned
+        value (int): the measured value to check for saturation
+
+    Returns: 
+        flag (int): Flag to mark saturation.
+            0 = all ok, 
+            1 = pixel reached non-linearity in pixel, row or column,  
+            3 = pixel reached saturation in pixel, row or column
+
+        x: nan if not saturated otherwise equal to 
+            CCDunit.non_linearity_pixel.saturation*nrowbin*ncolbin
+    '''
+
     value_mapped_to_pixels = value/(nrowbin*ncolbin)
     value_mapped_to_shift_register = value/(ncolbin)
     value_mapped_to_summation_well = value
@@ -245,37 +265,60 @@ def inverse_model_table(table,value):
 
     return table[0,int(value)], table[1,int(value)]
 
-def get_linearized_image(CCDitem, image_bias_sub):
+def lin_image_from_inverse_model_table(image_bias_sub,table):
+    
+    image_linear = np.zeros(image_bias_sub.shape)
+    error_flag = np.zeros(image_bias_sub.shape, dtype=np.uint16)
+
+    for i in range(image_bias_sub.shape[0]):
+        for j in range(image_bias_sub.shape[1]): 
+            if image_bias_sub[i,j] > 0:
+                image_linear[i,j],error_flag[i,j] = inverse_model_table(table,image_bias_sub[i,j])
+            else:
+                image_linear[i,j] = image_bias_sub[i,j]
+
+    return image_linear,error_flag
+
+def lin_image_from_inverse_model_real(image_bias_sub,CCDitem):
+    image_linear = np.zeros(image_bias_sub.shape)
+    error_flag = np.zeros(image_bias_sub.shape, dtype=np.uint16)
+                
+    for i in range(image_bias_sub.shape[0]):
+        for j in range(image_bias_sub.shape[1]): 
+            if image_bias_sub[i,j] > 0:
+                image_linear[i,j],error_flag[i,j] = inverse_model_real(CCDitem,image_bias_sub[i,j])
+            else:
+                image_linear[i,j] = image_bias_sub[i,j]
+
+    return image_linear,error_flag
+
+def get_linearized_image(CCDitem, image_bias_sub,force_table = True):
     """ Linearizes the image. At the moment not done for NADIR.
 
     Args:
         CCDitem:  dictonary containing CCD image and information
         image: np.array The image that will be linearised
+        force_table (bool): whether to force table generation if no exists (default=True)
+
     Returns: 
         image_linear (np.array, dtype=float64): linearised number of counts
         flag (np.array, dtype = uint16): flag to indicate problems with the linearisation
     """        
-    image_linear = np.zeros(image_bias_sub.shape)
-    error_flag = np.zeros(image_bias_sub.shape, dtype=np.uint16)
     
     if CCDitem["channel"]=='NADIR': # No linearisation of NADIR at the moment
         image_linear =image_bias_sub
     else:
         table = CCDitem['CCDunit'].get_table(CCDitem)
         if table is not None:
-            for i in range(image_bias_sub.shape[0]):
-                for j in range(image_bias_sub.shape[1]): 
-                    if image_bias_sub[i,j] > 0:
-                        image_linear[i,j],error_flag[i,j] = inverse_model_table(table,image_bias_sub[i,j])
-                    else:
-                        image_linear[i,j] = image_bias_sub[i,j]
+            image_linear,error_flag = lin_image_from_inverse_model_table(image_bias_sub,table)
         else:
-            for i in range(image_bias_sub.shape[0]):
-                for j in range(image_bias_sub.shape[1]): 
-                    if image_bias_sub[i,j] > 0:
-                        image_linear[i,j],error_flag[i,j] = inverse_model_real(CCDitem,image_bias_sub[i,j])
-                    else:
-                        image_linear[i,j] = image_bias_sub[i,j]
+            if force_table:
+                from database_generation.linearity import add_table
+                add_table(CCDitem)
+                table = CCDitem['CCDunit'].get_table(CCDitem)
+                image_linear,error_flag = lin_image_from_inverse_model_table(image_bias_sub,table)
+            else:
+                image_linear,error_flag = lin_image_from_inverse_model_real(image_bias_sub,CCDitem)
                 
     error_flag = make_binary(error_flag,2)
     
@@ -423,9 +466,10 @@ def subtract_dark(CCDitem, image=None):
     if CCDitem["temperature"]<-50. or CCDitem["temperature"]>30.: # Filter out cases where the temperature seems wrong. 
         error_flag_temperature.fill(1)
     
-    error_flag = combine_flags([make_binary(error_flag_negative,1), make_binary(error_flag_temperature,1)])
+    #FIXME: ADD THIS!
+    #error_flag = combine_flags([make_binary(error_flag_negative,1), make_binary(error_flag_temperature,1)])
 
-    return image_dark_sub, error_flag
+    return image_dark_sub, make_binary(error_flag_negative,1)
 
 
 def calculate_dark(CCDitem):

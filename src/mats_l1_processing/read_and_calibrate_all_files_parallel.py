@@ -24,7 +24,7 @@ from mats_l1_processing.instrument import Instrument
 import argparse
 from tqdm import tqdm
 from joblib import Parallel, delayed
-
+import time
 
 def main(directory, calibration_file, calibrate=True, plot=False):
     """Run program.
@@ -44,7 +44,11 @@ def main(directory, calibration_file, calibrate=True, plot=False):
 
     if calibrate:
         for CCDitem in CCDitems:
+            start = time.time()
             L1_calibrate(CCDitem,instrument)
+            end = time.time()
+            print("Time consumed in working: ",end - start)
+
 
 # %%
 if __name__ == "__main__":

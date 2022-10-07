@@ -316,20 +316,45 @@ def make_linearity(channel, calibration_file, plot=True, exp_type='col',inverse=
 
     return poly_or_spline
 
-def gen_non_linear_table(CCDitem,calibrationfile,fittype='inverse',randomize=False):
+def gen_non_linear_table(CCDitem,calibrationfile=None,fittype='interp',randomize=False):
+    """ 
+    Generates a table of "real" counts (corrected for non-linearity) for measured 
+    values from 0-2^16-1 for a given CCDitem taking into account binning to combine 
+    the different non-linearity coefficients from pixel, row and column.
 
-    #Add stuff not in the non linear tables (but required for add_and_rename)
-    CCDitem["read_from"] = 'rac'
-    CCDitem["EXP Nanoseconds"] = 0
-    CCDitem["BC"] = '[]'
+    Author: Ole Martin Christensen
+    
+    Args:
+        CCDitem (dict): CCDitem
+        calibrationfile (str):  calibration file which specifies where to get the non-lin
+                                constants from.
+        fittype (str):  whether to simply tabulate the values ('interp') or
+                        use an inverse model ('inverse'). Default: 'interp'.
+        randomize (bool): whether to perturb the non-lin constants with their covariance 
+                        before caluculating the table
+    Returns: 
+        
+        x_true (np.array, dtype=float64): The true counts after non-lin correction
+        x_measured (np.array, dtype=int): Measured counts
+        CCDitem (dict): Copy of the CCDItem
+        flag (np.array, dtype=int): Flag to mark saturation (0,1 or 3). See test_for_saturation
 
-    #CCDitem["channel"] = channel_num_to_str(CCDitem['CCDSEL'])
-    #CCDitem["RID"] = 'CCD' + str(CCDitem['CCDSEL'])
-    #CCDitem["CCDunit"] = CCD(CCDitem["channel"], calibrationfile)
+    """
+
+
+    #Add stuff (if not allready there) required for add_and_rename.
+    if not ("read_from" in CCDitem):
+        CCDitem["read_from"] = 'rac'
+    if not ("EXP Nanoseconds" in CCDitem):
+        CCDitem["EXP Nanoseconds"] = 0
+    if not ("BC") in CCDitem:
+        CCDitem["BC"] = '[]'
 
     CCDitem = add_and_rename_CCDitem_info(CCDitem)
-    print(CCDitem["channel"])
-    CCDitem["CCDunit"] = CCD(CCDitem["channel"], calibrationfile)
+    if calibrationfile==None:
+        pass
+    else:
+        CCDitem["CCDunit"] = CCD(CCDitem["channel"], calibrationfile)
     
     CCDitem["CCDunit"].non_linearity_pixel.non_lin_important = CCDitem["CCDunit"].non_linearity_pixel.calc_non_lin_important(0.5)
     CCDitem["CCDunit"].non_linearity_sumrow.non_lin_important = CCDitem["CCDunit"].non_linearity_sumrow.calc_non_lin_important(0.5)
@@ -344,6 +369,11 @@ def gen_non_linear_table(CCDitem,calibrationfile,fittype='inverse',randomize=Fal
         CCDitem["CCDunit"].non_linearity_sumrow.saturation = CCDitem["CCDunit"].non_linearity_sumrow.calc_non_lin_important(0.05)
         CCDitem["CCDunit"].non_linearity_sumwell.saturation = CCDitem["CCDunit"].non_linearity_sumwell.calc_non_lin_important(0.05)
 
+    x_true,x_measured,CCDitem,flag = tabulate_non_linearity(CCDitem,fittype)
+
+    return x_true,x_measured,CCDitem,flag
+
+def tabulate_non_linearity(CCDitem,fittype='interp'):
     try:
         CCDunit = CCDitem["CCDunit"]
     except:
@@ -382,3 +412,47 @@ def gen_non_linear_table(CCDitem,calibrationfile,fittype='inverse',randomize=Fal
         raise ValueError('fittype need to be inverse or interp')
 
     return x_true,x_measured,CCDitem,flag
+
+def add_table(CCDitem,fittype='interp'):
+    x_true,x_measured,CCDitem, flag = tabulate_non_linearity(CCDitem,fittype)
+    table = np.array([x_true, flag,x_measured])
+    tablefilename = str("channel_" +  str(CCDitem["CCDSEL"]) + "_nrbin_"
+                    + str(CCDitem["NRBIN"]) + "_ncbinfpga_" + str(CCDitem["NCBIN FPGAColumns"]) 
+                    + "_ncbinccd_" +str(CCDitem["NCBIN CCDColumns"]))
+    
+    np.save(CCDitem["CCDunit"].tablefolder + tablefilename + '.npy',table)
+    
+    df = pd.read_csv(CCDitem["CCDunit"].tablefolder + 'tables.csv')
+    
+    df.loc[len(df.index)] = [CCDitem["CCDSEL"],       
+    CCDitem["WDW Mode"],
+    CCDitem["WDW InputDataWindow"],
+    CCDitem["WDWOV"],
+    CCDitem["JPEGQ"],
+    CCDitem["FRAME"],
+    CCDitem["NROW"],
+    CCDitem["NRBIN"],
+    CCDitem["NRSKIP"],
+    CCDitem["NCOL"],
+    CCDitem["NCBIN FPGAColumns"],
+    CCDitem["NCBIN CCDColumns"],
+    CCDitem["NCSKIP"],
+    CCDitem["NFLUSH"],
+    CCDitem["TEXPMS"],
+    CCDitem["GAIN Mode"],
+    CCDitem["GAIN Timing"],
+    CCDitem["GAIN Truncation"],
+    CCDitem["TEMP"],
+    CCDitem["FBINOV"],
+    CCDitem["LBLNK"],
+    CCDitem["TBLNK"],
+    CCDitem["ZERO"],
+    CCDitem["TIMING1"],
+    CCDitem["TIMING2"],
+    CCDitem["VERSION"],
+    CCDitem["TIMING3"],
+    tablefilename]
+
+    df.to_csv(CCDitem["CCDunit"].tablefolder + 'tables.csv')
+
+    return

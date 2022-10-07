@@ -80,6 +80,36 @@ def test_forward_backward():
 
     forward_and_backward(CCDitem,  photons=1000, plot=False)
 
+
+# def test_non_linearity_preformance():
+#     with open('testdata/CCDitem_example.pkl', 'rb') as f:
+#         CCDitem = pickle.load(f)
+#     with open('testdata/CCDunit_IR1_example.pkl', 'rb') as f:
+#         CCDunit_IR1=pickle.load(f)        
+#     CCDitem['CCDunit']=CCDunit_IR1
+#     table = CCDitem['CCDunit'].get_table(CCDitem)
+#     start = time.time()
+#     image_bias_sub = np.random.rand(50,255)
+#     image_linear = np.zeros(image_bias_sub.shape)
+#     for i in range(image_bias_sub.shape[0]):
+#                 for j in range(image_bias_sub.shape[1]): 
+#                         image_linear[i,j],_ = inverse_model_table(table,image_bias_sub[i,j])
+#     end = time.time()
+#     print("Time consumed in working: ",end - start)
+
+#     start = time.time()
+#     for i in range(image_bias_sub.shape[0]):
+#         for j in range(image_bias_sub.shape[1]): 
+#             image_linear[i,j],_ = inverse_model_real(CCDitem,image_bias_sub[i,j])
+#     end = time.time()
+#     print("Time consumed in working: ",end - start)
+
+#     start = time.time()
+#     from database_generation.linearity import add_table
+#     add_table(CCDitem)
+#     end = time.time()
+#     print("Time consumed in working: ",end - start)
+
 def test_non_linearity_fullframe():
     with open('testdata/CCDitem_example.pkl', 'rb') as f:
         CCDitem = pickle.load(f)
@@ -161,7 +191,8 @@ def test_calibration_output():
         get_true_image,
         desmear_true_image,
         subtract_dark,
-        flatfield_calibration
+        flatfield_calibration,
+        get_linearized_image
     )
     
    # from mats_l1_processing.read_in_functions import read_CCDitems    
@@ -175,10 +206,10 @@ def test_calibration_output():
     
     image_bias_sub,error_flags_bias = get_true_image(CCDitem)
 
-    image_linear = image_bias_sub
+    image_linear,error_flags_linearity = get_linearized_image(CCDitem, image_bias_sub)
 
-
-    image_desmeared, error_flags_desmear= desmear_true_image(CCDitem, image_linear)
+    #FIXME: linear image is not tested
+    image_desmeared, error_flags_desmear= desmear_true_image(CCDitem, image_bias_sub)
 
     image_dark_sub, error_flags_dark = subtract_dark(CCDitem, image_desmeared)
 
@@ -196,7 +227,7 @@ def test_calibration_output():
 if __name__ == "__main__":
 
     test_calibrate()
-    test_calibration_output() 
+    #test_calibration_output() 
     # test_readfunctions()
     # test_CCDunit()
     # test_forward_backward()

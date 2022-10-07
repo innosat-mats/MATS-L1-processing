@@ -65,18 +65,10 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
     
     # Step 1 and 2: Remove bias and compensate for bad columns, image still in LSB
     image_bias_sub,error_flags_bias = get_true_image(CCDitem)
-    #    image_bias_sub = get_true_image(CCDitem)
 
     # step 3: correct for non-linearity (image is converted into float??)
 
-    #image_linear,error_flags_linearity = get_linearized_image(CCDitem, image_bias_sub)
-    #When uncommenting change the line below too
-    
-    image_linear = image_bias_sub
-    error_flags_linearity =error_flags_bias
-
-
-    #image_linear
+    image_linear,error_flags_linearity = get_linearized_image(CCDitem, image_bias_sub)
 
     # Step 4: Desmear
     image_desmeared, error_flags_desmear= desmear_true_image(CCDitem, image_linear)
@@ -107,6 +99,8 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
 
     error_spare = make_binary(np.zeros(CCDitem["IMAGE"].shape,dtype=int),2) #spare error field
 
-    errors = combine_flags([error_bad_column,error_flags_bias,error_flags_linearity,error_flags_desmear,error_flags_dark,error_flags_flatfield,error_ghost,error_absolute,error_spare])
+    #FIXME: ADD THIS!
+    errors = np.zeros(image_calib_nonflipped.shape)
+    #errors = combine_flags([error_bad_column,error_flags_bias,error_flags_linearity,error_flags_desmear,error_flags_dark,error_flags_flatfield,error_ghost,error_absolute,error_spare])
     
     return image_lsb, image_bias_sub, image_desmeared, image_dark_sub, image_calib_nonflipped, image_calibrated, image_common_fov, errors
