@@ -184,7 +184,7 @@ def test_calibration_output():
 
     image_calib_nonflipped, error_flags_flatfield = flatfield_calibration(CCDitem, image_dark_sub)
     
-    with open('/Users/lindamegner/MATS/retrieval/git/MATS-L1-processing/testdata/calibration_output.pkl', 'rb') as f:
+    with open('testdata/calibration_output.pkl', 'rb') as f:
             [image_bias_sub_old, image_desmeared_old, image_dark_sub_old, image_calib_nonflipped_old]=pickle.load(f)
     
     assert np.abs(image_bias_sub_old-image_bias_sub).all()<1e-3
@@ -195,7 +195,7 @@ def test_calibration_output():
 
 if __name__ == "__main__":
 
-    
+    test_calibrate()
     test_calibration_output() 
     # test_readfunctions()
     # test_CCDunit()
