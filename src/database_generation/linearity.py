@@ -453,6 +453,6 @@ def add_table(CCDitem,fittype='interp'):
     CCDitem["TIMING3"],
     tablefilename]
 
-    df.to_csv(CCDitem["CCDunit"].tablefolder + 'tables.csv')
+    df.to_csv(CCDitem["CCDunit"].tablefolder + 'tables.csv',index=False)
 
     return

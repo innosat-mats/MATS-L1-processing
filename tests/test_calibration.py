@@ -80,36 +80,6 @@ def test_forward_backward():
 
     forward_and_backward(CCDitem,  photons=1000, plot=False)
 
-
-# def test_non_linearity_preformance():
-#     with open('testdata/CCDitem_example.pkl', 'rb') as f:
-#         CCDitem = pickle.load(f)
-#     with open('testdata/CCDunit_IR1_example.pkl', 'rb') as f:
-#         CCDunit_IR1=pickle.load(f)        
-#     CCDitem['CCDunit']=CCDunit_IR1
-#     table = CCDitem['CCDunit'].get_table(CCDitem)
-#     start = time.time()
-#     image_bias_sub = np.random.rand(50,255)
-#     image_linear = np.zeros(image_bias_sub.shape)
-#     for i in range(image_bias_sub.shape[0]):
-#                 for j in range(image_bias_sub.shape[1]): 
-#                         image_linear[i,j],_ = inverse_model_table(table,image_bias_sub[i,j])
-#     end = time.time()
-#     print("Time consumed in working: ",end - start)
-
-#     start = time.time()
-#     for i in range(image_bias_sub.shape[0]):
-#         for j in range(image_bias_sub.shape[1]): 
-#             image_linear[i,j],_ = inverse_model_real(CCDitem,image_bias_sub[i,j])
-#     end = time.time()
-#     print("Time consumed in working: ",end - start)
-
-#     start = time.time()
-#     from database_generation.linearity import add_table
-#     add_table(CCDitem)
-#     end = time.time()
-#     print("Time consumed in working: ",end - start)
-
 def test_non_linearity_fullframe():
     with open('testdata/CCDitem_example.pkl', 'rb') as f:
         CCDitem = pickle.load(f)
@@ -166,24 +136,24 @@ def test_non_linearity_binned():
     image_linear_real,error_flag = inverse_model_real(CCDitem,30e3)
     assert np.abs(image_linear_real-image_linear_table)<1e-3
 
+
 def test_error_algebra():
-    error_flag_zero= np.zeros([20,30], dtype=np.uint16)
-    error_flag_one=np.zeros([20,30], dtype=np.uint16)
-    error_flag_one[0,0] = 1
 
-    error_flag=combine_flags([make_binary(error_flag_zero,1), make_binary(error_flag_one,1)])
-    assert error_flag[0,0] == '01'
-    assert error_flag[0,1] == '00'
+    assert combine_flags([0],[1]) == 0
+    assert combine_flags([0],[2]) == 0
 
-    error_flag=combine_flags([make_binary(error_flag_zero,2), make_binary(error_flag_one,1)])
-    assert error_flag[0,0] == '001'
-    assert error_flag[0,1] == '000'
-    
-    error_flag_one[0,0] = 3
+    assert combine_flags([1],[1]) == 1
+    assert combine_flags([0,1],[1,1]) == 2
+    assert combine_flags([1,0],[1,1]) == 1
 
-    error_flag=combine_flags([make_binary(error_flag_zero,2).astype('<U16'), make_binary(error_flag_one,2)])
-    assert error_flag[0,0] == '0011'
-    assert error_flag[0,1] == '0000'
+    assert combine_flags([2],[2]) == 2
+    assert combine_flags([0,2],[1,2]) == 4
+
+    assert combine_flags([0,3],[1,2]) == 6
+    assert combine_flags([1,3],[1,2]) == 7
+
+    A = np.ones((512,2047),dtype=np.int16)
+    assert np.all(combine_flags([A,A*3],[1,2])==A*7)
 
 def test_calibration_output():
     
@@ -226,8 +196,8 @@ def test_calibration_output():
 
 if __name__ == "__main__":
 
-    test_calibrate()
-    #test_calibration_output() 
+    #test_calibrate()
+    test_calibration_output() 
     # test_readfunctions()
     # test_CCDunit()
     # test_forward_backward()

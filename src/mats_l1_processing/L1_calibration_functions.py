@@ -40,50 +40,76 @@ def flip_image(CCDitem, image=None):
     return image
 
 def make_binary(flag,bits):
-    """Takes in numpy array with (e.g.) dtype=int and returns a numpy 
-    array with binary strings.
+    """Function to generate binary array of flag array. 
+    2022.10.08 OMC: Currently it does not do anything
 
     Args:
         flag (np.array, dtype=int): numpy array containing the flag
         bits (int): number of error bits represented in the array
 
     Returns: 
+        flag (np.array, dtype=int): numpy array containing the flag
         
-        a binary representation of the flag array
+        
 
     """
 
-    binary_repr_vector = np.vectorize(np.binary_repr)
+    #binary_repr_vector = np.vectorize(np.binary_repr)
     
-    return binary_repr_vector(flag,bits)
+    return flag
 
 
 # Utility functions
 
-def combine_flags(flags):
-    """Combines binary flags into one binary flag array.
+
+def combine_flags(flags,bits):
+    """Combines the error flags into one array.
     Args:
-        flags (list of np.array of strings ('U<1','U<2','U<4','U<8')):
+        flags (list of np.array with dtype int): list of the flags to combine
+        bits (np.array): number of bits corresponding to each flag 
 
     Returns: 
-        
-        total_flag (np.array of stings ('U<16')) the combined flag 
+        total_flag the combined flag in dec
 
     """
     
     import numpy as np
 
+    if len(flags) != len(bits):
+        raise ValueError('number of bit values differ from number of flag arrays')
 
-    
-    imsize = flags[0].shape
+    total_flag = 0
+    tot_bits = np.cumsum(bits)
+    tot_bits = np.insert(tot_bits,0,0)
+    for i in range(len(flags)):
+        total_flag=total_flag+np.left_shift(flags[i],tot_bits[i])
 
-    total_flag = np.zeros(imsize,dtype='<U16')
-    for i in range(total_flag.shape[0]):
-        for j in range(total_flag.shape[1]):
-            for k in range(len(flags)):
-                total_flag[i,j] = total_flag[i,j]+flags[k][i,j]
-    
     return total_flag
+
+# def combine_flags(flags):
+#     """Combines binary flags into one binary flag array.
+#     Args:
+#         flags (list of np.array of strings ('U<1','U<2','U<4','U<8')):
+
+#     Returns: 
+        
+#         total_flag (np.array of stings ('U<16')) the combined flag 
+
+#     """
+    
+#     import numpy as np
+
+
+    
+#     imsize = flags[0].shape
+
+#     total_flag = np.zeros(imsize,dtype='<U16')
+#     for i in range(total_flag.shape[0]):
+#         for j in range(total_flag.shape[1]):
+#             for k in range(len(flags)):
+#                 total_flag[i,j] = total_flag[i,j]+flags[k][i,j]
+    
+#     return total_flag
 #%% 
 ## non-linearity-stuff ##
 
@@ -315,6 +341,7 @@ def get_linearized_image(CCDitem, image_bias_sub,force_table = True):
             if force_table:
                 from database_generation.linearity import add_table
                 add_table(CCDitem)
+                CCDitem['CCDunit'].reload_table()
                 table = CCDitem['CCDunit'].get_table(CCDitem)
                 image_linear,error_flag = lin_image_from_inverse_model_table(image_bias_sub,table)
             else:
@@ -466,10 +493,9 @@ def subtract_dark(CCDitem, image=None):
     if CCDitem["temperature"]<-50. or CCDitem["temperature"]>30.: # Filter out cases where the temperature seems wrong. 
         error_flag_temperature.fill(1)
     
-    #FIXME: ADD THIS!
-    #error_flag = combine_flags([make_binary(error_flag_negative,1), make_binary(error_flag_temperature,1)])
+    error_flag = combine_flags([error_flag_negative, error_flag_temperature],[1,1])
 
-    return image_dark_sub, make_binary(error_flag_negative,1)
+    return image_dark_sub, error_flag
 
 
 def calculate_dark(CCDitem):
@@ -751,7 +777,7 @@ def desmear_true_image(header, image=None):
     error_flag= np.zeros(image.shape, dtype=np.uint16)
     error_flag[image<0] = 1
 
-    error_flag = make_binary(error_flag,2)
+    error_flag = make_binary(error_flag,1)
 
     return image, error_flag
 

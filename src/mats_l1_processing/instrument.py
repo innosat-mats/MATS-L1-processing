@@ -452,6 +452,18 @@ class CCD:
             
         return table
 
+    def reload_table(self):
+        """Reloads non-linearity tables 
+
+        Args:
+            None
+
+        Returns:
+            None
+
+        """
+        self.tables = pd.read_csv(self.tablefolder + 'tables.csv')
+
 class nonLinearity:
     """Class to represent a non-linearity for a MATS CCD.
 
