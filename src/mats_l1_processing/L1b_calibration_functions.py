@@ -97,8 +97,8 @@ def get_shift(CCDitem,skip_comp=False):
         x_pos=0
         y_pos=0
     elif CCDitem['channel']=='UV1':
-        x_pos=0#139
-        y_pos=0#148
+        x_pos=88#139
+        y_pos=13#148
     elif CCDitem['channel']=='UV2':
         x_pos=156
         y_pos=192
