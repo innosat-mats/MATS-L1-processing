@@ -33,7 +33,10 @@ def flip_image(CCDitem, image=None):
     if image is None:
         image = CCDitem["IMAGE"]
     
-    if CCDitem['channel']=='IR2' or CCDitem['channel']=='IR4':
+    if (CCDitem['channel']=='IR1' 
+        or CCDitem['channel']=='IR3'
+        or CCDitem['channel']=='UV1'
+        or CCDitem['channel']=='UV2'):
         image=np.fliplr(image)
         CCDitem['flipped'] = True
 
