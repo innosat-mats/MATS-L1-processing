@@ -8,6 +8,10 @@ Created on Fri Sep 16 15:17:27 2022
 Functions used in analysis images and calibration development but NOT for operational processing.
 """
 
+import pandas as pd
+from mats_l1_processing.L1_calibration_functions import get_true_image, desmear_true_image, binning_bc
+import numpy as np
+
 #############################################################################
 #   Plotting Functions                                                      #
 #############################################################################
@@ -235,7 +239,7 @@ def filter_on_time(CCDitems, starttime=None, stoptime=None):
             CCDitems[i]["EXP Date"], format="%Y-%m-%dT%H:%M:%S.%fZ"
         )
         if (starttime != None) and (stoptime != None):
-            if (image_time > starttime) and (image_time < endtime):
+            if (image_time > starttime) and (image_time < stoptime):
                 I.append(i)
         elif (starttime != None) and (stoptime == None):
             if image_time > starttime:
