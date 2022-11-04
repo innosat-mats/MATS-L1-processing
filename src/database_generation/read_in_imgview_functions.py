@@ -493,10 +493,12 @@ def read_txtfile_create_CCDitem(filepath):
 
     return CCDitem
 
+def read_MATS_image(rac_dir, bool):
+    pass
 
 def read_CCDitems_no_images(rac_dir, labtemp=999):
     from math import log
-    from get_temperature import create_temperature_info_array, add_temperature_info
+    from mats_l1_processing.get_temperature import create_temperature_info_array, add_temperature_info
 
     # reads data from all images (itemnumbers) in the rac file
 
