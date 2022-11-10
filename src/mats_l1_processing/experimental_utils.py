@@ -23,11 +23,13 @@ def plotCCDitem(CCDitem, fig, axis, title="", clim=999, aspect="auto"):
 
 
 def plot_CCDimage(image, fig, axis, title="", clim=999, aspect="auto"):
-    sp = axis.imshow(image, cmap="viridis", origin="lower", interpolation="none")
+    sp = axis.imshow(image, cmap="magma", origin="lower", interpolation="none")
     # sp=axis.pcolormesh(image, , cmap='viridis')
     if clim == 999:
-        mean = image.mean()
-        std = image.std()
+        [col, row]=image.shape
+        #Take the mean and std of the middle of the image, not boarders
+        mean = image[int(col/2-col*4/10):int(col/2+col*4/10), int(row/2-row*4/10):int(row/2+row*4/10)].mean()
+        std = image[int(col/2-col*4/10):int(col/2+col*4/10), int(row/2-row*4/10):int(row/2+row*4/10)].std()
         sp.set_clim([mean - 2 * std, mean + 2 * std])
     else:
         sp.set_clim(clim)
@@ -433,3 +435,47 @@ def compensate_bad_columns(header, image="No picture"):
     return image
 
 
+def calibrate_CCDitems(CCDitems,instrument, plot=False):
+    """
+    Calibrate all CCDitems in the list
+
+    Parameters
+    ----------
+    CCDitems : List of dictionaries
+        Contains images and housing data
+    instrument: instrument object, see mats_l1_processing.instrument
+    plot : logical, optional
+        If true the calibrations steps are plotted. The default is False.
+
+    Returns
+    -------
+    Does not return anything but CCDitems will now contain calibrated images
+    """
+    from mats_l1_processing.L1_calibrate import L1_calibrate
+    import matplotlib.pyplot as plt
+    
+    
+    for CCDitem in CCDitems:
+        (
+            image_lsb,
+            image_bias_sub,
+            image_desmeared,
+            image_dark_sub,
+            image_calib_nonflipped,
+            image_calibrated,
+            errors
+        ) = L1_calibrate(CCDitem, instrument)
+
+        if plot:
+            fig, ax = plt.subplots(5, 1)
+            plot_CCDimage(image_lsb, fig, ax[0], "Original LSB")
+            plot_CCDimage(image_bias_sub, fig, ax[1], "Bias subtracted")
+            plot_CCDimage(image_desmeared, fig, ax[2], " Desmeared LSB")
+            plot_CCDimage(
+                image_dark_sub, fig, ax[3], " Dark current subtracted LSB"
+            )
+            plot_CCDimage(
+                image_calib_nonflipped, fig, ax[4], " Flat field compensated LSB"
+            )
+            fig.suptitle(CCDitem["channel"])
+    
