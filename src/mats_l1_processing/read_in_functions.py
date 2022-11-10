@@ -54,13 +54,34 @@ def read_all_files_in_root_directory(read_from, root_directory):
         raise Exception("read_from needs to = rac_operational or imgview ")
     return CCDitems
 
+def read_CCDdata(directory):
+    """Reads the CCD metadata from a CCD.csv located in directory and returns data frame and items.
 
-def read_CCDitems(directory, read_from='rac'):
+    Args:
+        directory: Directory where CCD.csv is located.
+
+    Returns:
+        items: Dictionary representaiton of the dataframe
+
+        dataframe: Pandas dataframe containing the metadata
+    """
+    
+    import pandas as pd
+
+    df = pd.read_csv(directory + "CCD.csv", skiprows=[0])
+    items = df.to_dict("records")
+
+    return items,df
+
+
+def read_CCDitems(directory, read_from='rac',items = None):
     """ Reads in all CCDitems the given directory. Assumes a rac file if no argument is given. 
     This function has been renamed 20220919, old name was read_all_files_in_directory
     
     Args:
-        optional argument read_from, can be 'rac' (default). 'imgview' or 'rac_operational'
+        directory (str): directory to read from
+        read_from (optional, str): argument read_from, can be 'rac' (default). 'imgview' or 'rac_operational'
+        items (optional, dict): Dictionary of the CCD item metadata
 
     Returns: 
         list of CCDitems
@@ -69,11 +90,11 @@ def read_CCDitems(directory, read_from='rac'):
     from mats_l1_processing.get_temperature import add_rac_temp_data
     from database_generation.read_in_imgview_functions import read_CCDitem_from_imgview
     import os
-    import pandas as pd
     CCDitems = []
     if (read_from == "rac") or (read_from == "rac_operational"):
-        df = pd.read_csv(directory + "CCD.csv", skiprows=[0])
-        items = df.to_dict("records")
+        if items == None:
+            items,_ = read_CCDdata(directory)
+        
         for item in items:
             errorflag = read_CCDitem_image(item, directory)
             if errorflag:
