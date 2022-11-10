@@ -336,6 +336,8 @@ def get_linearized_image(CCDitem, image_bias_sub,force_table = True):
     
     if CCDitem["channel"]=='NADIR': # No linearisation of NADIR at the moment
         image_linear =image_bias_sub
+        error_flag= np.zeros(image_bias_sub.shape, dtype=np.uint16)
+        
     else:
         table = CCDitem['CCDunit'].get_table(CCDitem)
         if table is not None:
