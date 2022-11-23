@@ -1,8 +1,8 @@
 import pytest
 
-from mats_l1_processing.L1b_calibration_functions import grid_image,get_shift
+from mats_l1_processing.grid_image import grid_image,get_shift
 
-def test_shift_and_grid():
+def test_shift():
     CCDitem = dict()
     CCDitem["channel"] = "IR1"
     CCDitem["flipped"] = False
@@ -31,4 +31,4 @@ def test_shift_and_grid():
 
 if __name__ == "__main__":
 
-    test_shift_and_grid()
+    test_shift()

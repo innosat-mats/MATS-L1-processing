@@ -14,14 +14,13 @@ from mats_l1_processing.L1_calibration_functions import (
     subtract_dark,
     flatfield_calibration,
     get_linearized_image,
-    get_linearized_image_parallelized,
     combine_flags,
     make_binary,
     flip_image,
     handle_bad_columns
 )
 
-from mats_l1_processing.L1b_calibration_functions import shift_image
+from mats_l1_processing.grid_image import grid_image
 
 # from L1_calibration_functions import get_true_image_old, desmear_true_image_old
 #################################################
@@ -86,7 +85,7 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
     image_calibrated= flip_image(CCDitem, image_calib_nonflipped)
     
     #Shift image, i.e. put image on common field of view
-    #image_common_fov, error_flags_flipnshift = shift_image(CCDitem, image_calibrated)
+    valid_area,_,_ = grid_image(CCDitem)
     
     # Step 7 Remove ghost imaging. TBD.
     error_ghost =  make_binary(np.zeros(CCDitem["IMAGE"].shape,dtype=np.uint16),1)

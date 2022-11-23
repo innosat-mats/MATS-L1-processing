@@ -123,7 +123,27 @@ def get_shift(CCDitem,skip_comp=False):
 
     return x_pos,y_pos
 
+
+def get_valid_area(CCDitem):
+
+    return  np.zeros(CCDitem['IMAGE'].shape, dtype=np.uint16)
+
+
 def grid_image(CCDitem,unit):
+    """ 
+    Adds a grid to the image along the azimuth and elevation angles. Either in units
+    of fullframe pixels or degrees. The function also determines 
+
+    Args:
+        CCDitem (:obj:'CCDitem'): A CCDitem object
+        unit (str): 'pixels' or 'degrees'
+
+    Returns: 
+        valid_area (:obj:'np.array'): area of image that is good to use
+        x (:obj:'np.array'): shift in horizontal direction (in CCD pixels)
+        y (:obj:'np.array'): shift in vertical direction (in CCD pixels)
+    """
+
     x_pos,y_pos = get_shift(CCDitem,skip_comp=True) #get shift for first CCD pixel
 
     x_origo_full_frame,y_origo_full_frame = get_origo_CCD(unit='pixels')
@@ -139,7 +159,12 @@ def grid_image(CCDitem,unit):
     x_grid = np.arange(0,CCDitem['NCOL']+1)*dphi+x_pos+dphi/2-x_origo_full_frame
     y_grid = np.arange(0,CCDitem['NROW'])*dtheta+y_pos+dtheta/2-y_origo_full_frame
 
-    return x_grid,y_grid
+    CCDitem['azimuth'] = x_grid
+    CCDitem['elevation'] = y_grid
+
+    valid_area = get_valid_area(CCDitem)
+
+    return valid_area,x_grid,y_grid
 
 def shift_image(CCDitem, image=None):
     """ 
