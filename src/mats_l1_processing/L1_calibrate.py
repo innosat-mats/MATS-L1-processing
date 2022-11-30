@@ -85,7 +85,7 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
     image_calibrated= flip_image(CCDitem, image_calib_nonflipped)
     
     #Shift image, i.e. put image on common field of view
-    valid_area,_,_ = grid_image(CCDitem)
+    #valid_area,_,_ = grid_image(CCDitem)
     
     # Step 7 Remove ghost imaging. TBD.
     error_ghost =  make_binary(np.zeros(CCDitem["IMAGE"].shape,dtype=np.uint16),1)
