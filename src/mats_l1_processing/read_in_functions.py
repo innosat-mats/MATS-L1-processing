@@ -15,14 +15,14 @@ import time
 import matplotlib.pyplot as plt
 import json
 from PIL import Image
-
+from sys import getsizeof
+from mats_l1_processing.get_temperature import create_temperature_info_array, add_temperature_info
 
 # import imagereader
 
 
 
 def add_temperature_info_to_CCDitems(CCDitems, read_from, directory, labtemp=999):
-    from mats_l1_processing.get_temperature import create_temperature_info_array, add_temperature_info
 
     if read_from == "rac":
         temperaturedata, relativetimedata = create_temperature_info_array(
@@ -110,13 +110,16 @@ def read_CCDitems(directory, read_from='rac',items = None):
                 CCDitems.append(CCDitem)
     else:
         raise Exception("read_from needs to = rac,rac_operational or imgview ")
+    
+    temperaturedata, relativetimedata = create_temperature_info_array(directory + "/HTR.csv")
+    labtemp=999
 
     for CCDitem in CCDitems:
 
         add_and_rename_CCDitem_info(CCDitem)
 
         if read_from == "rac":  # Add temperature data from rac files
-            add_rac_temp_data(directory + "/HTR.csv", CCDitem, labtemp=999)
+            CCDitem = add_temperature_info(CCDitem, temperaturedata, relativetimedata, labtemp)
 
     return CCDitems
 
