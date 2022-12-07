@@ -30,7 +30,7 @@ from mats_l1_processing.grid_image import grid_image
 
 def calibrate_all_items(CCDitems, instrument, plot=False):
     import matplotlib.pyplot as plt
-    from mats_l1.processing.experimental_utils import plot_CCDimage
+    from mats_l1_processing.experimental_utils import plot_CCDimage
 
     for CCDitem in CCDitems:
         (
