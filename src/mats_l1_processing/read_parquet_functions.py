@@ -73,16 +73,16 @@ def rename_CCDitem_attributes(item: CCDItem) -> None:
         item["GAIN Timing"] = item.pop("GAINTiming")
 
     if "GAIN Truncation" not in item:
-        item["GAIN Truncation"] = item("GAINTruncation")
+        item["GAIN Truncation"] = item.pop("GAINTruncation")
 
     if "BC" not in item:
-        item["BC"] = item("BadColumns")
+        item["BC"] = item.pop("BadColumns")
     
     if "Image File Name" not in item:
         item["Image File Name"] = item.pop("ImageName")
 
     if "IMAGE" not in item:
-        item["IMAGE"] = np.float64(Image.open(BytesIO(item["ImageData"])))
+        item["IMAGE"] = np.float64(Image.open(BytesIO(item.pop["ImageData"])))
 
 
 def add_CCDItem_attributes(item: CCDItem):
@@ -127,7 +127,7 @@ def add_and_rename_CCDitem_attributes(items: List[CCDItem]):
         Nothing. Operation is performed in place.
     """
 
-    for ind, item in items:
+    for ind, item in enumerate(items):
         try:
             rename_CCDitem_attributes(item)
             add_CCDItem_attributes(item)
@@ -163,9 +163,9 @@ def read_CCDitems_interval(
         path,
         filesystem=filesystem,
     ).to_table(filter=(
-        (ds.field("EXPDate") >= Timestamp(start).asm8)
-        & (ds.field("EXPDate") <= Timestamp(stop).asm8)
-    )).to_pandas().to_dict("records")
+        (ds.field("EXPDate") >= Timestamp(start))
+        & (ds.field("EXPDate") <= Timestamp(stop))
+    )).to_pandas().reset_index().to_dict("records")
 
     add_and_rename_CCDitem_attributes(CCDitems)
 
@@ -191,7 +191,7 @@ def read_CCDitems(
     CCDitems = pq.read_table(
         path,
         filesystem=filesystem,
-    ).to_pandas().to_dict("records")
+    ).to_pandas().reset_index().to_dict("records")
 
     add_and_rename_CCDitem_attributes(CCDitems)
 
