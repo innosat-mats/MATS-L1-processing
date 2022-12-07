@@ -74,7 +74,7 @@ def read_CCDdata(directory):
     return items,df
 
 
-def read_CCDitems(directory, read_from='rac',items = None):
+def read_CCDitems(directory, read_from='rac',items = None, read_temperature = True):
     """ Reads in all CCDitems the given directory. Assumes a rac file if no argument is given. 
     This function has been renamed 20220919, old name was read_all_files_in_directory
     
@@ -110,16 +110,16 @@ def read_CCDitems(directory, read_from='rac',items = None):
                 CCDitems.append(CCDitem)
     else:
         raise Exception("read_from needs to = rac,rac_operational or imgview ")
-    
-    temperaturedata, relativetimedata = create_temperature_info_array(directory + "/HTR.csv")
-    labtemp=999
+    if read_temperature:
+        temperaturedata, relativetimedata = create_temperature_info_array(directory + "/HTR.csv")
+        labtemp=999
 
     for CCDitem in CCDitems:
 
         add_and_rename_CCDitem_info(CCDitem)
-
-        if read_from == "rac":  # Add temperature data from rac files
-            CCDitem = add_temperature_info(CCDitem, temperaturedata, relativetimedata, labtemp)
+        if read_temperature:
+            if read_from == "rac":  # Add temperature data from rac files
+                CCDitem = add_temperature_info(CCDitem, temperaturedata, relativetimedata, labtemp)
 
     return CCDitems
 
