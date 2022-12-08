@@ -88,7 +88,8 @@ def add_ccd_item_attributes(ccd_data: DataFrame) -> None:
         except Exception as err:
             image_name = ccd_data["ImageName"][ind]
             logging.warning(
-                f"could not prepare image {image_name} for calibration. Setting image data to `None`. (Error: {err})"  # noqa: E501
+                f"could not prepare image {image_name} for calibration. "
+                f"Setting image data to `None`. (Error: {err})"
             )
             images.append(None)
     ccd_data["IMAGE"] = images
