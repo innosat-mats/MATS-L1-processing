@@ -8,6 +8,7 @@ Functions used to read in MATS images and data from Parquet files.
 Parquet files can either be local or on a remote server, such as Amazon S3.
 """
 
+import logging
 from datetime import datetime
 from io import BytesIO
 from typing import cast, Any, Dict, List, Optional, SupportsFloat
@@ -16,11 +17,11 @@ import numpy as np
 import pyarrow as pa  # type: ignore
 import pyarrow.dataset as ds  # type: ignore
 import pyarrow.parquet as pq  # type: ignore
-from pandas import Timestamp  # type: ignore
+from pandas import DataFrame, Timestamp  # type: ignore
 from PIL import Image
 
 
-# Map string names to all channels
+# Map all channels to string names
 channel_num_to_str: Dict[int, str] = {
     1: "IR1",
     4: "IR2",
@@ -34,115 +35,150 @@ channel_num_to_str: Dict[int, str] = {
 CCDItem = Dict[str, Any]
 
 
-def rename_CCDitem_attributes(item: CCDItem) -> None:
+def rename_ccd_item_attributes(ccd_data: DataFrame) -> None:
     """Renaming of attributes to work with calibration code The names in the code
     are based on the old rac extract file (prior to May 2020).
     The names used in the parquet files are mostly the same as used in CSVs
     prior to November 2022. Exceptions are translated here.
 
-
     Args:
-        item: Item from Parquet store for which to translate attributes.
+        ccd_data (DataFrame):   CCD data for which translate attributes.
 
     Returns:
-        Nothing. Operation is performed in place.
+        None:   Operation is performed in place.
     """
 
-    if "EXP Nanoseconds" not in item:
-        item["EXP Nanoseconds"] = item.pop("EXPNanoseconds")
-
-    if "EXP Date" not in item:
-        item["EXP Date"] = item.pop("EXPDate")
-
-    if "WDW Mode" not in item:
-        item["WDW Mode"] = item.pop("WDWMode")
-
-    if "WDW InputDataWindow" not in item:
-        item["WDW InputDataWindow"] = item.pop("WDWInputDataWindow")
-
-    if "NCBIN CCDColumns" not in item:
-        item["NCBIN CCDColumns"] = item.pop("NCBINCCDColumns")
-
-    if "NCBIN FPGAColumns" not in item:
-        item["NCBIN FPGAColumns"] = item.pop("NCBINFPGAColumns")
-
-    if "GAIN Mode" not in item:
-        item["GAIN Mode"] = item.pop("GAINMode")
-
-    if "GAIN Timing" not in item:
-        item["GAIN Timing"] = item.pop("GAINTiming")
-
-    if "GAIN Truncation" not in item:
-        item["GAIN Truncation"] = item.pop("GAINTruncation")
-
-    if "BC" not in item:
-        item["BC"] = item.pop("BadColumns")
-
-    if "Image File Name" not in item:
-        item["Image File Name"] = item.pop("ImageName")
-
-    if "IMAGE" not in item:
-        item["IMAGE"] = np.float64(cast(
-            SupportsFloat,
-            Image.open(BytesIO(item.pop("ImageData"))),
-        ))
+    ccd_data.rename(
+        columns={
+            "EXPNanoseconds": "EXP Nanoseconds",
+            "EXPDate": "EXP Date",
+            "WDWMode": "WDW Mode",
+            "WDWInputDataWindow": "WDW InputDataWindow",
+            "NCBINCCDColumns": "NCBIN CCDColumns",
+            "NCBINFPGAColumns": "NCBIN FPGAColumns",
+            "GAINMode": "GAIN Mode",
+            "GAINTiming": "GAIN Timing",
+            "GAINTruncation": "GAIN Truncation",
+            "BadColumns": "BC",
+            "ImageName": "ImageFileName",
+            "OriginFile": "File",
+        },
+        inplace=True,
+    )
 
 
-def add_CCDItem_attributes(item: CCDItem):
-    """Add some attributes to CCD Item that we need. The names in the code
+def add_ccd_item_attributes(ccd_data: DataFrame) -> None:
+    """Add some attributes to CCD data that we need. The names in the code
     are based on the old rac extract file (prior to May 2020).
 
     Args:
-        item: Item from Parquet store to which to add attributes.
+        ccd_data (DataFrame):   CCD data to which to add attributes.
 
     Returns:
-        Nothing. Operation is performed in place.
+        None:   Operation is performed in place.
     """
 
-    item["channel"] = channel_num_to_str[item["CCDSEL"]]
-    item["flipped"] = False
+    images: List[Optional[Any]] = []
+    for ind, image_data in enumerate(ccd_data["ImageData"]):
+        try:
+            images.append(np.float64(cast(
+                SupportsFloat,
+                Image.open(BytesIO(image_data)),
+            )))
+        except Exception as err:
+            image_name = ccd_data["ImageName"][ind]
+            logging.warning(
+                f"could not prepare image {image_name} for calibration. Setting image data to `None`. (Error: {err})"  # noqa: E501
+            )
+            images.append(None)
+    ccd_data["IMAGE"] = images
+
+    ccd_data["channel"] = [channel_num_to_str[c] for c in ccd_data["CCDSEL"]]
+    ccd_data["flipped"] = False
 
     # CCDitem["id"] should not be needed in operational retrieval. Keeping it
     # because protocol reading / CodeCalibrationReport needs it.  LM220908
-    item["id"] = f"{item['EXP Nanoseconds']}_{item['CCDSEL']}"
+    ccd_data["id"] = f"{ccd_data['EXP Nanoseconds']}_{ccd_data['CCDSEL']}"
 
     # Add temperature info fom OBC, the temperature info from the rac files are
     # better since they are based on the thermistors on the UV channels
-    ADC_temp_in_mV = int(item["TEMP"]) / 32768 * 2048
+    ADC_temp_in_mV = ccd_data["TEMP"] / 32768 * 2048
     ADC_temp_in_degreeC = 1.0 / 0.85 * ADC_temp_in_mV - 296
-    item["temperature_ADC"] = ADC_temp_in_degreeC
+    ccd_data["temperature_ADC"] = ADC_temp_in_degreeC
 
     # This needs to be updated when a better temperature estimate has been
     # designed. For now a de facto implementation of
     # get_temperature.add_temperature_info()
-    item["temperature"] = item["HTR8A"]
-    item["temperature_HTR"] = item["HTR8A"]
+    ccd_data["temperature"] = ccd_data["HTR8A"]
+    ccd_data["temperature_HTR"] = ccd_data["HTR8A"]
 
 
-def add_and_rename_CCDitem_attributes(items: List[CCDItem]):
-    """Applies renaming of CCD attributes as well as adding a few that are
-    needed. Note that items with errors are removed, so the list may be shorter
-    after processing.
+def remove_empty_images(
+    ccd_data: DataFrame,
+    remove_errors: bool = False,
+    remove_warnings: bool = False,
+) -> DataFrame:
+    """Remove rows of CCD data where image could not be parsed.
+    Optionally also remove rows with errors or warnings.
 
     Args:
-        items: List of items from Parquet store to be converted to CCD items.
+        ccd_data (DataFrame):   CCD data which to filter.
+        remove_errors (bool):   Remove rows with errors. (Default: False.)
+        remove_warnings (bool): Remove rows with errors. (Default: False.)
 
     Returns:
-        Nothing. Operation is performed in place.
+        DataFrame:   The filtered CCD data.
     """
 
-    for ind, item in enumerate(items):
-        try:
-            rename_CCDitem_attributes(item)
-            add_CCDItem_attributes(item)
-        except Exception as err:
-            print(
-                f"Warning: could not prepare image {item.get('ImageName', 'unknown')} for calibration. Skipping. (Error: {err})"  # noqa: E501
-            )
-            items.pop(ind)
+    ccd_data = ccd_data[ccd_data.IMAGE != None]  # noqa: E711
+
+    if remove_errors:
+        ccd_data = ccd_data[ccd_data.Errors != None]  # noqa: E711
+
+    if remove_warnings:
+        ccd_data = ccd_data[ccd_data.Warnings != None]  # noqa: E711
+
+    return ccd_data
 
 
-def read_CCDitems_interval(
+def dataframe_to_ccd_items(ccd_data: DataFrame) -> List[CCDItem]:
+    rename_ccd_item_attributes(ccd_data)
+    add_ccd_item_attributes(ccd_data)
+    return remove_empty_images(ccd_data).to_dict("records")
+
+
+def read_ccd_data_in_interval(
+    start: datetime,
+    stop: datetime,
+    path: str,
+    filesystem: Optional[pa.fs.FileSystem] = None,
+) -> DataFrame:
+    """Reads the CCD data and metadata from the specified path or S3 bucket
+    between the specified times.
+
+    Args:
+        from (datetime):            Read CCD data from this timestamp (inclusive).
+        to (datetime):              Read CCD data up to this timestamp (inclusive).
+        path (str):                 Path to dataset. May be a directory or a
+                                    bucket, depending on filesystem.
+        filesystem (filesystem):    Optional. Filesystem to read. If not
+                                    specified will assume that path points to
+                                    an ordinary directory disk. (Default: None.)
+
+    Returns:
+        DataFrame:  The CCD data.
+    """
+
+    return ds.dataset(
+        path,
+        filesystem=filesystem,
+    ).to_table(filter=(
+        (ds.field("EXPDate") >= Timestamp(start))
+        & (ds.field("EXPDate") <= Timestamp(stop))
+    )).to_pandas().reset_index()
+
+
+def read_ccd_items_in_interval(
     start: datetime,
     stop: datetime,
     path: str,
@@ -150,53 +186,69 @@ def read_CCDitems_interval(
 ) -> List[CCDItem]:
     """Reads the CCD data and metadata from the specified path or S3 bucket
     between the specified times.
+    Some column names are translated and some convenience data is added before
+    data is converted and and returned.
 
     Args:
-        from:       Read CCD data from this timestamp (inclusive).
-        to:         Read CCD data up to this timestamp.
-        path:       Path to dataset. May be a directory or a bucket, depending
-                    on filesystem.
-        filesystem: Filesystem type. If not specified will assume that path
-                    points to an ordinary directory disk .
+        from (datetime):            Read CCD data from this timestamp (inclusive).
+        to (datetime):              Read CCD data up to this timestamp (inclusive).
+        path (str):                 Path to dataset. May be a directory or a
+                                    bucket, depending on filesystem.
+        filesystem (filesystem):    Optional. Filesystem to read. If not
+                                    specified will assume that path points to
+                                    an ordinary directory disk. (Default: None.)
 
     Returns:
-        List of dictionary representations of the dataframes
+        list[dict[str, Any]]:   List of dictionary representations of the CCD data.
     """
 
-    CCDitems = ds.dataset(
+    return dataframe_to_ccd_items(
+        read_ccd_data_in_interval(start, stop, path, filesystem)
+    )
+
+
+def read_ccd_data(
+    path: str,
+    filesystem: Optional[pa.fs.FileSystem] = None,
+) -> DataFrame:
+    """Reads the CCD data and metadata from a singel file at the specified path.
+
+    Args:
+        path (str):                 Path to dataset. May be a directory or a
+                                    bucket, depending on filesystem.
+        filesystem (filesystem):    Optional. Filesystem to read. If not
+                                    specified will assume that path points to
+                                    an ordinary directory disk. (Default: None.)
+
+    Returns:
+        DataFrame:  The CCD data.
+    """
+
+    return pq.read_table(
         path,
         filesystem=filesystem,
-    ).to_table(filter=(
-        (ds.field("EXPDate") >= Timestamp(start))
-        & (ds.field("EXPDate") <= Timestamp(stop))
-    )).to_pandas().reset_index().to_dict("records")
-
-    add_and_rename_CCDitem_attributes(CCDitems)
-
-    return CCDitems
+    ).to_pandas().reset_index()
 
 
-def read_CCDitems(
+def read_ccd_items(
     path: str,
     filesystem: Optional[pa.fs.FileSystem] = None,
 ) -> List[CCDItem]:
     """Reads the CCD data and metadata from a singel file at the specified path.
+    Some column names are translated and some convenience data is added before
+    data is converted and and returned.
 
     Args:
-        path:       Path to parquet file containing the CCD data. May point to
-                    object on disk or in a bucket, depending on filesystem.
-        filesystem: Filesystem type. If not specified will assume that path
-                    points to an ordinary directory on disk.
+        path (str):                 Path to dataset. May be a directory or a
+                                    bucket, depending on filesystem.
+        filesystem (filesystem):    Optional. Filesystem to read. If not
+                                    specified will assume that path points to
+                                    an ordinary directory disk. (Default: None.)
 
-    Returns:
-        List of dictionary representations of the dataframes
+    Return:
+        list[dict[str, Any]]:   List of dictionary representations of the CCD data.
     """
 
-    CCDitems = pq.read_table(
-        path,
-        filesystem=filesystem,
-    ).to_pandas().reset_index().to_dict("records")
-
-    add_and_rename_CCDitem_attributes(CCDitems)
-
-    return CCDitems
+    return dataframe_to_ccd_items(
+        read_ccd_data(path, filesystem)
+    )
