@@ -10,7 +10,7 @@ Parquet files can either be local or on a remote server, such as Amazon S3.
 
 from datetime import datetime
 from io import BytesIO
-from typing import Any, Dict, List, Optional
+from typing import cast, Any, Dict, List, Optional, SupportsFloat
 
 import numpy as np
 import pyarrow as pa  # type: ignore
@@ -43,7 +43,7 @@ def rename_CCDitem_attributes(item: CCDItem) -> None:
 
     Args:
         item: Item from Parquet store for which to translate attributes.
-    
+
     Returns:
         Nothing. Operation is performed in place.
     """
@@ -77,12 +77,15 @@ def rename_CCDitem_attributes(item: CCDItem) -> None:
 
     if "BC" not in item:
         item["BC"] = item.pop("BadColumns")
-    
+
     if "Image File Name" not in item:
         item["Image File Name"] = item.pop("ImageName")
 
     if "IMAGE" not in item:
-        item["IMAGE"] = np.float64(Image.open(BytesIO(item.pop["ImageData"])))
+        item["IMAGE"] = np.float64(cast(
+            SupportsFloat,
+            Image.open(BytesIO(item.pop("ImageData"))),
+        ))
 
 
 def add_CCDItem_attributes(item: CCDItem):
@@ -91,7 +94,7 @@ def add_CCDItem_attributes(item: CCDItem):
 
     Args:
         item: Item from Parquet store to which to add attributes.
-    
+
     Returns:
         Nothing. Operation is performed in place.
     """
@@ -122,7 +125,7 @@ def add_and_rename_CCDitem_attributes(items: List[CCDItem]):
 
     Args:
         items: List of items from Parquet store to be converted to CCCD items.
-    
+
     Returns:
         Nothing. Operation is performed in place.
     """
