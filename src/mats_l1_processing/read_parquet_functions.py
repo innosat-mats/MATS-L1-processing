@@ -112,10 +112,11 @@ def add_CCDItem_attributes(item: CCDItem):
     ADC_temp_in_degreeC = 1.0 / 0.85 * ADC_temp_in_mV - 296
     item["temperature_ADC"] = ADC_temp_in_degreeC
 
-    # TODO: Replace with something like `add_temperature_info` when HTR data is
-    # available, see: https://github.com/innosat-mats/level1a/issues/5
-    item["temperature"] = ADC_temp_in_degreeC
-    item["temperature_HTR"] = ADC_temp_in_degreeC
+    # This needs to be updated when a better temperature estimate has been
+    # designed. For now a de facto implementation of
+    # get_temperature.add_temperature_info()
+    item["temperature"] = item["HTR8A"]
+    item["temperature_HTR"] = item["HTR8A"]
 
 
 def add_and_rename_CCDitem_attributes(items: List[CCDItem]):
@@ -124,7 +125,7 @@ def add_and_rename_CCDitem_attributes(items: List[CCDItem]):
     after processing.
 
     Args:
-        items: List of items from Parquet store to be converted to CCCD items.
+        items: List of items from Parquet store to be converted to CCD items.
 
     Returns:
         Nothing. Operation is performed in place.
