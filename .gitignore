@@ -8,3 +8,7 @@ data
 src/mats_l1_processing.egg-info/
 calibration_data/
 htmlcov/
+.tox
+*.swp
+*.swo
+*.orig
