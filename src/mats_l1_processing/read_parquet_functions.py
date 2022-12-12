@@ -9,7 +9,7 @@ Parquet files can either be local or on a remote server, such as Amazon S3.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import cast, Any, Dict, List, Optional, SupportsFloat
 
@@ -114,24 +114,27 @@ def add_ccd_item_attributes(ccd_data: DataFrame) -> None:
     ccd_data["temperature_HTR"] = ccd_data["HTR8A"]
 
 
-def remove_empty_images(
+def remove_faulty_rows(
     ccd_data: DataFrame,
-    remove_errors: bool = False,
+    remove_empty: bool = True,
+    remove_errors: bool = True,
     remove_warnings: bool = False,
 ) -> DataFrame:
-    """Remove rows of CCD data where image could not be parsed.
-    Optionally also remove rows with errors or warnings.
+    """Remove rows of CCD data where image could not be parsed or other errors
+    or warnings occurred.
 
     Args:
         ccd_data (DataFrame):   CCD data which to filter.
-        remove_errors (bool):   Remove rows with errors. (Default: False.)
-        remove_warnings (bool): Remove rows with errors. (Default: False.)
+        remove_empty (bool):    Remove rows lacking image data. (Default: True)
+        remove_errors (bool):   Remove rows with errors. (Default: True)
+        remove_warnings (bool): Remove rows with warnings. (Default: False)
 
     Returns:
         DataFrame:   The filtered CCD data.
     """
 
-    ccd_data = ccd_data[ccd_data.IMAGE != None]  # noqa: E711
+    if remove_empty:
+        ccd_data = ccd_data[ccd_data.IMAGE != None]  # noqa: E711
 
     if remove_errors:
         ccd_data = ccd_data[ccd_data.Errors != None]  # noqa: E711
@@ -142,10 +145,35 @@ def remove_empty_images(
     return ccd_data
 
 
-def dataframe_to_ccd_items(ccd_data: DataFrame) -> List[CCDItem]:
-    rename_ccd_item_attributes(ccd_data)
-    add_ccd_item_attributes(ccd_data)
-    return remove_empty_images(ccd_data).to_dict("records")
+def dataframe_to_ccd_items(
+    ccd_data: DataFrame,
+    remove_empty: bool = True,
+    remove_errors: bool = True,
+    remove_warnings: bool = False,
+) -> List[CCDItem]:
+    """Returns a list of CCD Items converted from the input DataFrame
+
+    Args:
+        ccd_data (DataFrame):   The CCD data to convert.
+        remove_empty (bool):    Remove rows lacking image data. (Default: True)
+        remove_errors (bool):   Remove rows with errors. (Default: True)
+        remove_warnings (bool): Remove rows with warnings. (Default: False)
+
+    Returns:
+        List[Dict[str, Any]]:   List of valid CCD items. List may be shorter
+                                than than input, depending on applied filters.
+    """
+
+    data = ccd_data.copy()
+    rename_ccd_item_attributes(data)
+    add_ccd_item_attributes(data)
+
+    return remove_faulty_rows(
+        data,
+        remove_empty,
+        remove_errors,
+        remove_warnings,
+    ).reset_index().to_dict("records")
 
 
 def read_ccd_data_in_interval(
@@ -158,17 +186,22 @@ def read_ccd_data_in_interval(
     between the specified times.
 
     Args:
-        from (datetime):            Read CCD data from this timestamp (inclusive).
-        to (datetime):              Read CCD data up to this timestamp (inclusive).
+        start (datetime):           Read CCD data from this time (inclusive).
+        stop (datetime):            Read CCD data up to this time (inclusive).
         path (str):                 Path to dataset. May be a directory or a
                                     bucket, depending on filesystem.
-        filesystem (filesystem):    Optional. Filesystem to read. If not
+        filesystem (FileSystem):    Optional. File system to read. If not
                                     specified will assume that path points to
-                                    an ordinary directory disk. (Default: None.)
+                                    an ordinary directory disk. (Default: None)
 
     Returns:
         DataFrame:  The CCD data.
     """
+
+    if start.tzinfo is None:
+        start.replace(tzinfo=timezone.utc)
+    if stop.tzinfo is None:
+        stop.replace(tzinfo=timezone.utc)
 
     return ds.dataset(
         path,
@@ -191,13 +224,13 @@ def read_ccd_items_in_interval(
     data is converted and and returned.
 
     Args:
-        from (datetime):            Read CCD data from this timestamp (inclusive).
-        to (datetime):              Read CCD data up to this timestamp (inclusive).
+        start (datetime):           Read CCD data from this time (inclusive).
+        stop (datetime):            Read CCD data up to this time (inclusive).
         path (str):                 Path to dataset. May be a directory or a
                                     bucket, depending on filesystem.
-        filesystem (filesystem):    Optional. Filesystem to read. If not
+        filesystem (FileSystem):    Optional. File system to read. If not
                                     specified will assume that path points to
-                                    an ordinary directory disk. (Default: None.)
+                                    an ordinary directory disk. (Default: None)
 
     Returns:
         list[dict[str, Any]]:   List of dictionary representations of the CCD data.
@@ -217,18 +250,20 @@ def read_ccd_data(
     Args:
         path (str):                 Path to dataset. May be a directory or a
                                     bucket, depending on filesystem.
-        filesystem (filesystem):    Optional. Filesystem to read. If not
+        filesystem (FileSystem):    Optional. File system to read. If not
                                     specified will assume that path points to
-                                    an ordinary directory disk. (Default: None.)
+                                    an ordinary directory disk. (Default: None)
 
     Returns:
-        DataFrame:  The CCD data.
+        DataFrame:  The CCD data. Note that `EXPDate` is used as index and is
+                    therefore not a column. To regain the column, use the
+                    `reset_index()` method on the returned DataFrame.
     """
 
     return pq.read_table(
         path,
         filesystem=filesystem,
-    ).to_pandas().reset_index()
+    ).to_pandas()
 
 
 def read_ccd_items(
@@ -242,9 +277,9 @@ def read_ccd_items(
     Args:
         path (str):                 Path to dataset. May be a directory or a
                                     bucket, depending on filesystem.
-        filesystem (filesystem):    Optional. Filesystem to read. If not
+        filesystem (FileSystem):    Optional. File System to read. If not
                                     specified will assume that path points to
-                                    an ordinary directory disk. (Default: None.)
+                                    an ordinary directory disk. (Default: None)
 
     Return:
         list[dict[str, Any]]:   List of dictionary representations of the CCD data.
