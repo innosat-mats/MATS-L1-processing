@@ -3,7 +3,7 @@ testdata
 data
 calibration_data
 *.pkl
-level1b/handlers/mats_l1_processing/
+**/level1b/handlers/mats_l1_processing/
 
 # Visual studio code
 .vscode
