@@ -1,3 +1,5 @@
+src/database_generation/output/
+scripts/calibration_data_linda.toml
 testdata
 .coverage
 *.pyc

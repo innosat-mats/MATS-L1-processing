@@ -85,22 +85,22 @@ def get_shift(CCDitem,skip_comp=False):
     """
 
     if CCDitem['channel']=='IR1':
-        x_pos=-75
+        x_pos=75
         y_pos=47
     elif CCDitem['channel']=='IR2':
-        x_pos=144
+        x_pos=-144
         y_pos=76      
     elif CCDitem['channel']=='IR3':
-        x_pos=37
+        x_pos=-37
         y_pos=66 
     elif CCDitem['channel']=='IR4':
         x_pos=0
         y_pos=0
     elif CCDitem['channel']=='UV1':
-        x_pos=88#139
+        x_pos=-88#139
         y_pos=13#148
     elif CCDitem['channel']=='UV2':
-        x_pos=156
+        x_pos=-156
         y_pos=192
     elif CCDitem['channel']=='NADIR':
         x_pos=0 # No shifting of NADIR channel
@@ -108,13 +108,15 @@ def get_shift(CCDitem,skip_comp=False):
     else:
         raise Exception('Unknown channel name', CCDitem['channel'])
 
+    
     if skip_comp:
         if "flipped" in CCDitem:
             if CCDitem['flipped'] == True:
                 x_pos = x_pos + get_CCD_resolution(1,1) - CCDitem['NCSKIP'] - CCDitem['NCBIN FPGAColumns']*CCDitem['NCBIN CCDColumns']*(CCDitem['NCOL']+1) 
             else:
                 x_pos = x_pos+CCDitem['NCSKIP']
-        elif (CCDitem['channel']=='IR2') or (CCDitem['channel']=='IR4'):
+        elif ((CCDitem['channel']=='IR1') or (CCDitem['channel']=='IR3')
+            or (CCDitem['channel']=='UV1') or (CCDitem['channel']=='UV2')):
             x_pos = x_pos + get_CCD_resolution(1,1) - CCDitem['NCSKIP'] - CCDitem['NCBIN FPGAColumns']*CCDitem['NCBIN CCDColumns']*(CCDitem['NCOL']+1) 
         else:
             x_pos = x_pos+CCDitem['NCSKIP']

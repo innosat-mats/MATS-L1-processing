@@ -1,0 +1,24 @@
+# This document defines the position of various files used for the calibration of MATS data. 
+
+title = "Level 1 calibration files for testing this package"
+
+
+
+#Folders and parameters for generating the calibration database
+[primary_data]
+	folder = "calibration_data/binning_test_20200812/RacFiles_out/"
+#Folders and parameters for performing calibration
+[darkcurrent]
+	folder =  "/Users/lindamegner/MATS/retrieval/git/MATS-L1-processing/calibration_data/MATS_CCD_DC_calibration_FINAL/"
+    dc_2D_limit=0 #limit in counts above which 2D dark current subtraction is done
+[flatfield]
+	flatfieldfolder = "/Users/lindamegner/MATS/retrieval/git/MATS-L1-processing/calibration_data/flatfields/"
+	flatfieldfolder_cold_unprocessed = "/Users/lindamegner/MATS/retrieval/git/MATS-L1-processing/calibration_data/20200330_flatfields_0C/"
+	baffle_flatfield = "/Users/lindamegner/MATS/retrieval/git/MATS-L1-processing/calibration_data/Flatfield20210421/PayloadImages/"
+[linearity]
+    pixel = '/Users/lindamegner/MATS/retrieval/git/MATS-L1-processing/calibration_data/linearity/linear/linearity'
+    sumrow = '/Users/lindamegner/MATS/retrieval/git/MATS-L1-processing/calibration_data/linearity/linear/linearity'
+    sumwell = '/Users/lindamegner/MATS/retrieval/git/MATS-L1-processing/calibration_data/linearity/linear/linearity'
+    tables = '/Users/lindamegner/MATS/retrieval/git/MATS-L1-processing/calibration_data/linearity/tables/20220906/'
+[abs_rel_calib] 
+	abs_rel_calib_constants= "/Users/lindamegner/MATS/retrieval/git/MATS-L1-processing/calibration_data/abs_rel_calib/abs_rel_calib_constants.csv"
