@@ -18,9 +18,19 @@ jobs:
             cd l1b_lambda
             python3.9 -m pip install --upgrade pip
             pip install tox
+            ./copy_source.sh
         
         - name: Run unit tests
           run: |
             cd l1b_lambda
-            ./copy_source.sh
-            tox
+            tox -e py39
+
+        - name: Run lint checks
+          run: |
+            cd l1b_lambda
+            tox -e lint
+
+        - name: Run type checks
+          run: |
+            cd l1b_lambda
+            tox -e mypy
