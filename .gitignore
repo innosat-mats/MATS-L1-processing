@@ -1,3 +1,4 @@
+src/database_generation/output/
 testdata
 .coverage
 *.pyc
