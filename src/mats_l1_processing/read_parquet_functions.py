@@ -36,10 +36,10 @@ CCDItem = Dict[str, Any]
 
 
 def rename_ccd_item_attributes(ccd_data: DataFrame) -> None:
-    """Renaming of attributes to work with calibration code The names in the code
-    are based on the old rac extract file (prior to May 2020).
-    The names used in the parquet files are mostly the same as used in CSVs
-    prior to November 2022. Exceptions are translated here.
+    """Renaming of attributes to work with calibration code.
+    The names in the code are based on the old rac extract file (prior to May
+    2020).  The names used in the parquet files are mostly the same as used in
+    CSVs prior to November 2022. Exceptions are translated here.
 
     Args:
         ccd_data (DataFrame):   CCD data for which translate attributes.
@@ -68,8 +68,12 @@ def rename_ccd_item_attributes(ccd_data: DataFrame) -> None:
 
 
 def add_ccd_item_attributes(ccd_data: DataFrame) -> None:
-    """Add some attributes to CCD data that we need. The names in the code
-    are based on the old rac extract file (prior to May 2020).
+    """Add some attributes to CCD data that we need.
+    Note that this function assumes the data has up to date names for columns,
+    not the names used in the old rac extract file (prior to May 2020).
+    Conversion to the old standard can be performed using
+    `rename_ccd_item_attributes`, but that has to be done _after_ applying this
+    function.
 
     Args:
         ccd_data (DataFrame):   CCD data to which to add attributes.
@@ -99,7 +103,7 @@ def add_ccd_item_attributes(ccd_data: DataFrame) -> None:
 
     # CCDitem["id"] should not be needed in operational retrieval. Keeping it
     # because protocol reading / CodeCalibrationReport needs it.  LM220908
-    ccd_data["id"] = f"{ccd_data['EXP Nanoseconds']}_{ccd_data['CCDSEL']}"
+    ccd_data["id"] = f"{ccd_data['EXPNanoseconds']}_{ccd_data['CCDSEL']}"
 
     # Add temperature info fom OBC, the temperature info from the rac files are
     # better since they are based on the thermistors on the UV channels
@@ -165,15 +169,15 @@ def dataframe_to_ccd_items(
     """
 
     data = ccd_data.copy()
-    rename_ccd_item_attributes(data)
     add_ccd_item_attributes(data)
+    rename_ccd_item_attributes(data)
 
     return remove_faulty_rows(
         data,
         remove_empty,
         remove_errors,
         remove_warnings,
-    ).reset_index().to_dict("records")
+    ).to_dict("records")
 
 
 def read_ccd_data_in_interval(
@@ -255,15 +259,13 @@ def read_ccd_data(
                                     an ordinary directory disk. (Default: None)
 
     Returns:
-        DataFrame:  The CCD data. Note that `EXPDate` is used as index and is
-                    therefore not a column. To regain the column, use the
-                    `reset_index()` method on the returned DataFrame.
+        DataFrame:  The CCD data.
     """
 
     return pq.read_table(
         path,
         filesystem=filesystem,
-    ).to_pandas()
+    ).to_pandas().reset_index()
 
 
 def read_ccd_items(
