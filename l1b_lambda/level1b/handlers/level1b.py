@@ -1,7 +1,6 @@
 import json
 import os
 import subprocess
-from datetime import timezone
 from http import HTTPStatus
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import Any, Dict, List, Tuple
@@ -14,7 +13,7 @@ from pandas import (  # type: ignore
     concat,
 )
 
-import mats_l1_processing.read_parquet_functions as rpf
+from mats_l1_processing import read_parquet_functions as rpf
 from mats_l1_processing.instrument import Instrument
 from mats_l1_processing.L1_calibrate import L1_calibrate
 
@@ -89,7 +88,8 @@ def get_instrument(
         rclone_config_path,
         instrument_dir,
         f"S3:{instrument_bucket}",
-    )) 
+    ))
+
     return Instrument(
         f"{instrument_dir}/calibration_data/calibration_data.toml",
     )
@@ -121,7 +121,7 @@ def lambda_handler(event: Event, context: Context):
                 'message': f'{object} is not a parquet file, nothing to do.'
             })
         }
-    
+
     with TemporaryDirectory(
         "_instrument",
         "/tmp",
@@ -136,7 +136,7 @@ def lambda_handler(event: Event, context: Context):
             rclone_config_path,
         )
 
-        ccd_data = rpf.read_ccd_data(object_path, filesystem=s3) 
+        ccd_data = rpf.read_ccd_data(object_path, filesystem=s3)
         ccd_items = rpf.dataframe_to_ccd_items(
             ccd_data,
             remove_empty=False,
@@ -159,7 +159,7 @@ def lambda_handler(event: Event, context: Context):
             ) = L1_calibrate(ccd, instrument)
             ccd["ImageCalibrated"] = image_calibrated
             ccd["CalibrationErrors"] = errors
- 
+
     calibrated = DataFrame.from_records(
         ccd_items,
         columns=["EXP Date", "ImageCalibrated", "CalibrationErrors"],
