@@ -99,7 +99,7 @@ def add_ccd_item_attributes(ccd_data: DataFrame) -> None:
 
     # CCDitem["id"] should not be needed in operational retrieval. Keeping it
     # because protocol reading / CodeCalibrationReport needs it.  LM220908
-    ccd_data["id"] = f"{ccd_data['EXP Nanoseconds']}_{ccd_data['CCDSEL']}"
+    ccd_data["id"] = f"{ccd_data['EXPNanoseconds']}_{ccd_data['CCDSEL']}"
 
     # Add temperature info fom OBC, the temperature info from the rac files are
     # better since they are based on the thermistors on the UV channels
