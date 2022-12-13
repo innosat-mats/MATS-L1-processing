@@ -279,7 +279,7 @@ def read_ccd_items(
     Args:
         path (str):                 Path to dataset. May be a directory or a
                                     bucket, depending on filesystem.
-        filesystem (FileSystem):    Optional. File System to read. If not
+        filesystem (FileSystem):    Optional. File system to read. If not
                                     specified will assume that path points to
                                     an ordinary directory disk. (Default: None)
 
