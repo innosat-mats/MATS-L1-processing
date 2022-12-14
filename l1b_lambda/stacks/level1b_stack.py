@@ -4,7 +4,7 @@ from aws_cdk.aws_lambda_event_sources import SqsEventSource
 from aws_cdk.aws_lambda_python_alpha import PythonFunction
 from aws_cdk.aws_s3 import Bucket, NotificationKeyFilter
 from aws_cdk.aws_s3_notifications import SqsDestination
-from aws_cdk.aws_sqs import Queue
+from aws_cdk.aws_sqs import DeadLetterQueue, Queue
 from constructs import Construct
 
 
@@ -74,6 +74,14 @@ class Level1BStack(Stack):
             retention_period=queue_retention_period,
             visibility_timeout=queue_visibility_timeout,
             removal_policy=RemovalPolicy.RETAIN,
+            dead_letter_queue=DeadLetterQueue(
+                max_receive_count=1,
+                queue=Queue(
+                    self,
+                    "FailedCalibrationQueue",
+                    retention_period=queue_retention_period,
+                ),
+            ),
         )
 
         input_bucket.add_object_created_notification(
