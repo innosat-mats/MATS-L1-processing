@@ -2,7 +2,7 @@ from aws_cdk import Duration, Size, Stack, RemovalPolicy
 from aws_cdk.aws_lambda import Architecture, LayerVersion, Runtime
 from aws_cdk.aws_lambda_event_sources import SqsEventSource
 from aws_cdk.aws_lambda_python_alpha import PythonFunction
-from aws_cdk.aws_s3 import Bucket, NotificationKeyFilter
+from aws_cdk.aws_s3 import Bucket
 from aws_cdk.aws_s3_notifications import SqsDestination
 from aws_cdk.aws_sqs import DeadLetterQueue, Queue
 from constructs import Construct
@@ -86,7 +86,6 @@ class Level1BStack(Stack):
 
         input_bucket.add_object_created_notification(
             SqsDestination(event_queue),
-            NotificationKeyFilter(prefix="CCD"),
         )
 
         level1b_lambda.add_event_source(SqsEventSource(
