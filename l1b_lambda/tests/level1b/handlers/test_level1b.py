@@ -4,9 +4,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 import botocore
-import pytest  # type: ignore
+import pytest
 from botocore.stub import Stubber
-
 
 from level1b.handlers.level1b import (
     format_rclone_command,

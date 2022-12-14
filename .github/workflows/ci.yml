@@ -15,10 +15,13 @@ jobs:
 
         - name: Install General Dependencies
           run: |
-            cd l1b_lambda
             python3.9 -m pip install --upgrade pip
             pip install tox
-            ./copy_source.sh
+
+        - name: Build and install MATS L1 Processing
+          run: |
+            python -m build .
+            pip install dist/mats_l1_processing-0.0.0-py2.py3-none-any.whl
         
         - name: Run unit tests
           run: |

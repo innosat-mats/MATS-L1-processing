@@ -11,3 +11,5 @@ tqdm
 boto3
 types-boto3
 types-botocore
+types-Pillow
+types-toml

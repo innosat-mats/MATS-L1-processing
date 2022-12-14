@@ -3,7 +3,6 @@ testdata
 data
 calibration_data
 *.pkl
-**/level1b/handlers/mats_l1_processing/
 src/database_generation/output/
 scripts/calibration_data_linda.toml
 
