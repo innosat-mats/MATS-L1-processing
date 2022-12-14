@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+from functools import lru_cache
 from http import HTTPStatus
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import Any, Dict, List, Tuple
@@ -81,6 +82,7 @@ def format_rclone_command(
     ]
 
 
+@lru_cache(maxsize=None)
 def get_instrument(
     instrument_dir: str,
     instrument_bucket: str,
