@@ -18,7 +18,7 @@ copytree(
 Level1BStack(
     app,
     "Level1BStack",
-    input_bucket_name="ops-payload-level1a-v0.1",
+    input_bucket_name="ops-payload-level1a-v0.2",
     output_bucket_name="ops-payload-level1b-v0.1",
     instrument_bucket_name="instrument-data",
     rclone_arn="arn:aws:lambda:eu-north-1:671150066425:layer:rclone-amd64:1",
