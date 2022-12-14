@@ -65,18 +65,16 @@ def format_rclone_command(
     config_path: str,
     source: str,
     destination: str,
-    sloppy: bool = False
 ) -> List[str]:
-    cmd = [
+    return [
         "rclone",
         "--config",
         config_path,
         "copy",
         source,
         destination,
+        "--size-only",
     ]
-    if sloppy:
-        cmd.append("--size-only")
 
 
 def get_instrument(

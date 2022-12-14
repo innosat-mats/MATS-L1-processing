@@ -1,8 +1,7 @@
-
-from aws_cdk import Duration, Stack, RemovalPolicy
+from aws_cdk import Duration, Size, Stack, RemovalPolicy
 from aws_cdk.aws_lambda import Architecture, LayerVersion, Runtime
 from aws_cdk.aws_lambda_event_sources import SqsEventSource
-from aws_cdk.aws_lambda_python_alpha import PythonFunction  # type: ignore
+from aws_cdk.aws_lambda_python_alpha import PythonFunction
 from aws_cdk.aws_s3 import Bucket, NotificationKeyFilter
 from aws_cdk.aws_s3_notifications import SqsDestination
 from aws_cdk.aws_sqs import Queue
@@ -43,7 +42,7 @@ class Level1BStack(Stack):
             "InstrumentBucket",
             instrument_bucket_name,
         )
-        
+
         rclone_layer = LayerVersion.from_layer_version_arn(
             self,
             "RCloneLayer",
@@ -60,7 +59,7 @@ class Level1BStack(Stack):
             architecture=Architecture.X86_64,
             runtime=Runtime.PYTHON_3_9,
             memory_size=1024,
-            ephemeral_storage_size=1024,
+            ephemeral_storage_size=Size.mebibytes(1024),
             environment={
                 "L1B_BUCKET": output_bucket.bucket_name,
                 "INSTRUMENT_BUCKET": instrument_bucket.bucket_name,
