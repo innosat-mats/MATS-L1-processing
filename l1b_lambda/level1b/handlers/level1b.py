@@ -144,17 +144,19 @@ def lambda_handler(event: Event, context: Context):
 
         for ccd in ccd_items:
             if ccd["IMAGE"] is None:
-                continue
-            (
-                _,
-                _,
-                _,
-                _,
-                _,
-                image_calibrated,
-                _,
-                errors,
-            ) = L1_calibrate(ccd, instrument)
+                image_calibrated = None
+                errors = None
+            else:
+                (
+                    _,
+                    _,
+                    _,
+                    _,
+                    _,
+                    image_calibrated,
+                    _,
+                    errors,
+                ) = L1_calibrate(ccd, instrument)
             ccd["ImageCalibrated"] = image_calibrated
             ccd["CalibrationErrors"] = errors
 
