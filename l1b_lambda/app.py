@@ -11,7 +11,7 @@ app = App()
 
 copytree(
     Path("..") / "src" / "mats_l1_processing",
-    Path(".") / "level1b" / "handlers" / "mats_l1_processing",
+    Path(".") / "level1b" / "mats_l1_processing",
     dirs_exist_ok=True,
 )
 

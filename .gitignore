@@ -5,6 +5,7 @@ calibration_data
 *.pkl
 src/database_generation/output/
 scripts/calibration_data_linda.toml
+l1b_lambda/level1b/mats_l1_processing
 
 # Visual studio code
 .vscode
@@ -149,3 +150,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# CDK
+cdk.out/
