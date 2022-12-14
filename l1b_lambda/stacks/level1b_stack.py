@@ -18,7 +18,7 @@ class Level1BStack(Stack):
         instrument_bucket_name: str,
         rclone_arn: str,
         config_ssm_name: str,
-        lambda_timeout: Duration = Duration.seconds(300),
+        lambda_timeout: Duration = Duration.seconds(900),
         queue_retention_period: Duration = Duration.days(14),
         queue_visibility_timeout: Duration = Duration.hours(12),
         **kwargs
