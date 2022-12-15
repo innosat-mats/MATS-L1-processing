@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-from shutil import copytree
+from shutil import copytree, ignore_patterns
 
 from aws_cdk import App
 
@@ -13,6 +13,10 @@ copytree(
     Path("..") / "src" / "mats_l1_processing",
     Path(".") / "level1b" / "mats_l1_processing",
     dirs_exist_ok=True,
+    ignore=ignore_patterns(
+        "*.pyc",
+        "*cache*",
+    ),
 )
 
 Level1BStack(
