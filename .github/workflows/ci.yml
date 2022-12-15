@@ -1,0 +1,44 @@
+name: Level1B Lambda CI
+
+on: [push]
+
+jobs:
+    lambda_test:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v2
+
+        - name: Setup Python
+          uses: actions/setup-python@v2
+          with:
+            python-version: 3.9
+
+        - name: Install General Dependencies
+          run: |
+            python3.9 -m pip install --upgrade pip
+            pip install tox
+        
+        - name: Install Lambda 1B dependencies
+          run: |
+            cd l1b_lambda
+            pip install -r requirements.txt
+
+        - name: Build and install MATS L1 Processing
+          run: |
+            python -m build .
+            pip install ./dist/mats_l1_processing-0.0.0-py2.py3-none-any.whl
+        
+        - name: Run unit tests
+          run: |
+            cd l1b_lambda
+            tox -e py39
+
+        - name: Run lint checks
+          run: |
+            cd l1b_lambda
+            tox -e lint
+
+        - name: Run type checks
+          run: |
+            cd l1b_lambda
+            tox -e mypy
