@@ -90,8 +90,8 @@ def get_instrument(
 ):
     subprocess.call(format_rclone_command(
         rclone_config_path,
-        instrument_dir,
         f"S3:{instrument_bucket}",
+        instrument_dir,
     ))
 
     return Instrument(
