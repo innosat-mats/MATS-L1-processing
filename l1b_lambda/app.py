@@ -24,7 +24,7 @@ Level1BStack(
     "Level1BStack",
     input_bucket_name="ops-payload-level1a-v0.2",
     output_bucket_name="ops-payload-level1b-v0.1",
-    instrument_bucket_name="instrument-data",
+    instrument_bucket_name="mats-calibration-instrument-data",
     rclone_arn="arn:aws:lambda:eu-north-1:671150066425:layer:rclone-amd64:1",
     config_ssm_name="/rclone/l0-fetcher",
 )
