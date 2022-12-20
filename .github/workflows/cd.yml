@@ -46,4 +46,6 @@ jobs:
           pip install ./dist/mats_l1_processing-0.0.0-py2.py3-none-any.whl
 
       - name: Deploy stacks
-        run: cdk deploy --all --require-approval never
+        run: |
+          cd l1b_lambda
+          cdk deploy --all --require-approval never
