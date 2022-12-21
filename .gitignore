@@ -1,7 +1,7 @@
 # Project specific
 testdata
 data
-calibration_data
+**/calibration_data
 *.pkl
 src/database_generation/output/
 scripts/calibration_data_linda.toml
@@ -48,6 +48,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+*.whl
 
 # PyInstaller
 #  Usually these files are written by a python script from a template before

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-from shutil import copytree, ignore_patterns
+from shutil import copyfile
 
 from aws_cdk import App
 
@@ -9,14 +9,9 @@ from stacks.level1b_stack import Level1BStack
 
 app = App()
 
-copytree(
-    Path("..") / "src" / "mats_l1_processing",
-    Path(".") / "level1b" / "mats_l1_processing",
-    dirs_exist_ok=True,
-    ignore=ignore_patterns(
-        "*.pyc",
-        "*cache*",
-    ),
+copyfile(
+    Path("..") / "dist" / "mats_l1_processing-0.0.0-py2.py3-none-any.whl",
+    Path(".") / "mats_l1_processing.whl",
 )
 
 Level1BStack(
@@ -24,9 +19,6 @@ Level1BStack(
     "Level1BStack",
     input_bucket_name="ops-payload-level1a-v0.2",
     output_bucket_name="ops-payload-level1b-v0.1",
-    instrument_bucket_name="mats-calibration-instrument-data",
-    rclone_arn="arn:aws:lambda:eu-north-1:671150066425:layer:rclone-amd64:1",
-    config_ssm_name="/rclone/l0-fetcher",
 )
 
 app.synth()
