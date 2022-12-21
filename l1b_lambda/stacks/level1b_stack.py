@@ -1,5 +1,7 @@
 from aws_cdk import Duration, Stack, RemovalPolicy
-from aws_cdk.aws_lambda import Architecture, DockerImageFunction, DockerImageCode
+from aws_cdk.aws_lambda import (
+    Architecture, DockerImageFunction, DockerImageCode,
+)
 from aws_cdk.aws_lambda_event_sources import SqsEventSource
 from aws_cdk.aws_s3 import Bucket
 from aws_cdk.aws_s3_notifications import SqsDestination

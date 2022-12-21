@@ -1,12 +1,8 @@
 import json
 import os
-import subprocess
-from functools import lru_cache
 from http import HTTPStatus
-from tempfile import NamedTemporaryFile, TemporaryDirectory
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
-import boto3
 import pyarrow as pa  # type: ignore
 import pyarrow.parquet as pq  # type: ignore
 from pandas import (  # type: ignore

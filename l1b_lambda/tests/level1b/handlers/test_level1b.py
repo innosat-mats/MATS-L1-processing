@@ -1,11 +1,8 @@
 import json
 import os
-from pathlib import Path
 from unittest.mock import patch
 
-import botocore
 import pytest
-from botocore.stub import Stubber
 
 from level1b.handlers.level1b import (
     get_env_or_raise,
