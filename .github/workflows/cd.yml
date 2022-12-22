@@ -50,7 +50,7 @@ jobs:
 
       - name: Copy instrument data
         run: |
-          aws s3 cp s3://mats-calibration-instrument-data ./l1b_lambda
+          aws s3 cp s3://mats-calibration-instrument-data ./l1b_lambda --recursive
       
       - name: Deploy stacks
         run: |
