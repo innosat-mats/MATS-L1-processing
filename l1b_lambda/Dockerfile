@@ -16,7 +16,7 @@ RUN  pip3 install mats_l1_processing-0.0.0-py2.py3-none-any.whl --target "${LAMB
 COPY ./calibration_data /
 
 # Copy function code
-COPY ./handlers/level1b.py ${LAMBDA_TASK_ROOT}
+COPY ./level1b/handlers/level1b.py ${LAMBDA_TASK_ROOT}
 
 # Set the CMD to your handler (could also be done as a parameter override outside of the Dockerfile)
 CMD [ "level1b.handler" ] 
