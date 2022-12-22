@@ -19,6 +19,9 @@ jobs:
         run: |
           npm install -g aws-cdk
 
+      - name: Install aws-cli
+        uses: unfor19/install-aws-cli-action@v1
+
       - name: Configure aws credentials
         uses: aws-actions/configure-aws-credentials@master
         with:
@@ -45,6 +48,10 @@ jobs:
           python -m build .
           pip install ./dist/mats_l1_processing-0.0.0-py2.py3-none-any.whl
 
+      - name: Copy instrument data
+        run: |
+          aws s3 cp s3://mats-calibration-instrument-data ./l1b_lambda --recursive
+      
       - name: Deploy stacks
         run: |
           cd l1b_lambda
