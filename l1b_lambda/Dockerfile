@@ -19,4 +19,4 @@ COPY ./calibration_data /
 COPY ./level1b/handlers/level1b.py ${LAMBDA_TASK_ROOT}
 
 # Set the CMD to your handler (could also be done as a parameter override outside of the Dockerfile)
-CMD [ "level1b.handler" ] 
+CMD [ "level1b.lambda_handler" ] 
