@@ -11,7 +11,7 @@ app = App()
 
 copyfile(
     Path("..") / "dist" / "mats_l1_processing-0.0.0-py2.py3-none-any.whl",
-    Path(".") / "mats_l1_processing.whl",
+    Path(".") / "mats_l1_processing-0.0.0-py2.py3-none-any.whl",
 )
 
 Level1BStack(

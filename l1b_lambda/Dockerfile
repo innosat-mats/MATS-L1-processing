@@ -8,8 +8,8 @@ RUN  pip3 install -r requirements.txt --target "${LAMBDA_TASK_ROOT}"
 
 # Install Mats L1 Processing (requires wheel built and copied to build tree)
 
-COPY mats_l1_processing.whl .
-RUN  pip3 install mats_l1_processing.whl --target "${LAMBDA_TASK_ROOT}"
+COPY mats_l1_processing-0.0.0-py2.py3-none-any.whl .
+RUN  pip3 install mats_l1_processing-0.0.0-py2.py3-none-any.whl --target "${LAMBDA_TASK_ROOT}"
 
 # Copy instrument data
 
