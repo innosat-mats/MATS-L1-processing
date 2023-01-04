@@ -12,6 +12,7 @@ from pandas import (  # type: ignore
 
 from mats_l1_processing.instrument import Instrument  # type: ignore
 from mats_l1_processing.L1_calibrate import L1_calibrate  # type: ignore
+from mats_l1_processing import read_parquet_functions as rpf  # type: ignore
 
 
 BotoClient = Any
