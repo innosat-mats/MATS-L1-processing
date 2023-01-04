@@ -75,7 +75,7 @@ def lambda_handler(event: Event, context: Context):
                 })
             }
     except Exception as err:
-        raise Level1BException("Failed to initialize handler") from err
+        raise Level1BException(f"Failed to initialize handler: {err}") from err
 
     try:
         instrument = Instrument("/calibration_data/calibration_data.toml")
@@ -106,7 +106,7 @@ def lambda_handler(event: Event, context: Context):
             ccd["ImageCalibrated"] = image_calibrated
             ccd["CalibrationErrors"] = errors
     except Exception as err:
-        msg = f"Failed to process {object_path}"
+        msg = f"Failed to process {object_path}: {err}"
         raise Level1BException(msg) from err
 
     try:
@@ -129,5 +129,5 @@ def lambda_handler(event: Event, context: Context):
             version='2.6',
         )
     except Exception as err:
-        msg = f"Failed to store {object_path}"
+        msg = f"Failed to store {object_path}: {err}"
         raise Level1BException(msg) from err
