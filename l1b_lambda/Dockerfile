@@ -13,7 +13,7 @@ RUN  pip3 install mats_l1_processing-0.0.0-py2.py3-none-any.whl --target "${LAMB
 
 # Copy instrument data
 
-COPY ./calibration_data /
+COPY ./calibration_data /calibration_data
 
 # Copy function code
 COPY ./level1b/handlers/level1b.py ${LAMBDA_TASK_ROOT}

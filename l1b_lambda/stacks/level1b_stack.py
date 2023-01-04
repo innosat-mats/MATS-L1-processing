@@ -18,7 +18,6 @@ class Level1BStack(Stack):
         output_bucket_name: str,
         lambda_timeout: Duration = Duration.seconds(900),
         queue_retention_period: Duration = Duration.days(14),
-        queue_visibility_timeout: Duration = Duration.hours(12),
         **kwargs
     ) -> None:
         super().__init__(scope, id, **kwargs)
@@ -41,7 +40,7 @@ class Level1BStack(Stack):
             code=DockerImageCode.from_image_asset("."),
             timeout=lambda_timeout,
             architecture=Architecture.X86_64,
-            memory_size=1024,
+            memory_size=3072,
             environment={
                 "L1B_BUCKET": output_bucket.bucket_name,
             },
@@ -51,7 +50,7 @@ class Level1BStack(Stack):
             self,
             "Level1AQueue",
             retention_period=queue_retention_period,
-            visibility_timeout=queue_visibility_timeout,
+            visibility_timeout=lambda_timeout,
             removal_policy=RemovalPolicy.RETAIN,
             dead_letter_queue=DeadLetterQueue(
                 max_receive_count=1,
