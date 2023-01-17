@@ -40,7 +40,7 @@ class Level1BStack(Stack):
             code=DockerImageCode.from_image_asset("."),
             timeout=lambda_timeout,
             architecture=Architecture.X86_64,
-            memory_size=3072,
+            memory_size=4096,
             environment={
                 "L1B_BUCKET": output_bucket.bucket_name,
             },
