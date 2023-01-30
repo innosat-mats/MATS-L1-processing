@@ -154,6 +154,13 @@ def test_error_algebra():
 
     A = np.ones((512,2047),dtype=np.int16)
     assert np.all(combine_flags([A,A*3],[1,2])==A*7)
+    
+def test_channel_quaterion():
+    intrument = Instrument("tests/calibration_data_test.toml")
+    CCDunit_IR1=intrument.get_CCD("IR1")
+    assert np.abs(CCDunit_IR1.get_channel_quaternion()-np.array([-0.705835446710,0.003259749929,0.708320899863,0.008197500630] )).sum()<1e-3
+ 
+    
 
 def test_calibration_output():
     
@@ -197,7 +204,7 @@ def test_calibration_output():
 if __name__ == "__main__":
 
     #test_calibrate()
-    test_calibration_output() 
+    #test_calibration_output() 
     # test_readfunctions()
     # test_CCDunit()
     # test_forward_backward()
@@ -205,3 +212,4 @@ if __name__ == "__main__":
     # test_non_linearity_binned()
     # test_calibrate()
     # test_error_algebra()
+    test_channel_quaterion()

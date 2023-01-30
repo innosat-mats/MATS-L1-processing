@@ -17,8 +17,9 @@ from mats_l1_processing.L1_calibration_functions import (
     combine_flags,
     make_binary,
     flip_image,
-    handle_bad_columns
-)
+    handle_bad_columns)
+from mats_l1_processing.pointing import add_channel_quaternion
+
 
 from mats_l1_processing.grid_image import grid_image
 
@@ -83,6 +84,9 @@ def L1_calibrate(CCDitem, instrument): #This used to take in a calibration_file 
     
     # Flip image for IR2 and IR4
     image_calibrated= flip_image(CCDitem, image_calib_nonflipped)
+    
+    # Add channel quaterion to image
+    add_channel_quaternion(CCDitem)
     
     #Shift image, i.e. put image on common field of view
     #valid_area,_,_ = grid_image(CCDitem)
