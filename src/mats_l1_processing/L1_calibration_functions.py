@@ -464,7 +464,7 @@ def calculate_flatfield(CCDitem):
         or (CCDitem["NCBIN FPGAColumns"] > 1)
         or (CCDitem["NRBIN"] > 1)
         ):  
-        image_flatf = meanbin_image_with_BC(CCDitem, image_flatf)
+        image_flatf = bin_image_with_BC(CCDitem, image_flatf)
 
     return image_flatf
 
