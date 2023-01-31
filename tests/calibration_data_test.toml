@@ -27,4 +27,6 @@ title = "Level 1 calibration files for testing this package"
     tables = 'calibration_data/linearity/tables/20220906/'
 [abs_rel_calib]
 	abs_rel_calib_constants= "calibration_data/abs_rel_calib/abs_rel_calib_constants.csv"
+[pointing]
+    qprime = 'calibration_data/pointing/'
 

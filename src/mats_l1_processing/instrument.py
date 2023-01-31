@@ -311,6 +311,13 @@ class CCD:
         #         self.cal_fact=h[5]
         #     elif self.channel=='NADIR':
         #         self.cal_fact=h[6]
+    
+        #quaternion
+        filename=calibration_data['pointing']['qprime']+'qprime.csv'
+        qprimes=np.loadtxt(filename,delimiter=',',dtype={'names':('Channel','q0','q1','q2','q3'),
+                            'formats':('S5','f4','f4','f4','f4')})
+        self.qprime = np.array([(d['q0'],d['q1'],d['q2'],d['q3']) for d in qprimes if d['Channel'].decode('utf8')==self.channel][0])
+
                 
     def calib_denominator(self, mode): 
         """Get calibration constant that should be divided by to get unit 10^10 ph cm-2 s-1 str-1 nm-1.
@@ -463,6 +470,16 @@ class CCD:
 
         """
         self.tables = pd.read_csv(self.tablefolder + 'tables.csv')
+        
+    def get_channel_quaternion(self):
+        """Read the channel quaternion from file
+        Args:
+            CCDitem (dict): Dictionary of type CCDitem
+
+        Returns:
+            quaternion
+        """
+        return self.qprime
 
 class nonLinearity:
     """Class to represent a non-linearity for a MATS CCD.
