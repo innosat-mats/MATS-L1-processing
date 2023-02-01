@@ -17,8 +17,8 @@ copyfile(
 Level1BStack(
     app,
     "Level1BStack",
-    input_bucket_name="ops-payload-level1a-v0.3",
-    output_bucket_name="ops-payload-level1b-v0.2",
+    input_bucket_name="ops-payload-level1a-v0.4",
+    output_bucket_name="ops-payload-level1b-v0.3",
 )
 
 app.synth()
