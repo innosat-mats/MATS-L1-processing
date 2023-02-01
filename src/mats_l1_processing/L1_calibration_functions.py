@@ -746,18 +746,31 @@ def binning_bc(Ncol, Ncolskip, NcolbinFPGA, NcolbinCCD, BadColumns):
     return n_read, n_coadd
 
 
-def desmear(image,nrskip,fill,exptimeratio):
+def desmear(image,nrskip,exptimeratio, fill=None):
+    """Subtracts the smearing (due to no shutter) from the image taking into account crop.
+
+    Args:
+        image (np.array):  image to be desmeared
+        nrskip (int): number of rows skipped in the image
+        fill (np.array): values used to fill the skipped rows
+        exptimeratio (float): ratio between the exposure time and the row readout time
     
+    Returns: 
+        desmeared_image (np.array, dtype=float64): desmeared image
+    
+    """
+
     nrow,ncol=image.shape
     nr=nrow+nrskip
     weights=np.tril(exptimeratio*np.ones([nr,nr]),-(nrskip+1))+np.diag(np.ones([nr]))
-    extimage=np.vstack((fill,image))
+    if nrskip>0 :extimage=np.vstack((fill,image))
+    else : extimage=image
 
     return (linalg.solve(weights,extimage)[nrskip:,:])
 
 
 
-def desmear_true_image(header, image=None,fill_value=None):
+def desmear_true_image(header, image=None,fill_method='exp_row',**kwargs):
     """Subtracts the smearing (due to no shutter) from the image.
 
     Args:
@@ -774,24 +787,19 @@ def desmear_true_image(header, image=None,fill_value=None):
 
     nrow = int(header["NROW"])
     ncol = int(header["NCOL"]) + 1
+    nrskip = int(header["NRSKIP"])
     # calculate extra time per row
     T_row_extra, T_delay = calculate_time_per_row(header)
+
     T_exposure = float(header["TEXPMS"]) / 1000.0
-
-    if fill_value == None:
-
-        TotTime = 0
-        for irow in range(1, nrow):
-            for krow in range(0, irow):
-                image[irow, 0:ncol] = image[irow, 0:ncol] - image[krow, 0:ncol] * (
-                    T_row_extra / T_exposure
-                )
-                TotTime = TotTime + T_row_extra
-
+    if fill_method=="exp_row":
+        H = 10/0.15/header["NRBIN"]
+        fill_function=np.expand_dims(np.exp((np.arange(nrskip)+1)[::-1]/H),axis=1)
+        fill_array=fill_function*np.repeat(np.expand_dims(image[0,:],axis=1),nrskip,axis=1).T
     else:
-        #pad image with fill values
-        image_padde = np.zeros()
+        raise Exception("Fill method invalid")
 
+    image = desmear(image,nrskip=nrskip,exptimeratio=T_row_extra/T_exposure,fill=fill_array)
 
     # row 0 here is the first row to read out from the chip
     
