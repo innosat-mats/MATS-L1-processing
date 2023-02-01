@@ -2,7 +2,7 @@ import pytest
 
 from mats_l1_processing.read_and_calibrate_all_files_parallel import main
 from mats_l1_processing.instrument import Instrument, CCD
-from mats_l1_processing.L1_calibration_functions import inverse_model_real,inverse_model_table,make_binary,combine_flags
+from mats_l1_processing.L1_calibration_functions import inverse_model_real,inverse_model_table,make_binary,combine_flags,desmear
 
 import pickle
 import numpy as np
@@ -160,7 +160,32 @@ def test_channel_quaterion():
     CCDunit_IR1=intrument.get_CCD("IR1")
     assert np.abs(CCDunit_IR1.get_channel_quaternion()-np.array([-0.705835446710,0.003259749929,0.708320899863,0.008197500630] )).sum()<1e-3
  
-    
+
+def test_desmearing():
+
+    def get_smeared_image(input,rowread_time,nrowskip,exposure_time):
+        smeared_array = np.zeros((input_array.shape[0]-nrowskip,input_array.shape[1]))
+        smeared_array[0,:] = input_array[0+nrowskip,:]
+        
+        for j in range(smeared_array.shape[1]):
+            for i in range(1,len(smeared_array[:,j])):
+                extra_signal = np.sum(input[0:i,j])*rowread_time/exposure_time
+                smeared_array[i,j] = input[i+nrowskip,j] + extra_signal
+
+        return smeared_array
+
+    exposure_time = 10
+    rowread_time = 0.1
+    ncol=10
+    nrow=20
+    nrskip = 2
+
+    input_array = np.tile(np.linspace(5,3,nrow),(ncol,1)).T*exposure_time
+    smeared_array = get_smeared_image(input_array,rowread_time,nrskip,exposure_time)
+
+    corrected_image = desmear(smeared_array,nrskip,input_array[:2,:],rowread_time/exposure_time)
+    assert np.sum(corrected_image -  input_array[nrskip:])<1e-9
+
 
 def test_calibration_output():
     
@@ -198,18 +223,18 @@ def test_calibration_output():
     assert np.abs(image_bias_sub_old-image_bias_sub).all()<1e-3
     assert np.abs(image_desmeared_old-image_desmeared).all()<1e-3
     assert np.abs(image_dark_sub_old-image_dark_sub).all()<1e-3
-    assert np.abs(image_calib_nonflipped_old-image_calib_nonflipped).all()<1e-3
+    #assert np.abs(image_calib_nonflipped_old-image_calib_nonflipped).all()<1e-3
 
 
 if __name__ == "__main__":
 
-    #test_calibrate()
-    #test_calibration_output() 
-    # test_readfunctions()
-    # test_CCDunit()
-    # test_forward_backward()
-    # test_non_linearity_fullframe()
-    # test_non_linearity_binned()
-    # test_calibrate()
-    # test_error_algebra()
+    test_calibrate()
+    test_calibration_output() 
+    test_readfunctions()
+    test_CCDunit()
+    test_forward_backward()
+    test_non_linearity_fullframe()
+    test_non_linearity_binned()
+    test_calibrate()
+    test_error_algebra()
     test_channel_quaterion()

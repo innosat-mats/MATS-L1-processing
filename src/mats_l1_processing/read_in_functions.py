@@ -17,6 +17,7 @@ import json
 from PIL import Image
 from sys import getsizeof
 from mats_l1_processing.get_temperature import create_temperature_info_array, add_temperature_info
+import os
 
 # import imagereader
 
@@ -89,7 +90,6 @@ def read_CCDitems(directory, read_from='rac',items = None):
     
     from mats_l1_processing.get_temperature import add_rac_temp_data
     from database_generation.read_in_imgview_functions import read_CCDitem_from_imgview
-    import os
     CCDitems = []
     if (read_from == "rac") or (read_from == "rac_operational"):
         if items == None:
@@ -102,6 +102,9 @@ def read_CCDitems(directory, read_from='rac',items = None):
                       item['Image File Name'], " cannot be found or read and has been removed")
             else:
                 CCDitems.append(item)
+        
+        temperaturedata, relativetimedata = create_temperature_info_array(os.path.join(directory + "HTR.csv"))
+
     elif read_from == "imgview":
         for file in os.listdir(directory):
             if len(file) > 11 and file.endswith("_output.txt"):
@@ -111,15 +114,20 @@ def read_CCDitems(directory, read_from='rac',items = None):
     else:
         raise Exception("read_from needs to = rac,rac_operational or imgview ")
     
-    temperaturedata, relativetimedata = create_temperature_info_array(directory + "/HTR.csv")
     labtemp=999
 
     for CCDitem in CCDitems:
 
         add_and_rename_CCDitem_info(CCDitem)
 
-        if read_from == "rac":  # Add temperature data from rac files
+        if (read_from == "rac") or (read_from == "rac_operational"):  # Add temperature data from rac files
             CCDitem = add_temperature_info(CCDitem, temperaturedata, relativetimedata, labtemp)
+
+        elif  read_from == "imgview":
+            CCDitem = add_temperature_info(CCDitem, temperature=labtemp)
+
+        else:
+            raise Exception("read_from needs to = rac,rac_operational or imgview ")
 
     return CCDitems
 

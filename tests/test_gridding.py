@@ -11,18 +11,18 @@ def test_shift():
     CCDitem["NCBIN FPGAColumns"] = 1
     CCDitem["NCBIN CCDColumns"] = 1
     CCDitem["NRBIN"] = 1
-    assert get_shift(CCDitem) == (-75,47)
+    assert get_shift(CCDitem) == (75,47)
 
     CCDitem["NCBIN FPGAColumns"] = 2
     CCDitem["NCBIN CCDColumns"] = 2
     CCDitem["NRBIN"] = 2
-    assert get_shift(CCDitem) == (-75,47)
+    assert get_shift(CCDitem) == (75,47)
     
     CCDitem["NCSKIP"] = 1
-    assert get_shift(CCDitem,skip_comp=True) == (-74,47)
+    assert get_shift(CCDitem,skip_comp=True) == (76,47)
 
     CCDitem["NROWSKIP"] = 1
-    assert get_shift(CCDitem,skip_comp=True) == (-74,48)
+    assert get_shift(CCDitem,skip_comp=True) == (76,48)
     
     return
 

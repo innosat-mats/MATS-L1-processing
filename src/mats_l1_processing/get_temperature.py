@@ -35,7 +35,7 @@ def add_rac_temp_data(HTRfilepath, CCDitem, labtemp=999):
 
 
 
-def add_temperature_info(CCDitem, temperaturedata, relativetimedata, temperature=-999):
+def add_temperature_info(CCDitem, temperaturedata=None, relativetimedata=None, temperature=-999):
     # Find the temperature of the CCDs. If not read from rac set the temperature.
     if CCDitem["read_from"] == "rac":
         # find the closest time when heater settings have been recorded. Could be changed to interpolate.

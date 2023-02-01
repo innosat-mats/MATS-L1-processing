@@ -18,7 +18,7 @@ import scipy.optimize as opt
 from mats_l1_processing.instrument import nonLinearity as NL
 from joblib import Parallel, delayed
 from mats_l1_processing.instrument import CCD
-
+from scipy import linalg as linalg
 
 def flip_image(CCDitem, image=None):
     """ Flips the image to account for odd number of mirrors in the light path. 
@@ -746,8 +746,18 @@ def binning_bc(Ncol, Ncolskip, NcolbinFPGA, NcolbinCCD, BadColumns):
     return n_read, n_coadd
 
 
+def desmear(image,nrskip,fill,exptimeratio):
+    
+    nrow,ncol=image.shape
+    nr=nrow+nrskip
+    weights=np.tril(exptimeratio*np.ones([nr,nr]),-(nrskip+1))+np.diag(np.ones([nr]))
+    extimage=np.vstack((fill,image))
 
-def desmear_true_image(header, image=None):
+    return (linalg.solve(weights,extimage)[nrskip:,:])
+
+
+
+def desmear_true_image(header, image=None,fill_value=None):
     """Subtracts the smearing (due to no shutter) from the image.
 
     Args:
@@ -768,13 +778,20 @@ def desmear_true_image(header, image=None):
     T_row_extra, T_delay = calculate_time_per_row(header)
     T_exposure = float(header["TEXPMS"]) / 1000.0
 
-    TotTime = 0
-    for irow in range(1, nrow):
-        for krow in range(0, irow):
-            image[irow, 0:ncol] = image[irow, 0:ncol] - image[krow, 0:ncol] * (
-                T_row_extra / T_exposure
-            )
-            TotTime = TotTime + T_row_extra
+    if fill_value == None:
+
+        TotTime = 0
+        for irow in range(1, nrow):
+            for krow in range(0, irow):
+                image[irow, 0:ncol] = image[irow, 0:ncol] - image[krow, 0:ncol] * (
+                    T_row_extra / T_exposure
+                )
+                TotTime = TotTime + T_row_extra
+
+    else:
+        #pad image with fill values
+        image_padde = np.zeros()
+
 
     # row 0 here is the first row to read out from the chip
     
