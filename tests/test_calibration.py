@@ -183,7 +183,7 @@ def test_desmearing():
     input_array = np.tile(np.linspace(5,3,nrow),(ncol,1)).T*exposure_time
     smeared_array = get_smeared_image(input_array,rowread_time,nrskip,exposure_time)
 
-    corrected_image = desmear(smeared_array,nrskip,input_array[:2,:],rowread_time/exposure_time)
+    corrected_image = desmear(smeared_array,nrskip,rowread_time/exposure_time,input_array[:nrskip,:])
     assert np.sum(corrected_image -  input_array[nrskip:])<1e-9
 
 
