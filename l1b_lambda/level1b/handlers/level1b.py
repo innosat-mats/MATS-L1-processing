@@ -122,6 +122,9 @@ def lambda_handler(event: Event, context: Context):
         l1b_data["ImageCalibrated"] = [
             ic.tolist() for ic in l1b_data["ImageCalibrated"]
         ]
+        l1b_data["CalibrationErrors"] = [
+            int(ce) for ce in l1b_data["CalibrationErrors"]
+        ]
     except Exception as err:
         msg = f"Failed to prepare {object_path} for storage: {err}"
         raise Level1BException(msg) from err
