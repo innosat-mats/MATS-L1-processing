@@ -321,7 +321,7 @@ def lin_image_from_inverse_model_real(image_bias_sub,CCDitem):
 
     return image_linear,error_flag
 
-def get_linearized_image(CCDitem, image_bias_sub,force_table: bool = False):
+def get_linearized_image(CCDitem, image_bias_sub, force_table: bool = False):
     """ Linearizes the image. At the moment not done for NADIR.
 
     Args:
