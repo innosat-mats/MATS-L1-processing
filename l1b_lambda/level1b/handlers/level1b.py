@@ -119,7 +119,17 @@ def lambda_handler(event: Event, context: Context):
         ], axis=1).set_index("EXPDate").sort_index()
         l1b_data.drop(["ImageData", "Errors", "Warnings"], axis=1, inplace=True)
         l1b_data = l1b_data[l1b_data.ImageCalibrated != None]  # noqa: E711
+        l1b_data["ImageCalibrated"] = [
+            ic.tolist() for ic in l1b_data["ImageCalibrated"]
+        ]
+        l1b_data["CalibrationErrors"] = [
+            ce.tolist() for ce in l1b_data["CalibrationErrors"]
+        ]
+    except Exception as err:
+        msg = f"Failed to prepare {object_path} for storage: {err}"
+        raise Level1BException(msg) from err
 
+    try:
         out_table = pa.Table.from_pandas(l1b_data)
         pq.write_table(
             out_table,
