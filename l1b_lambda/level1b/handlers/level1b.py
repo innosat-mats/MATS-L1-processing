@@ -111,7 +111,12 @@ def lambda_handler(event: Event, context: Context):
     try:
         calibrated = DataFrame.from_records(
             ccd_items,
-            columns=["EXP Date", "ImageCalibrated", "CalibrationErrors"],
+            columns=[
+                "EXP Date",
+                "ImageCalibrated",
+                "CalibrationErrors",
+                "qprime",
+            ],
         )
         l1b_data = concat([
             ccd_data,
