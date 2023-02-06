@@ -101,7 +101,7 @@ def lambda_handler(event: Event, context: Context):
                     _,
                     image_calibrated,
                     errors,
-                ) = L1_calibrate(ccd, instrument)
+                ) = L1_calibrate(ccd, instrument, force_table=False)
             ccd["ImageCalibrated"] = image_calibrated
             ccd["CalibrationErrors"] = errors
     except Exception as err:

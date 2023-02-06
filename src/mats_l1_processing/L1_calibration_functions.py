@@ -321,13 +321,13 @@ def lin_image_from_inverse_model_real(image_bias_sub,CCDitem):
 
     return image_linear,error_flag
 
-def get_linearized_image(CCDitem, image_bias_sub,force_table: bool = False):
+def get_linearized_image(CCDitem, image_bias_sub, force_table: bool = True):
     """ Linearizes the image. At the moment not done for NADIR.
 
     Args:
         CCDitem:  dictonary containing CCD image and information
         image: np.array The image that will be linearised
-        force_table (bool): whether to force table generation if no exists (default=False)
+        force_table (bool): whether to force table generation if no exists (default=True)
 
     Returns: 
         image_linear (np.array, dtype=float64): linearised number of counts
