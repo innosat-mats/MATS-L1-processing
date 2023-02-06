@@ -158,6 +158,7 @@ class CCD:
 
         calibration_data = toml.load(calibration_file)
         
+        self.default_temp = calibration_data["darkcurrent"]["default_temp"]
         # Limit to choose 1D or 2D dark current subtraction
         self.dc_2D_limit=calibration_data["darkcurrent"]["dc_2D_limit"]
         if self.dc_2D_limit!=0: 
