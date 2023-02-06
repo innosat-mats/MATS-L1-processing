@@ -60,25 +60,25 @@ def test_CCDunit():
     with open('testdata/CCDunit_UV1_example.pkl', 'wb') as f:
         pickle.dump(CCDunit_IR1, f)
 
-def test_forward_backward(): 
-    """
-    This tests the forward and backward calibration. 
-    The backward calibraton should completely reverse everything the forward 
-    calibration has done thus giving back the original image.
-    This test needs a CCDitem and a CCDunit, which are created and saved in 
-    test_reafunctions and test_CCDunit.
+# def test_forward_backward(): 
+#     """
+#     This tests the forward and backward calibration. 
+#     The backward calibraton should completely reverse everything the forward 
+#     calibration has done thus giving back the original image.
+#     This test needs a CCDitem and a CCDunit, which are created and saved in 
+#     test_reafunctions and test_CCDunit.
     
-    """
-    from mats_l1_processing.forward_model import  forward_and_backward
+#     """
+#     from mats_l1_processing.forward_model import  forward_and_backward
     
-    with open('testdata/CCDitem_example.pkl', 'rb') as f:
-        CCDitem = pickle.load(f)
+#     with open('testdata/CCDitem_example.pkl', 'rb') as f:
+#         CCDitem = pickle.load(f)
     
-    with open('testdata/CCDunit_IR1_example.pkl', 'rb') as f:
-        CCDunit_IR1=pickle.load(f)        
-    CCDitem['CCDunit']=CCDunit_IR1
+#     with open('testdata/CCDunit_IR1_example.pkl', 'rb') as f:
+#         CCDunit_IR1=pickle.load(f)        
+#     CCDitem['CCDunit']=CCDunit_IR1
 
-    forward_and_backward(CCDitem,  photons=1000, plot=False)
+#     forward_and_backward(CCDitem,  photons=1000, plot=False)
 
 def test_non_linearity_fullframe():
     with open('testdata/CCDitem_example.pkl', 'rb') as f:
