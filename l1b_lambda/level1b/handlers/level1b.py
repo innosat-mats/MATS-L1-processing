@@ -101,7 +101,7 @@ def lambda_handler(event: Event, context: Context):
                     _,
                     image_calibrated,
                     errors,
-                ) = L1_calibrate(ccd, instrument)
+                ) = L1_calibrate(ccd, instrument, force_table=False)
             ccd["ImageCalibrated"] = image_calibrated
             ccd["CalibrationErrors"] = errors
     except Exception as err:
@@ -111,7 +111,12 @@ def lambda_handler(event: Event, context: Context):
     try:
         calibrated = DataFrame.from_records(
             ccd_items,
-            columns=["EXP Date", "ImageCalibrated", "CalibrationErrors"],
+            columns=[
+                "EXP Date",
+                "ImageCalibrated",
+                "CalibrationErrors",
+                "qprime",
+            ],
         )
         l1b_data = concat([
             ccd_data,

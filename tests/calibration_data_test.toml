@@ -15,7 +15,8 @@ title = "Level 1 calibration files for testing this package"
 #Folders and parameters for performing calibration
 [darkcurrent]
     folder = "calibration_data/MATS_CCD_DC_calibration_FINAL/"
-    dc_2D_limit=0 
+    dc_2D_limit = 0 
+    default_temp = 0
 [flatfield]
     flatfieldfolder = "calibration_data/flatfields/"
     flatfieldfolder_cold_unprocessed = "calibration_data/20200330_flatfields_0C/"

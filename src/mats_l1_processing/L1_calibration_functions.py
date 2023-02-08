@@ -321,7 +321,7 @@ def lin_image_from_inverse_model_real(image_bias_sub,CCDitem):
 
     return image_linear,error_flag
 
-def get_linearized_image(CCDitem, image_bias_sub,force_table = True):
+def get_linearized_image(CCDitem, image_bias_sub, force_table: bool = True):
     """ Linearizes the image. At the moment not done for NADIR.
 
     Args:
@@ -484,7 +484,14 @@ def subtract_dark(CCDitem, image=None):
     
     if image is None:
         image = CCDitem["IMAGE"]
-        
+    
+
+    error_flag_no_temperature = np.zeros(image.shape, dtype=np.uint16)
+    if np.isnan(CCDitem["temperature"]):
+        CCDitem["temperature"] = CCDitem["CCDunit"].default_temp
+        error_flag_no_temperature.fill(1)
+
+
     dark_img = calculate_dark(CCDitem)
 
 
@@ -498,7 +505,7 @@ def subtract_dark(CCDitem, image=None):
     if CCDitem["temperature"]<-50. or CCDitem["temperature"]>30.: # Filter out cases where the temperature seems wrong. 
         error_flag_temperature.fill(1)
     
-    error_flag = combine_flags([error_flag_negative, error_flag_temperature],[1,1])
+    error_flag = combine_flags([error_flag_negative, error_flag_temperature,error_flag_no_temperature],[1,1,1])
 
     return image_dark_sub, error_flag
 
