@@ -25,7 +25,10 @@ def pix_deg(ccditem, xpixel, ypixel):
     xdisp = 6.06/2047
     ydisp = 1.52/510  # 1.52/510
     ncskip = ccditem['NCSKIP']
-    ncbin = ccditem['NCBIN CCDColumns']
+    try:
+        ncbin = ccditem['NCBIN CCDColumns']
+    except:
+        ncbin = ccditem['NCBINCCDColumns']
     nrskip = ccditem['NRSKIP']
     nrbin = ccditem['NRBIN']
     ncol = ccditem['NCOL']
