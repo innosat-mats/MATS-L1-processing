@@ -18,6 +18,7 @@ class Level1BStack(Stack):
         output_bucket_name: str,
         lambda_timeout: Duration = Duration.seconds(900),
         queue_retention_period: Duration = Duration.days(14),
+        code_version: str = "",
         **kwargs
     ) -> None:
         super().__init__(scope, id, **kwargs)
@@ -43,6 +44,7 @@ class Level1BStack(Stack):
             memory_size=4096,
             environment={
                 "L1B_BUCKET": output_bucket.bucket_name,
+                "L1B_VERSION": code_version,
             },
         )
 
