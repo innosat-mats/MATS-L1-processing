@@ -185,9 +185,10 @@ def read_ccd_data_in_interval(
     stop: datetime,
     path: str,
     filesystem: Optional[pa.fs.FileSystem] = None,
-) -> DataFrame:
+    metadata: bool = False,
+) -> Union[DataFrame, Tuple[DataFrame, pq.FileMetaData]]:
     """Reads the CCD data and metadata from the specified path or S3 bucket
-    between the specified times.
+    between the specified times. Optionally read file metadata.
 
     Args:
         start (datetime):           Read CCD data from this time (inclusive).
@@ -197,9 +198,12 @@ def read_ccd_data_in_interval(
         filesystem (FileSystem):    Optional. File system to read. If not
                                     specified will assume that path points to
                                     an ordinary directory disk. (Default: None)
+        metadata (bool):            If True, return Parquet file metadata along
+                                    with data frame. (Default: False)
 
     Returns:
-        DataFrame:  The CCD data.
+        DataFrame:      The CCD data.
+        FileMetaData:   File metadata (optional).
     """
 
     if start.tzinfo is None:
@@ -207,13 +211,17 @@ def read_ccd_data_in_interval(
     if stop.tzinfo is None:
         stop.replace(tzinfo=timezone.utc)
 
-    return ds.dataset(
+    table = ds.dataset(
         path,
         filesystem=filesystem,
     ).to_table(filter=(
         (ds.field("EXPDate") >= Timestamp(start))
         & (ds.field("EXPDate") <= Timestamp(stop))
-    )).to_pandas().reset_index()
+    ))
+    dataframe = table.to_pandas().reset_index()
+    if metadata:
+        return dataframe, table.schema.metadata
+    return dataframe
 
 
 def read_ccd_items_in_interval(
@@ -251,6 +259,7 @@ def read_ccd_data(
     metadata: bool = False,
 ) -> Union[DataFrame, Tuple[DataFrame, pq.FileMetaData]]:
     """Reads the CCD data and metadata from a singel file at the specified path.
+    Optionally read file metadata.
 
     Args:
         path (str):                 Path to dataset. May be a directory or a
