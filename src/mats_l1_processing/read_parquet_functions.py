@@ -11,7 +11,7 @@ Parquet files can either be local or on a remote server, such as Amazon S3.
 import logging
 from datetime import datetime, timezone
 from io import BytesIO
-from typing import cast, Any, Dict, List, Optional, SupportsFloat
+from typing import cast, Any, Dict, List, Optional, SupportsFloat, Tuple, Union
 
 import numpy as np
 import pyarrow as pa  # type: ignore
@@ -248,7 +248,8 @@ def read_ccd_items_in_interval(
 def read_ccd_data(
     path: str,
     filesystem: Optional[pa.fs.FileSystem] = None,
-) -> DataFrame:
+    metadata: bool = False,
+) -> Union[DataFrame, Tuple[DataFrame, pq.FileMetaData]]:
     """Reads the CCD data and metadata from a singel file at the specified path.
 
     Args:
@@ -257,15 +258,22 @@ def read_ccd_data(
         filesystem (FileSystem):    Optional. File system to read. If not
                                     specified will assume that path points to
                                     an ordinary directory disk. (Default: None)
+        metadata (bool):            If True, return Parquet file metadata along
+                                    with data frame. (Default: False)
 
     Returns:
-        DataFrame:  The CCD data.
+        DataFrame:      The CCD data.
+        FileMetaData:   File metadata (optional).
     """
 
-    return pq.read_table(
+    table = pq.read_table(
         path,
         filesystem=filesystem,
-    ).to_pandas().reset_index()
+    )
+    dataframe = table.to_pandas().reset_index()
+    if metadata:
+        return dataframe, table.schema.metadata
+    return dataframe
 
 
 def read_ccd_items(
