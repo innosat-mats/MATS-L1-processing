@@ -51,6 +51,7 @@ def parse_event_message(event: Event) -> Tuple[str, str]:
 def lambda_handler(event: Event, context: Context):
     try:
         output_bucket = get_env_or_raise("L1B_BUCKET")
+        code_version = get_env_or_raise("L1A_VERSION")
         region = os.environ.get('AWS_REGION', "eu-north-1")
         s3 = pa.fs.S3FileSystem(region=region)
 
@@ -80,7 +81,12 @@ def lambda_handler(event: Event, context: Context):
     try:
         instrument = Instrument("/calibration_data/calibration_data.toml")
 
-        ccd_data = rpf.read_ccd_data(object_path, filesystem=s3)
+        ccd_data, metadata = rpf.read_ccd_data(
+            object_path,
+            filesystem=s3,
+            metadata=True,
+        )
+        metadata.update({"L1BCode": code_version})
         ccd_items = rpf.dataframe_to_ccd_items(
             ccd_data,
             remove_empty=False,
@@ -136,6 +142,10 @@ def lambda_handler(event: Event, context: Context):
 
     try:
         out_table = pa.Table.from_pandas(l1b_data)
+        out_table.replace_schema_metadata({
+            **out_table.schema.metadata,
+            **metadata,
+        })
         pq.write_table(
             out_table,
             f"{output_bucket}/{object_path}",
