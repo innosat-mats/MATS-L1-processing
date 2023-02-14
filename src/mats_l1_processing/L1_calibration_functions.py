@@ -790,7 +790,7 @@ def desmear(image, nrskip, exptimeratio, fill=None):
     return (linalg.solve(weights, extimage)[nrskip:, :])
 
 
-def desmear_true_image(header, image=None, fill_method='exp_row', **kwargs):
+def desmear_true_image(header, image=None, fill_method='const', **kwargs):
     """Subtracts the smearing (due to no shutter) from the image.
 
     Args:
@@ -815,6 +815,10 @@ def desmear_true_image(header, image=None, fill_method='exp_row', **kwargs):
     if fill_method == "exp_row":
         H = 10/0.15/header["NRBIN"]
         fill_function = np.expand_dims(np.exp((np.arange(nrskip)+1)[::-1]/H), axis=1)
+        fill_array = fill_function * \
+            np.repeat(np.expand_dims(image[0, :], axis=1), nrskip, axis=1).T
+    elif fill_method=="const":
+        fill_function = np.ones([nrskip,1])
         fill_array = fill_function * \
             np.repeat(np.expand_dims(image[0, :], axis=1), nrskip, axis=1).T
     else:

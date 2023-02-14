@@ -102,4 +102,4 @@ def L1_calibrate(CCDitem, instrument, force_table: bool = True):  # This used to
     error_flags_dark,error_flags_flatfield,error_ghost],
     [1,1,2,1,3,2,1])
     
-    return image_lsb, image_bias_sub, image_desmeared, image_dark_sub, image_calib_nonflipped, image_calibrated, errors
+    return image_lsb, image_bias_sub, image_linear, image_desmeared, image_dark_sub, image_calib_nonflipped, image_calibrated, errors
