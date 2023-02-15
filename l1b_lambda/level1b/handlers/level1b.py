@@ -86,7 +86,12 @@ def lambda_handler(event: Event, context: Context):
             filesystem=s3,
             metadata=True,
         )
-        metadata.update({"L1BCode": code_version})
+        metadata.update({
+            "L1BCodeVersion": code_version,
+            "DataLevel": "L1B",
+            "DataBucket": output_bucket,
+            "DataPath": object_path,
+        })
         ccd_items = rpf.dataframe_to_ccd_items(
             ccd_data,
             remove_empty=False,
@@ -141,8 +146,7 @@ def lambda_handler(event: Event, context: Context):
         raise Level1BException(msg) from err
 
     try:
-        out_table = pa.Table.from_pandas(l1b_data)
-        out_table.replace_schema_metadata({
+        out_table = pa.Table.from_pandas(l1b_data).replace_schema_metadata({
             **out_table.schema.metadata,
             **metadata,
         })
