@@ -1,0 +1,3 @@
+[submodule "l1b_lambda/instrument_data"]
+	path = l1b_lambda/instrument_data
+	url = git@github.com:innosat-mats/MATS-instrument-data.git
