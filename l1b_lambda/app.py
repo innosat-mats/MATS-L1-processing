@@ -19,8 +19,8 @@ copyfile(
 Level1BStack(
     app,
     "Level1BStack",
-    input_bucket_name="ops-payload-level1a-v0.4",
-    output_bucket_name="ops-payload-level1b-v0.3",
+    input_bucket_name="ops-payload-level1a-v0.5",
+    output_bucket_name="ops-payload-level1b-v0.4",
     code_version=f"{repo.tags[-1]} ({repo.head.commit})",
 )
 
