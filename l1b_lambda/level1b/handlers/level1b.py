@@ -123,10 +123,14 @@ def lambda_handler(event: Event, context: Context):
         calibrated = DataFrame.from_records(
             ccd_items,
             columns=[
-                "EXP Date",
                 "ImageCalibrated",
                 "CalibrationErrors",
                 "qprime",
+                "channel",
+                "flipped",
+                "temperature",
+                "temperature_HTR",
+                "temperature_ADC",
             ],
         )
         l1b_data = concat([
