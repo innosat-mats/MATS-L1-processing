@@ -781,7 +781,7 @@ def desmear(image, nrskip, exptimeratio, fill=None):
     nrow, ncol = image.shape
     nr = nrow+nrskip
     weights = np.tril(
-        exptimeratio*np.ones([nr, nr]), -1)+np.diag(np.ones([nr]))
+        exptimeratio*np.ones([nr, nr]), -(nrskip+1))+np.diag(np.ones([nr]))
     if nrskip > 0:
         extimage = np.vstack((fill, image)) 
     else:
