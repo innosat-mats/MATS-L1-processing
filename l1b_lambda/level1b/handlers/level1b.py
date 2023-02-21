@@ -51,7 +51,7 @@ def parse_event_message(event: Event) -> Tuple[str, str]:
 def lambda_handler(event: Event, context: Context):
     try:
         output_bucket = get_env_or_raise("L1B_BUCKET")
-        code_version = get_env_or_raise("L1A_VERSION")
+        code_version = get_env_or_raise("L1B_VERSION")
         region = os.environ.get('AWS_REGION', "eu-north-1")
         s3 = pa.fs.S3FileSystem(region=region)
 
