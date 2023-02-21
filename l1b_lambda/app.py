@@ -9,7 +9,7 @@ from aws_cdk import App
 from stacks.level1b_stack import Level1BStack
 
 app = App()
-repo = git.Repo(".")
+repo = git.Repo("..")
 
 copyfile(
     Path("..") / "dist" / "mats_l1_processing-0.0.0-py2.py3-none-any.whl",
