@@ -12,6 +12,7 @@ jobs:
         with:
           ref: "deploy"
           submodules: "true"
+          token: ${{ secrets.INSTRUMENT_DATA_TOKEN }}
 
       - name: Setup node 18
         uses: actions/setup-node@v2
