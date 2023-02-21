@@ -2,8 +2,10 @@
 
 from pathlib import Path
 from shutil import copyfile
+from typing import Optional
 
 import git
+from git import TagReference
 from aws_cdk import App
 
 from stacks.level1b_stack import Level1BStack
@@ -17,7 +19,7 @@ copyfile(
 )
 
 try:
-    tag = repo.tags[-1]
+    tag: Optional[TagReference] = repo.tags[-1]
 except IndexError:
     tag = None
 
