@@ -783,14 +783,14 @@ def desmear(image, nrskip, exptimeratio, fill=None):
     weights = np.tril(
         exptimeratio*np.ones([nr, nr]), -(nrskip+1))+np.diag(np.ones([nr]))
     if nrskip > 0:
-        extimage = np.vstack((fill, image))
+        extimage = np.vstack((fill, image)) 
     else:
         extimage = image
+    desmeared=linalg.solve(weights, extimage)
+    return desmeared[nrskip:, :]
 
-    return (linalg.solve(weights, extimage)[nrskip:, :])
 
-
-def desmear_true_image(header, image=None, fill_method='exp_row', **kwargs):
+def desmear_true_image(header, image=None, fill_method='lin_row', **kwargs):
     """Subtracts the smearing (due to no shutter) from the image.
 
     Args:
@@ -808,19 +808,26 @@ def desmear_true_image(header, image=None, fill_method='exp_row', **kwargs):
     nrow = int(header["NROW"])
     ncol = int(header["NCOL"]) + 1
     nrskip = int(header["NRSKIP"])
+    nrbin = int(header["NRBIN"])
     # calculate extra time per row
     T_row_extra, T_delay = calculate_time_per_row(header)
 
     T_exposure = float(header["TEXPMS"]) / 1000.0
     if fill_method == "exp_row":
-        H = 10/0.15/header["NRBIN"]
-        fill_function = np.expand_dims(np.exp((np.arange(nrskip)+1)[::-1]/H), axis=1)
+        H = 1/np.log(np.median(image[1,:])/np.median(image[2,:]))
+        fill_function = np.expand_dims(np.exp((np.arange(nrskip/nrbin)+1)[::-1]/H), axis=1)
         fill_array = fill_function * \
-            np.repeat(np.expand_dims(image[0, :], axis=1), nrskip, axis=1).T
+            np.repeat(np.expand_dims(image[0, :], axis=1), fill_function.shape[0], axis=1).T
+    elif fill_method == "lin_row":
+        #make a rough correction for the fact row 2 has some row 1 in it
+        grad=(1 - T_row_extra /T_exposure)*(np.median(image[1,:])-np.median(image[2,:]))
+        fill_function = np.expand_dims(grad*((np.arange(nrskip/nrbin)+1)[::-1]), axis=1)
+        fill_array = fill_function + \
+            np.repeat(np.expand_dims(image[0, :], axis=1), fill_function.shape[0], axis=1).T       
     else:
         raise Exception("Fill method invalid")
 
-    image = desmear(image, nrskip=nrskip, exptimeratio=T_row_extra /
+    image = desmear(image, nrskip=fill_function.shape[0], exptimeratio=T_row_extra /
                     T_exposure, fill=fill_array)
 
     # row 0 here is the first row to read out from the chip
