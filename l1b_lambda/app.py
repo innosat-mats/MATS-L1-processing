@@ -16,12 +16,17 @@ copyfile(
     Path(".") / "mats_l1_processing-0.0.0-py2.py3-none-any.whl",
 )
 
+try:
+    tag = repo.tags[-1]
+except IndexError:
+    tag = None
+
 Level1BStack(
     app,
     "Level1BStack",
     input_bucket_name="ops-payload-level1a-v0.5",
     output_bucket_name="ops-payload-level1b-v0.4",
-    code_version=f"{repo.tags[-1]} ({repo.head.commit})",
+    code_version=f"{tag} ({repo.head.commit})",
 )
 
 app.synth()
