@@ -220,8 +220,10 @@ def read_ccd_data_in_interval(
     )
     if filter != None:
         for variable in filter.keys():
-            filterlist = filterlist & ((ds.field(variable) >= filter[variable][0]) &
-                                       (ds.field(variable) <= filter[variable][1]))
+            filterlist &= (
+                (ds.field(variable) >= filter[variable][0])
+                & (ds.field(variable) <= filter[variable][1])
+            )
 
     table = ds.dataset(
         path,
