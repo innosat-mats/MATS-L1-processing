@@ -199,7 +199,8 @@ def read_ccd_data_in_interval(
         filesystem (FileSystem):    Optional. File system to read. If not
                                     specified will assume that path points to
                                     an ordinary directory disk. (Default: None)
-        filter (dict):              an extra filter in form dict {fieldname, [min,max],....}
+        filter (Optional[dict]):    Extra filters of the form:
+                                    `{fieldname1: [min, max], ...}`
         metadata (bool):            If True, return Parquet file metadata along
                                     with data frame. (Default: False)
 
