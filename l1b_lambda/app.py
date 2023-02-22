@@ -2,26 +2,33 @@
 
 from pathlib import Path
 from shutil import copyfile
+from typing import Optional
 
 import git
+from git import TagReference
 from aws_cdk import App
 
 from stacks.level1b_stack import Level1BStack
 
 app = App()
-repo = git.Repo(".")
+repo = git.Repo("..")
 
 copyfile(
     Path("..") / "dist" / "mats_l1_processing-0.0.0-py2.py3-none-any.whl",
     Path(".") / "mats_l1_processing-0.0.0-py2.py3-none-any.whl",
 )
 
+try:
+    tag: Optional[TagReference] = repo.tags[-1]
+except IndexError:
+    tag = None
+
 Level1BStack(
     app,
     "Level1BStack",
     input_bucket_name="ops-payload-level1a-v0.5",
     output_bucket_name="ops-payload-level1b-v0.4",
-    code_version=f"{repo.tags[-1]} ({repo.head.commit})",
+    code_version=f"{tag} ({repo.head.commit})",
 )
 
 app.synth()
