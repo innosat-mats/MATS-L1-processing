@@ -185,6 +185,7 @@ def read_ccd_data_in_interval(
     stop: datetime,
     path: str,
     filesystem: Optional[pa.fs.FileSystem] = None,
+    filter: dict = None,
     metadata: bool = False,
 ) -> Union[DataFrame, Tuple[DataFrame, pq.FileMetaData]]:
     """Reads the CCD data and metadata from the specified path or S3 bucket
@@ -198,6 +199,7 @@ def read_ccd_data_in_interval(
         filesystem (FileSystem):    Optional. File system to read. If not
                                     specified will assume that path points to
                                     an ordinary directory disk. (Default: None)
+        filter (dict):              an extra filter in form dict {fieldname, [min,max],....}
         metadata (bool):            If True, return Parquet file metadata along
                                     with data frame. (Default: False)
 
@@ -211,14 +213,20 @@ def read_ccd_data_in_interval(
     if stop.tzinfo is None:
         stop.replace(tzinfo=timezone.utc)
 
+    filterlist = (
+        (ds.field("EXPDate") >= Timestamp(start))
+        & (ds.field("EXPDate") <= Timestamp(stop))
+    )
+    if filter != None:
+        for variable in filter.keys():
+            filterlist = filterlist & ((ds.field(variable) >= filter[variable][0]) &
+                                       (ds.field(variable) <= filter[variable][1]))
+
     table = ds.dataset(
         path,
         filesystem=filesystem,
-    ).to_table(filter=(
-        (ds.field("EXPDate") >= Timestamp(start))
-        & (ds.field("EXPDate") <= Timestamp(stop))
-    ))
-    dataframe = table.to_pandas().reset_index()
+    ).to_table(filter=filterlist)
+    dataframe = table.to_pandas().reset_index().set_index('TMHeaderTime')
     if metadata:
         return dataframe, table.schema.metadata
     return dataframe
