@@ -185,7 +185,7 @@ def read_ccd_data_in_interval(
     stop: datetime,
     path: str,
     filesystem: Optional[pa.fs.FileSystem] = None,
-    filter: dict = None,
+    filter: Optional[Dict[str, Sequence[float, float]]] = None,
     metadata: bool = False,
 ) -> Union[DataFrame, Tuple[DataFrame, pq.FileMetaData]]:
     """Reads the CCD data and metadata from the specified path or S3 bucket
