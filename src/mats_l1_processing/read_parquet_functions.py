@@ -201,6 +201,7 @@ def read_ccd_data_in_interval(
                                     an ordinary directory disk. (Default: None)
         filter (Optional[dict]):    Extra filters of the form:
                                     `{fieldname1: [min, max], ...}`
+                                     (Default: None)
         metadata (bool):            If True, return Parquet file metadata along
                                     with data frame. (Default: False)
 
