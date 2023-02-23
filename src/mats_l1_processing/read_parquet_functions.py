@@ -11,8 +11,9 @@ Parquet files can either be local or on a remote server, such as Amazon S3.
 import logging
 from datetime import datetime, timezone
 from io import BytesIO
-from typing import cast, Any, Dict, List, Optional, SupportsFloat, Tuple, Union
-
+from typing import (
+    cast, Any, Dict, List, Optional, Sequence, SupportsFloat, Tuple, Union,
+)
 import numpy as np
 import pyarrow as pa  # type: ignore
 import pyarrow.dataset as ds  # type: ignore
@@ -201,7 +202,7 @@ def read_ccd_data_in_interval(
                                     an ordinary directory disk. (Default: None)
         filter (Optional[dict]):    Extra filters of the form:
                                     `{fieldname1: [min, max], ...}`
-                                     (Default: None)
+                                    (Default: None)
         metadata (bool):            If True, return Parquet file metadata along
                                     with data frame. (Default: False)
 
