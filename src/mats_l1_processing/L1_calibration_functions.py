@@ -779,15 +779,17 @@ def desmear(image, nrskip, exptimeratio, fill=None):
     """
 
     nrow, ncol = image.shape
-    nr = nrow+nrskip
+    nr = nrow-nrskip
     weights = np.tril(
-        exptimeratio*np.ones([nr, nr]), -(nrskip+1))+np.diag(np.ones([nr]))
+        exptimeratio*np.ones([nrow, nrow]), -(nrskip+1))+np.diag(np.ones([nrow]))
     if nrskip > 0:
-        extimage = np.vstack((fill, image)) 
+        extimage = image - \
+            np.tril(exptimeratio*np.ones([nrow, nrow]), -
+                    1) @ np.vstack((fill, np.zeros([nr, ncol])))
     else:
         extimage = image
-    desmeared=linalg.solve(weights, extimage)
-    return desmeared[nrskip:, :]
+    desmeared = linalg.solve(weights, extimage)
+    return desmeared
 
 
 def desmear_true_image(header, image=None, fill_method='lin_row', **kwargs):
