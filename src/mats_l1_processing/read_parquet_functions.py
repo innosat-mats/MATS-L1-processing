@@ -11,8 +11,9 @@ Parquet files can either be local or on a remote server, such as Amazon S3.
 import logging
 from datetime import datetime, timezone
 from io import BytesIO
-from typing import cast, Any, Dict, List, Optional, SupportsFloat, Tuple, Union
-
+from typing import (
+    cast, Any, Dict, List, Optional, Sequence, SupportsFloat, Tuple, Union,
+)
 import numpy as np
 import pyarrow as pa  # type: ignore
 import pyarrow.dataset as ds  # type: ignore
@@ -185,6 +186,7 @@ def read_ccd_data_in_interval(
     stop: datetime,
     path: str,
     filesystem: Optional[pa.fs.FileSystem] = None,
+    filter: Optional[Dict[str, Sequence[float]]] = None,
     metadata: bool = False,
 ) -> Union[DataFrame, Tuple[DataFrame, pq.FileMetaData]]:
     """Reads the CCD data and metadata from the specified path or S3 bucket
@@ -198,6 +200,9 @@ def read_ccd_data_in_interval(
         filesystem (FileSystem):    Optional. File system to read. If not
                                     specified will assume that path points to
                                     an ordinary directory disk. (Default: None)
+        filter (Optional[dict]):    Extra filters of the form:
+                                    `{fieldname1: [min, max], ...}`
+                                    (Default: None)
         metadata (bool):            If True, return Parquet file metadata along
                                     with data frame. (Default: False)
 
@@ -211,14 +216,22 @@ def read_ccd_data_in_interval(
     if stop.tzinfo is None:
         stop.replace(tzinfo=timezone.utc)
 
+    filterlist = (
+        (ds.field("EXPDate") >= Timestamp(start))
+        & (ds.field("EXPDate") <= Timestamp(stop))
+    )
+    if filter != None:
+        for variable in filter.keys():
+            filterlist &= (
+                (ds.field(variable) >= filter[variable][0])
+                & (ds.field(variable) <= filter[variable][1])
+            )
+
     table = ds.dataset(
         path,
         filesystem=filesystem,
-    ).to_table(filter=(
-        (ds.field("EXPDate") >= Timestamp(start))
-        & (ds.field("EXPDate") <= Timestamp(stop))
-    ))
-    dataframe = table.to_pandas().reset_index()
+    ).to_table(filter=filterlist)
+    dataframe = table.to_pandas().reset_index().set_index('TMHeaderTime')
     if metadata:
         return dataframe, table.schema.metadata
     return dataframe
