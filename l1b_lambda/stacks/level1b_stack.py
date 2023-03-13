@@ -19,25 +19,26 @@ class Level1BStack(Stack):
         lambda_timeout: Duration = Duration.seconds(900),
         queue_retention_period: Duration = Duration.days(14),
         code_version: str = "",
+        development: bool = False,
         **kwargs
     ) -> None:
         super().__init__(scope, id, **kwargs)
 
         input_bucket = Bucket.from_bucket_name(
             self,
-            "Level1ABucket",
+            f"Level1ABucket{'Dev' if development else ''}",
             input_bucket_name,
         )
 
         output_bucket = Bucket.from_bucket_name(
             self,
-            "Level1BBucket",
+            f"Level1BBucket{'Dev' if development else ''}",
             output_bucket_name,
         )
 
         level1b_lambda = DockerImageFunction(
             self,
-            "Level1BLambda",
+            f"Level1BLambda{'Dev' if development else ''}",
             code=DockerImageCode.from_image_asset("."),
             timeout=lambda_timeout,
             architecture=Architecture.X86_64,
@@ -50,7 +51,7 @@ class Level1BStack(Stack):
 
         event_queue = Queue(
             self,
-            "Level1AQueue",
+            f"Level1AQueue{'Dev' if development else ''}",
             retention_period=queue_retention_period,
             visibility_timeout=lambda_timeout,
             removal_policy=RemovalPolicy.RETAIN,
@@ -58,7 +59,7 @@ class Level1BStack(Stack):
                 max_receive_count=1,
                 queue=Queue(
                     self,
-                    "FailedCalibrationQueue",
+                    f"FailedCalibrationQueue{'Dev' if development else ''}",
                     retention_period=queue_retention_period,
                 ),
             ),

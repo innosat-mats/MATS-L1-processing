@@ -1,0 +1,58 @@
+name: Level1B Lambda CD (Dev)
+
+on:
+  workflow_dispatch:
+
+env:
+  # NOTE: Any non-empty string is regarded as `True`, hence "YES"
+  MATS_DEVELOPMENT: "YES"
+
+jobs:
+  aws_cdk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          submodules: "true"
+          token: ${{ secrets.INSTRUMENT_DATA_TOKEN }}
+
+      - name: Setup node 18
+        uses: actions/setup-node@v2
+        with:
+          node-version: "18"
+
+      - name: Install aws-cdk
+        run: |
+          npm install -g aws-cdk
+
+      - name: Configure aws credentials
+        uses: aws-actions/configure-aws-credentials@master
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Setup python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Upgrade pip
+        run: |
+          python3.9 -m pip install --upgrade pip
+
+      - name: Install Lambda 1B dependencies
+        run: |
+          cd l1b_lambda
+          pip install -r requirements.txt
+
+      - name: Build and install MATS L1 Processing
+        run: |
+          python -m build .
+          pip install ./dist/mats_l1_processing-0.0.0-py2.py3-none-any.whl
+
+      - name: Deploy stacks
+        run: |
+          cd l1b_lambda
+          cdk deploy --all --require-approval never
