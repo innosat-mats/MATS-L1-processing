@@ -4,7 +4,8 @@ on:
   workflow_dispatch:
 
 env:
-  MATS_DEVELOPMENT: "TRUE"
+  # NOTE: Any non-empty string is regarded as `True`, hence "YES"
+  MATS_DEVELOPMENT: "YES"
 
 jobs:
   aws_cdk:

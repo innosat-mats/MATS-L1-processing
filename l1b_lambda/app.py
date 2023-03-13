@@ -18,7 +18,7 @@ copyfile(
     Path(".") / "mats_l1_processing-0.0.0-py2.py3-none-any.whl",
 )
 
-development = os.environ.get("MATS_DEVELOPMENT", False)
+development = bool(os.environ.get("MATS_DEVELOPMENT", False))
 if development:
     output_bucket_name = "dev-payload-level1b"
 else:
