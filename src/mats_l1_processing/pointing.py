@@ -22,8 +22,7 @@ def add_channel_quaternion(CCDitem):
 def pix_deg(ccditem, xpixel, ypixel):
     """
     Function to get the x and y angle from a pixel relative to the center of the CCD
-    WARNING : no images are flipped in this function
-    
+        
     Parameters
     ----------
     ccditem : CCDitem
@@ -60,7 +59,7 @@ def pix_deg(ccditem, xpixel, ypixel):
     y_disp = (h/(f*511))
     x_disp = (d/(f*2048))
   
-    if (ccditem['CCDSEL']) in [1, 3, 5, 6]:
+    if (ccditem['CCDSEL']) in [1, 3, 5, 6, 7]:
         xdeg = np.rad2deg(np.arctan(x_disp*((2048-ncskip - (ncol+1)*ncbin + ncbin*(xpixel+0.5)) - 2047./2)))
     else:
         xdeg = np.rad2deg(np.arctan(x_disp*(ncskip + ncbin * (xpixel+0.5) - 2047./2)))
