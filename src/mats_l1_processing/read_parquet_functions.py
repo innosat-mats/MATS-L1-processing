@@ -231,7 +231,11 @@ def read_ccd_data_in_interval(
         path,
         filesystem=filesystem,
     ).to_table(filter=filterlist)
-    dataframe = table.to_pandas().reset_index().set_index('TMHeaderTime')
+    dataframe = table.to_pandas()
+    dataframe.set_index('TMHeaderTime')
+    dataframe.sort_index()
+    dataframe.reset_index(inplace=True)
+
     if metadata:
         return dataframe, table.schema.metadata
     return dataframe
