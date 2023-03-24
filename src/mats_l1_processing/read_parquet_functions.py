@@ -232,7 +232,8 @@ def read_ccd_data_in_interval(
         filesystem=filesystem,
     ).to_table(filter=filterlist)
     dataframe = table.to_pandas()
-    dataframe.set_index('TMHeaderTime')
+    dataframe.reset_index(inplace=True)
+    dataframe.set_index('TMHeaderTime',inplace=True)
     dataframe.sort_index()
     dataframe.reset_index(inplace=True)
 
