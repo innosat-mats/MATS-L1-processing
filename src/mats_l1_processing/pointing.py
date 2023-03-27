@@ -23,7 +23,7 @@ def pix_deg(ccditem, xpixel, ypixel):
     """
     Function to get the x and y angle from a pixel relative to the center of the CCD
         
-    Parameters
+    Arguments
     ----------
     ccditem : CCDitem
         measurement
