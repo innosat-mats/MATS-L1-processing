@@ -22,7 +22,7 @@ development = bool(os.environ.get("MATS_DEVELOPMENT", False))
 if development:
     output_bucket_name = "dev-payload-level1b"
 else:
-    output_bucket_name = "ops-payload-level1b-v0.4"
+    output_bucket_name = "ops-payload-level1b-v0.5"
 
 try:
     tag: Optional[TagReference] = repo.tags[-1]
@@ -32,7 +32,7 @@ except IndexError:
 Level1BStack(
     app,
     "Level1BStack",
-    input_bucket_name="ops-payload-level1a-v0.5",
+    input_bucket_name="ops-payload-level1a-v0.6",
     output_bucket_name=output_bucket_name,
     code_version=f"{tag} ({repo.head.commit})",
     development=development,
