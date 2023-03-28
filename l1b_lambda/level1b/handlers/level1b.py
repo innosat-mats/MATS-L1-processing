@@ -135,11 +135,6 @@ def lambda_handler(event: Event, context: Context):
                 "ImageCalibrated",
                 "CalibrationErrors",
                 "qprime",
-                "channel",
-                "flipped",
-                "temperature",
-                "temperature_HTR",
-                "temperature_ADC",
             ],
         )
         l1b_data = concat([
