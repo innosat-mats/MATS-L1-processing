@@ -234,7 +234,7 @@ def read_ccd_data_in_interval(
     dataframe = table.to_pandas()
     dataframe.reset_index(inplace=True)
     dataframe.set_index('TMHeaderTime',inplace=True)
-    dataframe.sort_index()
+    dataframe.sort_index(inplace=True)
     dataframe.reset_index(inplace=True)
 
     if metadata:
