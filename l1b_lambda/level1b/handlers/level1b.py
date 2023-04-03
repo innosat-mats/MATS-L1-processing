@@ -87,11 +87,20 @@ def lambda_handler(event: Event, context: Context):
             metadata=True,
         )
         metadata.update({
-            "L1BCodeVersion": code_version,
+            "L1BCode": code_version,
             "DataLevel": "L1B",
             "DataBucket": output_bucket,
             "DataPath": object_path,
         })
+        if "CODE" in metadata.keys():
+            metadata["RACCode"] = metadata.pop("CODE")
+        elif b"CODE" in metadata.keys():
+            metadata["RACCode"] = metadata.pop(b"CODE")
+        if "pandas" in metadata.keys():
+            del metadata["pandas"]
+        elif b"pandas" in metadata.keys():
+            del metadata[b"pandas"]
+
         ccd_items = rpf.dataframe_to_ccd_items(
             ccd_data,
             remove_empty=False,
@@ -126,11 +135,6 @@ def lambda_handler(event: Event, context: Context):
                 "ImageCalibrated",
                 "CalibrationErrors",
                 "qprime",
-                "channel",
-                "flipped",
-                "temperature",
-                "temperature_HTR",
-                "temperature_ADC",
             ],
         )
         l1b_data = concat([
@@ -150,9 +154,10 @@ def lambda_handler(event: Event, context: Context):
         raise Level1BException(msg) from err
 
     try:
+        for key in metadata.keys():
+            l1b_data[key] = metadata[key]
         out_table = pa.Table.from_pandas(l1b_data)
         out_table = out_table.replace_schema_metadata({
-            **out_table.schema.metadata,
             **metadata,
         })
         pq.write_table(
