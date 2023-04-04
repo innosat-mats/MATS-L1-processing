@@ -15,6 +15,8 @@ import scipy
 import pickle
 import pandas as pd
 import scipy.io
+from scipy.io import loadmat
+
 
 class CCD:
     """Class to represent a single physical CCD on MATS, a.k.a CCDunit
@@ -173,7 +175,7 @@ class CCD:
             + "_CCD_DC_calibration.mat"
         )
 
-        mat = scipy.io.loadmat(filename)
+        mat = loadmat(filename)
 
         self.dc_zero_avr_HSM = mat["dc_zero_avr_HSM"]
         self.dc_zero_std_HSM = mat["dc_zero_std_HSM"]
@@ -702,3 +704,28 @@ class Instrument:
         """
         return getattr(self,channel)
      
+
+class Photometer:
+    """
+    Class to represent the two photometers on MATS
+
+    The class contains attributes and methods for extracting calibration parameters for the
+    photometers.
+
+    Attributes:
+        cal_therm (dict): calibration table Thermistors
+        cal_rad (dict): calibration table Photometers
+    """
+
+    def __init__(self, calibration_file: str):
+        """Init method for Photometer class
+
+        Args:
+            calibration_file (str): calibration file containing paths to calibration data
+        """
+        #   import matlab .mat calibration files into dicts
+        calibration_data = toml.load(calibration_file)
+        calibration_data["photometer"]["thermistor_table"]
+        calibration_data["photometer"]["photometer_table"]
+        self.cal_therm = loadmat(calibration_data["photometer"]["thermistor_table"]) # Thermistors
+        self.cal_rad = loadmat(calibration_data["photometer"]["photometer_table"]) # Phot signal
