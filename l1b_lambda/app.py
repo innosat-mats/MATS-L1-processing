@@ -33,7 +33,7 @@ except IndexError:
 
 Level1BStack(
     app,
-    "Level1BStack",
+    f"Level1BStack{'Dev' if development else ''}",
     input_bucket_name=input_bucket_name,
     output_bucket_name=output_bucket_name,
     code_version=f"{tag} ({repo.head.commit})",
