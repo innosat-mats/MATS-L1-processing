@@ -33,10 +33,10 @@ def calibrate_pm(df: DataFrame, photometer: Photometer):
 # =================================
 # Change raw temperature data to °C
 #   define pmBkg_Tpd, pmBkg_Tif, pmAband_Tpd, pmAband_Tif
-    pmBkg_Tpd = np.NaN * np.ones((len(PM1_Tpd_bit)))   # Temperature of the Bkg photometer photodiode
-    pmBkg_Tif = np.NaN * np.ones((len(PM1_Tif_bit)))   # Temperature of the Bkg photometer filter
-    pmAband_Tpd = np.NaN * np.ones((len(PM2_Tpd_bit))) # Temperature of the A-band photometer photodiode
-    pmAband_Tif = np.NaN * np.ones((len(PM2_Tif_bit))) # Temperature of the A-band photometer filter
+    pmBkg_Tpd = np.NaN * np.ones_like(PM1_Tpd_bit)   # Temperature of the Bkg photometer photodiode
+    pmBkg_Tif = np.NaN * np.ones_like(PM1_Tif_bit)   # Temperature of the Bkg photometer filter
+    pmAband_Tpd = np.NaN * np.ones_like(PM2_Tpd_bit) # Temperature of the A-band photometer photodiode
+    pmAband_Tif = np.NaN * np.ones_like(PM2_Tif_bit) # Temperature of the A-band photometer filter
 
     for ij in range(0, len(PM1_Tpd_bit)-1):
         index11 =  np.where(bitar == round(PM1_Tpd_bit[ij],1))
@@ -51,8 +51,8 @@ def calibrate_pm(df: DataFrame, photometer: Photometer):
 # ==============================
 # Change raw photometer data to photons cm-2 str-1 s-1
 #   define pmBkg_Sig, pmAband_Sig
-    pmBkg_Sig = np.ones((len(PM1_Sig_bit)))   # Background photometer signal
-    pmAband_Sig = np.ones((len(PM2_Sig_bit))) # A-band photometer signal
+    pmBkg_Sig = np.ones_like(PM1_Sig_bit)   # Background photometer signal
+    pmAband_Sig = np.ones_like(PM2_Sig_bit) # A-band photometer signal
     #ijk1=0
     #ijk2=0
 
