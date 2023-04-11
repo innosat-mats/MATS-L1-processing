@@ -3,19 +3,24 @@ import numpy as np
 from mats_l1_processing.instrument import Photometer
 from pandas import DataFrame
 
+
+
 def calibrate_pm(df: DataFrame, photometer: Photometer):
     
 # ===============================================================================================================
 # Calibration starts here
 # PM1 is Bkg photometer, 754BP3 nm / PM2 is A-band photometer, 763BP8 nm
 #   Change to bits/s
+
+    SAMPLING_CYCLES = 166
+
     PM1_Sig_bit = df['PM1S']/df['PM1SCNTR']
     PM1_Tpd_bit = df['PM1A']/df['PM1ACNTR']
     PM1_Tif_bit = df['PM1B']/df['PM1BCNTR']
     PM2_Sig_bit = df['PM2S']/df['PM2SCNTR']
     PM2_Tpd_bit = df['PM2A']/df['PM2ACNTR']
     PM2_Tif_bit = df['PM2B']/df['PM2BCNTR']
-    pm_texp = round(df['PM1SCNTR']/166) # exposure time in seconds, 1 second "integration" is 166-167 sampling cycles
+    pm_texp = round(df['PM1SCNTR']/SAMPLING_CYCLES) # exposure time in seconds, 1 second "integration" is 166-167 sampling cycles
 
 # ===========================================================
 # Calibrate data
@@ -53,8 +58,6 @@ def calibrate_pm(df: DataFrame, photometer: Photometer):
 #   define pmBkg_Sig, pmAband_Sig
     pmBkg_Sig = np.ones_like(PM1_Sig_bit)   # Background photometer signal
     pmAband_Sig = np.ones_like(PM2_Sig_bit) # A-band photometer signal
-    #ijk1=0
-    #ijk2=0
 
     for ik in range(0, len(PM1_Sig_bit)-1):
         index21 = np.where(Temperatur == round(pmBkg_Tpd[ik],1)) #OMC 2023.04.04: Shoud interpolation be used insted of lookup table?
@@ -63,14 +66,12 @@ def calibrate_pm(df: DataFrame, photometer: Photometer):
         index23 = np.where(bitar == round(PM1_Sig_bit[ik],1)) #OMC 2023.04.04: Shoud interpolation be used insted of lookup table?
         if index23[1].size == 0:
             pmBkg_Sig[ik] = np.NaN
-            #ijk1=ijk1+1
         else:
             pmBkg_Sig[ik] = SignFM1_Rad_raw[index21[1], index23[1]]
     
-        index24 = np.where(bitar == round(PM2_Sig_bit[ik],1)) #OMC 2023.04.04: Shoud interpolation be used insted of lookup table?
+        index24 = np.where(bitar == round(PM2_Sig_bit[ik],1)) #OMC 2023.04.04: Should interpolation be used insted of lookup table?
         if index24[1].size == 0:
             pmAband_Sig[ik] = np.NaN
-            #ijk2=ijk2+1
         else:
             pmAband_Sig[ik] = SignFM2_Rad_raw[index22[1], index24[1]]
 

@@ -725,7 +725,5 @@ class Photometer:
         """
         #   import matlab .mat calibration files into dicts
         calibration_data = toml.load(calibration_file)
-        calibration_data["photometer"]["thermistor_table"]
-        calibration_data["photometer"]["photometer_table"]
         self.cal_therm = loadmat(calibration_data["photometer"]["thermistor_table"]) # Thermistors
         self.cal_rad = loadmat(calibration_data["photometer"]["photometer_table"]) # Phot signal
