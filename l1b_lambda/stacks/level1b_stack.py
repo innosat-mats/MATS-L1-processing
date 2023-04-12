@@ -16,6 +16,7 @@ class Level1BStack(Stack):
         id: str,
         input_bucket_name: str,
         output_bucket_name: str,
+        data_source: str,
         lambda_timeout: Duration = Duration.seconds(900),
         queue_retention_period: Duration = Duration.days(14),
         code_version: str = "",
@@ -26,19 +27,19 @@ class Level1BStack(Stack):
 
         input_bucket = Bucket.from_bucket_name(
             self,
-            f"Level1ABucket{'Dev' if development else ''}",
+            f"Level1ABucket{data_source}{'Dev' if development else ''}",
             input_bucket_name,
         )
 
         output_bucket = Bucket.from_bucket_name(
             self,
-            f"Level1BBucket{'Dev' if development else ''}",
+            f"Level1BBucket{data_source}{'Dev' if development else ''}",
             output_bucket_name,
         )
 
         level1b_lambda = DockerImageFunction(
             self,
-            f"Level1BLambda{'Dev' if development else ''}",
+            f"Level1BLambda{data_source}{'Dev' if development else ''}",
             code=DockerImageCode.from_image_asset("."),
             timeout=lambda_timeout,
             architecture=Architecture.X86_64,
@@ -46,12 +47,13 @@ class Level1BStack(Stack):
             environment={
                 "L1B_BUCKET": output_bucket.bucket_name,
                 "L1B_VERSION": code_version,
+                "L1A_DATA_SOURCE": data_source,
             },
         )
 
         event_queue = Queue(
             self,
-            f"Level1AQueue{'Dev' if development else ''}",
+            f"Level1AQueue{data_source}{'Dev' if development else ''}",
             retention_period=queue_retention_period,
             visibility_timeout=lambda_timeout,
             removal_policy=RemovalPolicy.RETAIN,
@@ -59,7 +61,7 @@ class Level1BStack(Stack):
                 max_receive_count=1,
                 queue=Queue(
                     self,
-                    f"FailedCalibrationQueue{'Dev' if development else ''}",
+                    f"FailedCalibrationQueue{data_source}{'Dev' if development else ''}",  # noqa: E501
                     retention_period=queue_retention_period,
                 ),
             ),
