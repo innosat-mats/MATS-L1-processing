@@ -1,8 +1,10 @@
 import pytest
 
 from mats_l1_processing.read_and_calibrate_all_files_parallel import main
-from mats_l1_processing.instrument import Instrument, CCD
+from mats_l1_processing.instrument import Instrument, CCD, Photometer
 from mats_l1_processing.L1_calibration_functions import inverse_model_real,inverse_model_table,make_binary,combine_flags,desmear
+from mats_l1_processing import photometer
+import pandas as pd
 
 import pickle
 import numpy as np
@@ -225,15 +227,29 @@ def test_calibration_output():
     assert np.abs(image_dark_sub_old-image_dark_sub).all()<1e-3
     #assert np.abs(image_calib_nonflipped_old-image_calib_nonflipped).all()<1e-3
 
+def test_photometer():
+    
+    photometer_calib = Photometer("tests/calibration_data_test.toml")
+    with open('testdata/photometer_test_data_in.pkl', 'rb') as f:
+        photometer_data = pickle.load(f)
+    
+    photometer.calibrate_pm(photometer_data,photometer_calib)
+
+    with open('testdata/photometer_test_data_out.pkl', 'rb') as f:
+        photometer_data_out = pickle.load(f)
+    
+    for j in range(10):
+        for i in range(len(photometer_data.iloc[j])): assert(np.any(photometer_data.iloc[j][i]== photometer_data_out.iloc[j][i]))
 
 if __name__ == "__main__":
 
-    test_calibrate()
-    test_calibration_output() 
-    test_readfunctions()
-    test_CCDunit()
-    test_non_linearity_fullframe()
-    test_non_linearity_binned()
-    test_calibrate()
-    test_error_algebra()
-    test_channel_quaterion()
+    # test_calibrate()
+    # test_calibration_output() 
+    # test_readfunctions()
+    # test_CCDunit()
+    # test_non_linearity_fullframe()
+    # test_non_linearity_binned()
+    # test_calibrate()
+    # test_error_algebra()
+    # test_channel_quaterion()
+    test_photometer()

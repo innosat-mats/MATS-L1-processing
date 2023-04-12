@@ -75,7 +75,7 @@ def convert_image_data(ccd_data: DataFrame) -> None:
 
     Returns:
         None:   Operation is performed in place.
-    """    
+    """
 
     images: List[Optional[Any]] = []
     for ind, image_data in enumerate(ccd_data["ImageData"]):
@@ -249,7 +249,7 @@ def read_ccd_data_in_interval(
     dataframe = table.to_pandas()
     dataframe.reset_index(inplace=True)
     dataframe.set_index('TMHeaderTime',inplace=True)
-    dataframe.sort_index()
+    dataframe.sort_index(inplace=True)
     dataframe.reset_index(inplace=True)
 
     if metadata:

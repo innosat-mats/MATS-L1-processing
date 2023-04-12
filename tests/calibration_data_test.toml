@@ -30,4 +30,7 @@ title = "Level 1 calibration files for testing this package"
 	abs_rel_calib_constants= "calibration_data/abs_rel_calib/abs_rel_calib_constants.csv"
 [pointing]
     qprime = 'calibration_data/pointing/'
+[photometer]
+    thermistor_table = 'calibration_data/photometers/AlbedoFM_Thermistors_Temp_vs_bits.mat'
+    photometer_table = 'calibration_data/photometers/AlbedoFM_Calib_Tdep_Radiance_vs_bits.mat' 
 
