@@ -37,7 +37,7 @@ except IndexError:
 
 Level1BStack(
     app,
-    f"Level1BStack{'Dev' if development else ''}",
+    f"Level1BStackCCD{'Dev' if development else ''}",
     input_bucket_name=input_bucket_name_ccd,
     output_bucket_name=output_bucket_name_ccd,
     data_source="CCD",
