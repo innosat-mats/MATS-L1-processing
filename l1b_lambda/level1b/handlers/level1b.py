@@ -105,7 +105,7 @@ def handle_ccd_data(ccd_data: DataFrame, instrument: Instrument) -> DataFrame:
 def handle_pm_data(pm_data: DataFrame, instrument: Instrument) -> DataFrame:
     l1b_data = concat(
         [calibrate_pm(df, instrument) for _, df in pm_data.iterrows()],
-    )
+    ).set_index("PMTime").sort_index()
     l1b_data.drop(["Errors", "Warnings"], axis=1, inplace=True)
     return l1b_data
 
@@ -186,7 +186,7 @@ def lambda_handler(event: Event, context: Context):
         raise Level1BException(msg) from err
 
     try:
-        out_table = pa.Table.from_pandas(l1b_data)
+        out_table = pa.Table.from_pandas(l1b_data.reset_index(inplace=True))
         out_table = out_table.replace_schema_metadata({
             **metadata,
         })
