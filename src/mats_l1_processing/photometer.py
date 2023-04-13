@@ -80,7 +80,7 @@ def calibrate_pm(df: DataFrame, photometer: Photometer):
 #   Remove raw photometer data from the df dataframe
     df.drop(df.iloc[:, 12:24], inplace=True, axis=1)
 
-#   Add calibared data to the df dataframe
+#   Add calibrated data to the df dataframe
     df["pmAband_Sig"] = pmAband_Sig # A-band photometer signal [photons cm-2 str-1 s-1]
     df["pmAband_Tpd"] = pmAband_Tpd # Temperature of the A-band photometer photodiode [°C]
     df["pmAband_Tif"] = pmAband_Tif # Temperature of the A-band photometer interference filter [°C]
