@@ -103,7 +103,10 @@ def handle_ccd_data(ccd_data: DataFrame, instrument: Instrument) -> DataFrame:
 
 
 def handle_pm_data(pm_data: DataFrame, instrument: Instrument) -> DataFrame:
-    l1b_data = calibrate_pm(pm_data, instrument).set_index("PMTime").sort_index()
+    l1b_data = calibrate_pm(
+        pm_data,
+        instrument,
+    ).set_index("PMTime").sort_index()
     l1b_data.drop(["Errors", "Warnings"], axis=1, inplace=True)
     return l1b_data
 
