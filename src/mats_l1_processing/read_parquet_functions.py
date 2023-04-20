@@ -252,7 +252,10 @@ def read_ccd_data_in_interval(
         + ds.field("month") * 10000
         + ds.field("day") * 100
         + ds.field("hour")
-        <= stop_with_margin.year * 1000000 + stop_with_margin.month * 10000 + stop_with_margin.day * 100 + stop_with_margin.hour
+        <= stop_with_margin.year * 1000000
+        + stop_with_margin.month * 10000
+        + stop_with_margin.day * 100
+        + stop_with_margin.hour
     )
 
 
