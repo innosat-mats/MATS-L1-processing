@@ -9,7 +9,7 @@ Parquet files can either be local or on a remote server, such as Amazon S3.
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from io import BytesIO
 from typing import (
     cast, Any, Dict, List, Optional, Sequence, SupportsFloat, Tuple, Union,
@@ -20,6 +20,8 @@ import pyarrow.dataset as ds  # type: ignore
 import pyarrow.parquet as pq  # type: ignore
 from pandas import DataFrame, Timestamp  # type: ignore
 from PIL import Image
+import time as time
+
 
 
 # Map all channels to string names
@@ -216,6 +218,44 @@ def read_ccd_data_in_interval(
     if stop.tzinfo is None:
         stop.replace(tzinfo=timezone.utc)
 
+    partitioning = ds.partitioning(
+        schema=pa.schema(
+            [
+                ("year", pa.int16()),
+                ("month", pa.int8()),
+                ("day", pa.int8()),
+                ("hour", pa.int8()),
+            ]
+        ),
+    )
+
+    dataset = ds.dataset(
+        path,
+        filesystem=filesystem,
+        partitioning=partitioning,
+    )
+
+    start_with_margin =  start - timedelta(hours=1)
+    stop_with_margin = stop + timedelta(hours=1)
+
+    partition_filter = (
+        ds.field("year") * 1000000
+        + ds.field("month") * 10000
+        + ds.field("day") * 100
+        + ds.field("hour")
+        >= start_with_margin.year * 1000000
+        + start_with_margin.month * 10000
+        + start_with_margin.day * 100
+        + start_with_margin.hour
+    ) & (
+        ds.field("year") * 1000000
+        + ds.field("month") * 10000
+        + ds.field("day") * 100
+        + ds.field("hour")
+        <= stop_with_margin.year * 1000000 + stop_with_margin.month * 10000 + stop_with_margin.day * 100 + stop_with_margin.hour
+    )
+
+
     filterlist = (
         (ds.field("EXPDate") >= Timestamp(start))
         & (ds.field("EXPDate") <= Timestamp(stop))
@@ -227,10 +267,23 @@ def read_ccd_data_in_interval(
                 & (ds.field(variable) <= filter[variable][1])
             )
 
+    st = time.time()
+    table = dataset.to_table(
+        filter=partition_filter & filterlist
+    )
+    et = time.time()
+    print('Execution time:', et - st, 'seconds' )
+    print(len(table))
+
+    st = time.time()
     table = ds.dataset(
         path,
         filesystem=filesystem,
     ).to_table(filter=filterlist)
+    et = time.time()
+    print('Execution time:', et - st, 'seconds')
+    print(len(table))
+
     dataframe = table.to_pandas()
     dataframe.reset_index(inplace=True)
     dataframe.set_index('TMHeaderTime',inplace=True)
