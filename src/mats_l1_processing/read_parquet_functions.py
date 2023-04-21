@@ -270,9 +270,7 @@ def read_ccd_data_in_interval(
                 & (ds.field(variable) <= filter[variable][1])
             )
 
-    table = dataset.to_table(
-        filter=partition_filter & filterlist
-    )
+    table = dataset.to_table(filter=partition_filter & filterlist)
 
     dataframe = table.to_pandas()
     dataframe.reset_index(inplace=True)
