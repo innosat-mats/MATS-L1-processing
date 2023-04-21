@@ -270,22 +270,9 @@ def read_ccd_data_in_interval(
                 & (ds.field(variable) <= filter[variable][1])
             )
 
-    st = time.time()
     table = dataset.to_table(
         filter=partition_filter & filterlist
     )
-    et = time.time()
-    print('Execution time:', et - st, 'seconds' )
-    print(len(table))
-
-    st = time.time()
-    table = ds.dataset(
-        path,
-        filesystem=filesystem,
-    ).to_table(filter=filterlist)
-    et = time.time()
-    print('Execution time:', et - st, 'seconds')
-    print(len(table))
 
     dataframe = table.to_pandas()
     dataframe.reset_index(inplace=True)
