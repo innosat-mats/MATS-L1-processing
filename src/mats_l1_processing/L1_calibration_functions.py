@@ -19,6 +19,9 @@ from mats_l1_processing.instrument import nonLinearity as NL
 from joblib import Parallel, delayed
 from mats_l1_processing.instrument import CCD
 from scipy import linalg as linalg
+from mats_utils.geolocation.coordinates import nadir_az
+import pandas as pd
+import warnings
 
 
 def flip_image(CCDitem, image=None):
@@ -932,3 +935,78 @@ def calculate_time_per_row(header):
     T_row_extra = (T_row_read + T_row_shift * nrowbin) / 1e9
 
     return T_row_extra, T_delay
+
+
+#%%
+# nadir artifact removal
+
+
+
+def artifact_correction(ccditem,image=None):
+    """
+    Function computing and applying a correction mask on the nadir images. The correction masks are computed 
+    by assuming a constant bias between the expected pixel value and the measured one in the artifact. Several 
+    azimuth angles intervals are defined and the corresponding mask is applied to the image.
+   
+    Arguments:
+        ccditem : Panda series
+            Panda series containing the ccditem
+        image (optional) : np.array
+            If this is given then it will be used instead of the image in the CCDitem
+        
+    Returns:
+        corrected_image : np.array(float.64)
+            numpy array representing the corrected image  
+        error_flag : np.array(float.64)
+            numpy array representing the corrected pixels
+    """
+
+
+
+    if image is None:
+        image = ccditem["IMAGE"]    
+
+               
+    artifact_masks = ccditem['CCDunit'].get_artifact_mask()
+
+    MASK_AZIMUTH = artifact_masks['azimuth'] # list of all the azimuth values in the dataframe
+    m = len(artifact_masks)
+
+    try : 
+        azimuth = nadir_az(ccditem) # nadir azimuth angle of the ccditem
+    except: # if no azimuth angle can be calculated, an average angle of -90 deg is assumed   
+        warnings.warns("Unable to compute the nadir solar azimuth angle (angle set to a default value of -90 deg)")
+        azimuth = -90
+
+    # finding the mask which corresponding azimuth angle interval is the closest to the image's azimuth angle
+    distance = 360.0
+    best_ind = 0
+    for j in range(m):
+        if abs(MASK_AZIMUTH[j]-azimuth) < distance:
+            best_ind = j
+            distance = abs(MASK_AZIMUTH[j]-azimuth)
+    mask = artifact_masks['bias_mask'][best_ind]
+        
+    if np.shape(mask) != np.shape(image):
+        warnings.warns("Image shape doesn't match the mask shape (no correction applied)")
+        corrected_im = image
+        error_flag = np.zeros(corrected_im.shape, dtype=np.uint16)
+        error_flag = make_binary(error_flag, 1)
+
+        return(corrected_im,error_flag)
+        
+
+    # substracting the mask
+    corrected_im = image-mask
+    # removing all negative pixel values
+    corrected_im = corrected_im * (corrected_im>0)   
+
+    # error flag is 1 for pixels being corrected
+    error_flag = np.zeros(corrected_im.shape, dtype=np.uint16)
+    error_flag[mask > 0] = 1
+
+    error_flag = make_binary(error_flag, 1)
+
+    return corrected_im, error_flag
+
+    

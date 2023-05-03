@@ -2,7 +2,7 @@ import pytest
 
 from mats_l1_processing.read_and_calibrate_all_files_parallel import main
 from mats_l1_processing.instrument import Instrument, CCD
-from mats_l1_processing.L1_calibration_functions import inverse_model_real,inverse_model_table,make_binary,combine_flags,desmear
+from mats_l1_processing.L1_calibration_functions import inverse_model_real,inverse_model_table,make_binary,combine_flags,desmear,artifact_correction
 
 import pickle
 import numpy as np
@@ -83,6 +83,7 @@ def test_CCDunit():
 def test_non_linearity_fullframe():
     with open('testdata/CCDitem_example.pkl', 'rb') as f:
         CCDitem = pickle.load(f)
+        
     
     with open('testdata/CCDunit_IR1_example.pkl', 'rb') as f:
         CCDunit_IR1=pickle.load(f)        
@@ -187,6 +188,49 @@ def test_desmearing():
     assert np.sum(corrected_image -  input_array[nrskip:])<1e-9
 
 
+
+def test_artifact():
+
+    with open('testdata/artifact_correction/CCDitem_artifact_IR2.pkl', 'rb') as f:
+        CCDitem_IR2 = pickle.load(f)
+
+    with open('testdata/artifact_correction/CCDitem_artifact_NADIR.pkl', 'rb') as f:
+        CCDitem_nadir = pickle.load(f)
+
+    instrument = Instrument("tests/calibration_data_test.toml")
+    CCDunit_IR2=instrument.get_CCD("IR2")
+    CCDitem_IR2['CCDunit']=CCDunit_IR2
+    CCDunit_nadir=instrument.get_CCD("NADIR")
+    CCDitem_nadir['CCDunit']=CCDunit_nadir
+    
+    
+    
+
+    # ccd channel other than NADIR shouldn't be modified
+    # image = CCDitem_IR2['IMAGE']
+    # image_no_artifact, error_artifact = artifact_correction(CCDitem_IR2)
+    # assert abs(np.sum(image_no_artifact -  image))<1e-9
+    # assert abs(np.sum(np.zeros_like(image)-error_artifact))<1e-9
+
+    
+    image = CCDitem_nadir['IMAGE']
+    image_expected = np.load('testdata/artifact_correction/image_artifact_corrected.npy')
+    error_expected =  np.load('testdata/artifact_correction/artifact_error.npy')
+    image_no_artifact, error_artifact = artifact_correction(CCDitem_nadir)
+    assert abs(np.sum(image_no_artifact -  image_expected))<1e-9
+    assert abs(np.sum(error_expected-error_artifact))<1e-9
+
+    image = np.load('testdata/artifact_correction/image_artifact.npy')
+    image_expected = np.load('testdata/artifact_correction/image_artifact_corrected2.npy')
+    error_expected =  np.load('testdata/artifact_correction/artifact_error.npy')
+    image_no_artifact, error_artifact = artifact_correction(CCDitem_nadir,image)
+    assert abs(np.sum(image_expected -  image_no_artifact))<1e-9
+    assert abs(np.sum(error_expected-error_artifact))<1e-9
+
+
+    
+
+
 def test_calibration_output():
     
     from mats_l1_processing.L1_calibration_functions import (
@@ -194,7 +238,8 @@ def test_calibration_output():
         desmear_true_image,
         subtract_dark,
         flatfield_calibration,
-        get_linearized_image
+        get_linearized_image,
+        artifact_correction
     )
     
    # from mats_l1_processing.read_in_functions import read_CCDitems    
@@ -216,14 +261,23 @@ def test_calibration_output():
     image_dark_sub, error_flags_dark = subtract_dark(CCDitem, image_desmeared)
 
     image_calib_nonflipped, error_flags_flatfield = flatfield_calibration(CCDitem, image_dark_sub)
+
+
+    # no test for image flipping yet
+    image_calibrated_flipped = image_calib_nonflipped
+
+    image_calibrated, error_artifact = artifact_correction(CCDitem,image_calibrated_flipped)
     
     with open('testdata/calibration_output.pkl', 'rb') as f:
-            [image_bias_sub_old, image_desmeared_old, image_dark_sub_old, image_calib_nonflipped_old]=pickle.load(f)
+            [image_bias_sub_old, image_desmeared_old, image_dark_sub_old, image_calib_nonflipped_old, image_no_artifact_old]=pickle.load(f)
     
     assert np.abs(image_bias_sub_old-image_bias_sub).all()<1e-3
     assert np.abs(image_desmeared_old-image_desmeared).all()<1e-3
     assert np.abs(image_dark_sub_old-image_dark_sub).all()<1e-3
     #assert np.abs(image_calib_nonflipped_old-image_calib_nonflipped).all()<1e-3
+    assert np.abs(image_no_artifact_old-image_calibrated).all()<1e-3
+
+
 
 
 if __name__ == "__main__":
