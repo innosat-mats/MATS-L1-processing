@@ -106,6 +106,6 @@ def L1_calibrate(CCDitem, instrument, force_table: bool = True):  # This used to
 
     errors = combine_flags([error_bad_column,error_flags_bias,error_flags_linearity,error_flags_desmear,
     error_flags_dark,error_flags_flatfield,error_ghost,error_artifact],
-    [1,1,2,1,3,2,1,1])
+    [1,1,2,1,3,2,1,2])
     
     return image_lsb, image_bias_sub, image_desmeared, image_dark_sub, image_calib_nonflipped, image_calibrated_flipped, image_calibrated, errors

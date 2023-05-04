@@ -206,11 +206,12 @@ def test_artifact():
     
     
 
-    # ccd channel other than NADIR shouldn't be modified
-    # image = CCDitem_IR2['IMAGE']
-    # image_no_artifact, error_artifact = artifact_correction(CCDitem_IR2)
-    # assert abs(np.sum(image_no_artifact -  image))<1e-9
-    # assert abs(np.sum(np.zeros_like(image)-error_artifact))<1e-9
+    #ccd channel other than NADIR shouldn't be modified
+    image = CCDitem_IR2['IMAGE']
+    image_no_artifact, error_artifact = artifact_correction(CCDitem_IR2)
+    assert abs(np.sum(image_no_artifact -  image))<1e-9
+    expected_error_flag = np.full(np.shape(image),2,dtype=np.uint16)
+    assert abs(np.sum(expected_error_flag-error_artifact))<1e-9
 
     
     image = CCDitem_nadir['IMAGE']

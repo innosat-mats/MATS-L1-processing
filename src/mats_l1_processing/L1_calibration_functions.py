@@ -964,19 +964,31 @@ def artifact_correction(ccditem,image=None):
 
 
     if image is None:
-        image = ccditem["IMAGE"]    
-
+        image = ccditem["IMAGE"]   
                
     artifact_masks = ccditem['CCDunit'].get_artifact_mask()
+
+    if len(artifact_masks)==1 and np.sum(np.abs(artifact_masks.iloc[0]['bias_mask'])==0.0): # if an empty mask is applied
+        warnings.warn("Empty mask applied (no correction applied)")
+        corrected_im = image
+        error_flag_mask = np.zeros(corrected_im.shape, dtype=np.uint16)
+        error_flag_no_correction = np.ones(corrected_im.shape, dtype=np.uint16)        
+        error_flag = combine_flags([error_flag_mask,error_flag_no_correction],[1,1])
+
+        return(corrected_im,error_flag)
 
     MASK_AZIMUTH = artifact_masks['azimuth'] # list of all the azimuth values in the dataframe
     m = len(artifact_masks)
 
     try : 
         azimuth = nadir_az(ccditem) # nadir azimuth angle of the ccditem
-    except: # if no azimuth angle can be calculated, an average angle of -90 deg is assumed   
-        warnings.warns("Unable to compute the nadir solar azimuth angle (angle set to a default value of -90 deg)")
-        azimuth = -90
+    except: # if no azimuth angle can be calculated, no correction is applied
+        warnings.warn("Unable to compute the nadir solar azimuth angle (no correction applied)")
+        corrected_im = image
+        error_flag_mask = np.zeros(corrected_im.shape, dtype=np.uint16)
+        error_flag_no_correction = np.ones(corrected_im.shape, dtype=np.uint16)        
+        error_flag = combine_flags([error_flag_mask,error_flag_no_correction],[1,1])
+        return(corrected_im,error_flag)
 
     # finding the mask which corresponding azimuth angle interval is the closest to the image's azimuth angle
     distance = 360.0
@@ -988,10 +1000,11 @@ def artifact_correction(ccditem,image=None):
     mask = artifact_masks['bias_mask'][best_ind]
         
     if np.shape(mask) != np.shape(image):
-        warnings.warns("Image shape doesn't match the mask shape (no correction applied)")
+        warnings.warn("Image shape doesn't match the mask shape (no correction applied)")
         corrected_im = image
-        error_flag = np.zeros(corrected_im.shape, dtype=np.uint16)
-        error_flag = make_binary(error_flag, 1)
+        error_flag_mask = np.zeros(corrected_im.shape, dtype=np.uint16)
+        error_flag_no_correction = np.ones(corrected_im.shape, dtype=np.uint16)        
+        error_flag = combine_flags([error_flag_mask,error_flag_no_correction],[1,1])
 
         return(corrected_im,error_flag)
         
@@ -1002,10 +1015,10 @@ def artifact_correction(ccditem,image=None):
     corrected_im = corrected_im * (corrected_im>0)   
 
     # error flag is 1 for pixels being corrected
-    error_flag = np.zeros(corrected_im.shape, dtype=np.uint16)
-    error_flag[mask > 0] = 1
-
-    error_flag = make_binary(error_flag, 1)
+    error_flag_mask = np.zeros(corrected_im.shape, dtype=np.uint16)
+    error_flag_mask[mask > 0] = 1    
+    error_flag_no_correction = np.zeros(corrected_im.shape, dtype=np.uint16)        
+    error_flag = combine_flags([error_flag_mask,error_flag_no_correction],[1,1])
 
     return corrected_im, error_flag
 
