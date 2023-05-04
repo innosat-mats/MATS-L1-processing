@@ -209,24 +209,24 @@ def test_artifact():
     #ccd channel other than NADIR shouldn't be modified
     image = CCDitem_IR2['IMAGE']
     image_no_artifact, error_artifact = artifact_correction(CCDitem_IR2)
-    assert abs(np.sum(image_no_artifact -  image))<1e-9
+    np.testing.assert_allclose(image_no_artifact,image,atol=1e-9)
     expected_error_flag = np.full(np.shape(image),2,dtype=np.uint16)
-    assert abs(np.sum(expected_error_flag-error_artifact))<1e-9
+    np.testing.assert_allclose(expected_error_flag,error_artifact,atol=1e-9)
 
     
     image = CCDitem_nadir['IMAGE']
     image_expected = np.load('testdata/artifact_correction/image_artifact_corrected.npy')
     error_expected =  np.load('testdata/artifact_correction/artifact_error.npy')
     image_no_artifact, error_artifact = artifact_correction(CCDitem_nadir)
-    assert abs(np.sum(image_no_artifact -  image_expected))<1e-9
-    assert abs(np.sum(error_expected-error_artifact))<1e-9
+    np.testing.assert_allclose(image_no_artifact,image_expected,atol=1e-9)
+    np.testing.assert_allclose(error_expected,error_artifact,atol=1e-9)
 
     image = np.load('testdata/artifact_correction/image_artifact.npy')
     image_expected = np.load('testdata/artifact_correction/image_artifact_corrected2.npy')
     error_expected =  np.load('testdata/artifact_correction/artifact_error.npy')
     image_no_artifact, error_artifact = artifact_correction(CCDitem_nadir,image)
-    assert abs(np.sum(image_expected -  image_no_artifact))<1e-9
-    assert abs(np.sum(error_expected-error_artifact))<1e-9
+    np.testing.assert_allclose(image_expected,image_no_artifact,atol=1e-9)
+    np.testing.assert_allclose(error_expected,error_artifact,atol=1e-9)
 
 
     
