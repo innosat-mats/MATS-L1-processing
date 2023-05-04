@@ -19,7 +19,7 @@ from mats_l1_processing.instrument import nonLinearity as NL
 from joblib import Parallel, delayed
 from mats_l1_processing.instrument import CCD
 from scipy import linalg as linalg
-from mats_utils.geolocation.coordinates import nadir_az
+from mats_l1_processing.pointing import nadir_az
 import pandas as pd
 import warnings
 
