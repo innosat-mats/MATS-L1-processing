@@ -78,8 +78,6 @@ def combine_flags(flags, bits):
 
     """
 
-    import numpy as np
-
     if len(flags) != len(bits):
         raise ValueError('number of bit values differ from number of flag arrays')
 
