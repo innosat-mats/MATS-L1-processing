@@ -1,3 +1,4 @@
+name: Level1B Lambda CD (Dev)
 
 on:
   workflow_dispatch:

@@ -84,31 +84,18 @@ def get_shift(CCDitem,skip_comp=False):
         y: shift in vertical direction (in CCD pixels)
     """
 
-    if CCDitem['channel']=='IR1':
-        x_pos=75
-        y_pos=47
-    elif CCDitem['channel']=='IR2':
-        x_pos=-144
-        y_pos=76      
-    elif CCDitem['channel']=='IR3':
-        x_pos=-37
-        y_pos=66 
-    elif CCDitem['channel']=='IR4':
-        x_pos=0
-        y_pos=0
-    elif CCDitem['channel']=='UV1':
-        x_pos=-88#139
-        y_pos=13#148
-    elif CCDitem['channel']=='UV2':
-        x_pos=-156
-        y_pos=192
-    elif CCDitem['channel']=='NADIR':
-        x_pos=0 # No shifting of NADIR channel
-        y_pos=0
-    else:
-        raise Exception('Unknown channel name', CCDitem['channel'])
-
     
+    # #Lindas settings as measured in the lab
+    #x_pos_vec = {'IR1':75,'IR2':-144,'IR3':-37,'IR4':0,'UV1':-88,'UV2':-156,'NADIR':0} 
+    #y_pos_vec = {'IR1': 47,'IR2':76,'IR3':66,'IR4':0,'UV1':13,'UV2':192,'NADIR':0} 
+    #Donals settings from star measuremnets
+    x_pos_vec = {'IR1':83.47120648,'IR2':-141.29390513,'IR3':-46.07793043,'IR4':0,'UV1':-90.50990343,'UV2':-161.31804504,'NADIR':0} 
+    y_pos_vec = {'IR1':48.92274474,'IR2':75.78736229,'IR3':67.06758131,'IR4':0,'UV1':5.37669736,'UV2':188.22050731,'NADIR':0} 
+    
+
+    x_pos=round(x_pos_vec[CCDitem['channel']])
+    y_pos=round(y_pos_vec[CCDitem['channel']])
+
     if skip_comp:
         if "flipped" in CCDitem:
             if CCDitem['flipped'] == True:
@@ -192,7 +179,7 @@ def shift_image(CCDitem, image=None):
     y_rel=y_maximum-y_pos
     
     
-    image_common_fov = np.empty((720,2300))
+    image_common_fov = np.empty((720,2400))
     error_flag= np.ones(image_common_fov.shape, dtype=np.uint16)
     image_common_fov[:] = np.nan
     image_common_fov[y_rel:y_rel+image.shape[0], x_rel:x_rel+image.shape[1]]=image

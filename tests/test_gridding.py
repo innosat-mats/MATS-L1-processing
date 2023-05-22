@@ -3,6 +3,7 @@ import pytest
 from mats_l1_processing.grid_image import grid_image,get_shift
 from mats_l1_processing.pointing import pix_deg
 from numpy import abs
+from pytest import approx
 
 def test_shift():
     CCDitem = dict()
@@ -40,8 +41,8 @@ def test_pixdeg():
     ccditem['CCDSEL'] = 2
 
     a,b = pix_deg(ccditem, 7, 9)
-    assert(abs(a - -2.141871030776746)<1e-6)
-    assert(abs(b - -0.7033725490196079)<1e-6)
+    assert(a == approx(-2.1394290161657805,abs=1e-6))
+    assert(b == approx(-0.6995209721539268,abs=1e-6))    
 
     ccditem = {}
     ccditem['NCSKIP'] = 0
@@ -52,8 +53,8 @@ def test_pixdeg():
     ccditem['CCDSEL'] = 2
 
     a,b = (pix_deg(ccditem, 70, 90))
-    assert(abs(a - 5.318412310698583)<1e-6)
-    assert(abs(b - -0.22054901960784315)<1e-6)
+    assert(a == approx(5.29965319095335,abs=1e-6))
+    assert(b == approx(-0.2193511489861099,abs=1e-6)) 
 
 
     ccditem = {}
@@ -65,8 +66,8 @@ def test_pixdeg():
     ccditem['CCDSEL'] = 4
 
     a,b = pix_deg(ccditem, 50, 2)
-    assert(abs(a - -2.288412310698583)<1e-6)
-    assert(abs(b - -0.5662745098039216)<1e-6)
+    assert(a == approx(-2.285652940019572,abs=1e-6))
+    assert(b == approx(-0.5631835091518915,abs=1e-6)) 
     
 
     ccditem = {}
@@ -78,8 +79,8 @@ def test_pixdeg():
     ccditem['CCDSEL'] = 3
 
     a,b = pix_deg(ccditem, 50, 2)
-    assert(abs(a - 2.498602833414753)<1e-6)
-    assert(abs(b - -0.5662745098039216)<1e-6)
+    assert(a == approx(2.4953357893889208,abs=1e-6))
+    assert(b == approx(-0.5631835091518915,abs=1e-6)) 
     
 
 if __name__ == "__main__":
