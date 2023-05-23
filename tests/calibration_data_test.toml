@@ -30,4 +30,7 @@ title = "Level 1 calibration files for testing this package"
 	abs_rel_calib_constants= "calibration_data/abs_rel_calib/abs_rel_calib_constants.csv"
 [pointing]
     qprime = 'calibration_data/pointing/'
+[artifact]
+    nadir = 'calibration_data/artifact/nadir_correction_masks.pk1'
+    blank = 'calibration_data/artifact/blank_mask.pk1'
 
