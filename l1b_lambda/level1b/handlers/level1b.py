@@ -106,7 +106,7 @@ def lambda_handler(event: Event, context: Context):
             remove_empty=False,
             remove_errors=False,
             remove_warnings=False,
-            legacy=True,
+            legacy=False,
         )
 
         for ccd in ccd_items:
@@ -163,7 +163,7 @@ def lambda_handler(event: Event, context: Context):
         })
         pq.write_table(
             out_table,
-            f"{output_bucket}/{object_path}",
+            f"{output_bucket}/{object}",
             filesystem=s3,
             version='2.6',
         )

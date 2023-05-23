@@ -23,8 +23,8 @@ if development:
     input_bucket_name = "dev-payload-level1a"
     output_bucket_name = "dev-payload-level1b"
 else:
-    input_bucket_name = "ops-payload-level1a-v0.5"
-    output_bucket_name = "ops-payload-level1b-v0.4"
+    input_bucket_name = "ops-payload-level1a-v0.6"
+    output_bucket_name = "ops-payload-level1b-v0.5"
 
 try:
     tag: Optional[TagReference] = repo.tags[-1]
