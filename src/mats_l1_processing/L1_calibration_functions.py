@@ -369,8 +369,14 @@ def get_linearized_image(CCDitem, image_bias_sub, force_table: bool = True):
                 image_linear, error_flag = lin_image_from_inverse_model_table(
                     image_bias_sub, table)
             else:
-                image_linear, error_flag = lin_image_from_inverse_model_real(
-                    image_bias_sub, CCDitem)
+                try:
+                    raise ValueError(
+                        f"No table for CCD item {CCDitem['ImageName']}"
+                    )
+                except KeyError:
+                    raise ValueError(
+                        f"No table for CCD item {CCDitem['ImageFileName']}"
+                    )
 
     error_flag = make_binary(error_flag, 2)
 
