@@ -15,22 +15,18 @@ The MATLAB script can be found here: https://github.com/OleMartinChristensen/MAT
 
 import numpy as np
 import scipy.optimize as opt
-from mats_l1_processing.instrument import nonLinearity as NL
 from joblib import Parallel, delayed
-from mats_l1_processing.instrument import CCD
 from scipy import linalg as linalg
-from mats_l1_processing.pointing import nadir_az
-import pandas as pd
 import warnings
 
 
 def flip_image(CCDitem, image=None):
-    """ Flips the image to account for odd number of mirrors in the light path. 
+    """ Flips the image to account for odd number of mirrors in the light path.
     Args:
         CCDitem
-        optional image 
+        optional image
 
-    Returns: 
+    Returns:
         image that has been flipped and shifted
 
     """
@@ -48,18 +44,15 @@ def flip_image(CCDitem, image=None):
 
 
 def make_binary(flag, bits):
-    """Function to generate binary array of flag array. 
+    """Function to generate binary array of flag array.
     2022.10.08 OMC: Currently it does not do anything
 
     Args:
         flag (np.array, dtype=int): numpy array containing the flag
         bits (int): number of error bits represented in the array
 
-    Returns: 
+    Returns:
         flag (np.array, dtype=int): numpy array containing the flag
-
-
-
     """
 
     # binary_repr_vector = np.vectorize(np.binary_repr)
@@ -74,9 +67,9 @@ def combine_flags(flags, bits):
     """Combines the error flags into one array.
     Args:
         flags (list of np.array with dtype int): list of the flags to combine
-        bits (np.array): number of bits corresponding to each flag 
+        bits (np.array): number of bits corresponding to each flag
 
-    Returns: 
+    Returns:
         total_flag the combined flag in dec
 
     """
@@ -170,7 +163,7 @@ def optimize_function(x, CCD, nrowbin, ncolbin, value):
 
 
 def test_for_saturation(CCDunit, nrowbin, ncolbin, value):
-    ''' 
+    '''
     Tests if a value is in the saturated are of a CCD
 
     Author: Ole Martin Christensen
@@ -181,13 +174,13 @@ def test_for_saturation(CCDunit, nrowbin, ncolbin, value):
         ncolbin (int): number of columns binned
         value (int): the measured value to check for saturation
 
-    Returns: 
+    Returns:
         flag (int): Flag to mark saturation.
-            0 = all ok, 
-            1 = pixel reached non-linearity in pixel, row or column,  
+            0 = all ok,
+            1 = pixel reached non-linearity in pixel, row or column,
             3 = pixel reached saturation in pixel, row or column
 
-        x: nan if not saturated otherwise equal to 
+        x: nan if not saturated otherwise equal to
             CCDunit.non_linearity_pixel.saturation*nrowbin*ncolbin
     '''
 
@@ -219,17 +212,17 @@ def test_for_saturation(CCDunit, nrowbin, ncolbin, value):
 
 
 def check_true_value_max(CCDunit, nrowbin, ncolbin, x_true, flag):
-    """A method which takes in a CCDunit and binning factors and flags 
-    for saturation, and sets value to the saturated value if needed. 
+    """A method which takes in a CCDunit and binning factors and flags
+    for saturation, and sets value to the saturated value if needed.
 
     Args:
         CCDunit (obj): A CCDUnit object
         nrowbin (int): number of rows binned
-        ncolbin (int): nuber of cols binned 
+        ncolbin (int): nuber of cols binned
         x_true (float): true value of counts
         flag (int): flag of pixel (to be modified)
 
-    Returns: 
+    Returns:
         flag (int): flag to indicate high degree of non-linearity and/or saturation
         x (float): true number of counts
     """
@@ -255,18 +248,18 @@ def check_true_value_max(CCDunit, nrowbin, ncolbin, x_true, flag):
 
 
 def inverse_model_real(CCDitem, value, method='BFGS'):
-    """A method which takes in a CCDitem and uses the 3 non-linearities in the 
-    CCDUnit and the degree of binnning to get the true count (corrected for 
+    """A method which takes in a CCDitem and uses the 3 non-linearities in the
+    CCDUnit and the degree of binnning to get the true count (corrected for
     non-linearity) based on the measured value. This method is slow, so
     if the binning factors are common its faster to pre-calculate a table
-    and use *inverse_model_table* instead. 
+    and use *inverse_model_table* instead.
 
     Args:
         CCDitem (dict): Dictionary of type CCDItem
         value: Measured value of a pixel
         method: Method to be used in solving the inverse problem
 
-    Returns: 
+    Returns:
         x (np.array, dtype=float): true number of counts
         flag (np.array, dtype = int64): flag to indicate high degree of non-linearity and/or saturation
     """
@@ -297,10 +290,10 @@ def inverse_model_table(table, value):
     and finds the true number of counts.
 
     Args:
-        table (np.array): lookup table of true counts and flags indexed with counts 
+        table (np.array): lookup table of true counts and flags indexed with counts
         value (float): measured number of counts
 
-    Returns: 
+    Returns:
         x (np.array, dtype=float): true number of counts
         flag (np.array, dtype = int): flag to indicate high degree of non-linearity and/or saturation
     """
@@ -349,7 +342,7 @@ def get_linearized_image(CCDitem, image_bias_sub, force_table: bool = True):
         image: np.array The image that will be linearised
         force_table (bool): whether to force table generation if no exists (default=True)
 
-    Returns: 
+    Returns:
         image_linear (np.array, dtype=float64): linearised number of counts
         flag (np.array, dtype = uint16): flag to indicate problems with the linearisation
     """
@@ -404,14 +397,14 @@ def get_linearized_image_parallelized(CCDitem, image_bias_sub):
 ## Bad columns ##
 
 def handle_bad_columns(CCDitem, handle_BC=False):
-    """ Handles bad columns. For now just set them to non-bad. 
+    """ Handles bad columns. For now just set them to non-bad.
     Args:
         CCDitem:  dictonary containing CCD image and information
         handle_BC (optional): switch to tell whether to treat BC or not
 
-    Returns: 
+    Returns:
         image_dark_sub (np.array, dtype=float64): true number of counts
-        flags (np.array, dtype = uint16): 2 flags to indicate problems with the darc subtractions. 
+        flags (np.array, dtype = uint16): 2 flags to indicate problems with the darc subtractions.
             Binary array: 1st bit idicates that the dark subtraction renedered a negative value as result, second bit indiates a temperature out of normal range.
     """
 
@@ -436,15 +429,15 @@ def handle_bad_columns(CCDitem, handle_BC=False):
 ## Flatfield ##
 
 def flatfield_calibration(CCDitem, image=None):
-    """Calibrates the image for eacvh pixel, ie, absolute relativ calibration and flatfield compensation 
+    """Calibrates the image for eacvh pixel, ie, absolute relativ calibration and flatfield compensation
 
     Args:
         CCDitem:  dictonary containing CCD image and information
         image (optional) np.array: If this is given then it will be used instead of the image in the CCDitem
 
-    Returns: 
+    Returns:
         image_dark_sub (np.array, dtype=float64): true number of counts
-        flags (np.array, dtype = uint16): 2 flags to indicate problems with the darc subtractions. 
+        flags (np.array, dtype = uint16): 2 flags to indicate problems with the darc subtractions.
             Binary array: 1st bit idicates that the dark subtraction renedered a negative value as result, second bit indiates a temperature out of normal range.
     """
 
@@ -467,15 +460,15 @@ def flatfield_calibration(CCDitem, image=None):
 
 
 def calculate_flatfield(CCDitem):
-    """Calculates the flatfield factor for binned images, otherwise simply returns 
+    """Calculates the flatfield factor for binned images, otherwise simply returns
     the flatfield of the channel. This factor should be diveded with to comensate for flatfield.
 
     Args:
         CCDitem:  dictonary containing CCD image and information
 
 
-    Returns: 
-        image_flatf: np.array of the same size as the binned image, with factors 
+    Returns:
+        image_flatf: np.array of the same size as the binned image, with factors
         which should be divided with to compensate for flatfield
     """
     try:
@@ -503,9 +496,9 @@ def subtract_dark(CCDitem, image=None):
         CCDitem:  dictonary containing CCD image and information
         image (optional) np.array: If this is given then it will be used instead of the image in the CCDitem
 
-    Returns: 
+    Returns:
         image_dark_sub (np.array, dtype=float64): true number of counts
-        flags (np.array, dtype = uint16): 2 flags to indicate problems with the darc subtractions. 
+        flags (np.array, dtype = uint16): 2 flags to indicate problems with the darc subtractions.
             Binary array: 1st bit idicates that the dark subtraction renedered a negative value as result, second bit indiates a temperature out of normal range.
     """
 
@@ -537,16 +530,16 @@ def subtract_dark(CCDitem, image=None):
 
 def calculate_dark(CCDitem):
     """
-    Calculates dark image from Gabriels measurements. The function reads 
-    gabriels dark current images using temperature and gain mode as an input. 
+    Calculates dark image from Gabriels measurements. The function reads
+    gabriels dark current images using temperature and gain mode as an input.
     The function converts from electrons to counts and returns a correctly
-    binned dark current image in unit counts.  
+    binned dark current image in unit counts.
 
     Args:
         CCDitem:  dictonary containing CCD image and information
 
-    Returns: 
-        dark_calc_image: Full frame dark current image for given CCD item. 
+    Returns:
+        dark_calc_image: Full frame dark current image for given CCD item.
     """
 
     try:
@@ -588,15 +581,15 @@ def calculate_dark(CCDitem):
 
 def bin_image_with_BC(CCDitem, image_nonbinned=None):
     """
-    This is a function to bin an image without any offset or blanks. 
+    This is a function to bin an image without any offset or blanks.
     Bins according to binning and NSKIP settings in CCDitem.
 
     Args:
         CCDitem:  dictonary containing CCD image and information
         image_nonbinned (optional): numpy array image
 
-    Returns: 
-        binned_image: binned image (by summing) 
+    Returns:
+        binned_image: binned image (by summing)
 
     """
     if image_nonbinned is None:
@@ -612,10 +605,10 @@ def bin_image_with_BC(CCDitem, image_nonbinned=None):
 
 def meanbin_image_with_BC(CCDitem, image_nonbinned=None, error_flag_out=False):
     """
-    This function bins a image, taking bad coulmns into account, and returns a 
-    binned image where the subpixels are the mean of the subbins. 
-    If all subins are bvad columns (NaNs) Nan is returned for the superbin. 
-    This fucntion is thus also an easy way to check if all subpixels in a 
+    This function bins a image, taking bad coulmns into account, and returns a
+    binned image where the subpixels are the mean of the subbins.
+    If all subins are bvad columns (NaNs) Nan is returned for the superbin.
+    This fucntion is thus also an easy way to check if all subpixels in a
     superpixel are bad (NaN).
 
 
@@ -625,9 +618,9 @@ def meanbin_image_with_BC(CCDitem, image_nonbinned=None, error_flag_out=False):
         image_nonbinned (optional): numpy array image
         error_flag_out (optional): . Option to return error fflag. Defaulte False
 
-    Returns: 
-        meanbinned_image: binned image (by taking the average) according to the info in CCDitem 
-        OPTIONAL error_flag  (np.array, dtype = uint16): returned if error_flag is True. 
+    Returns:
+        meanbinned_image: binned image (by taking the average) according to the info in CCDitem
+        OPTIONAL error_flag  (np.array, dtype = uint16): returned if error_flag is True.
             Indicates that all subpixels in superpixel are BC and therefore set to  NaNs.
 
 
@@ -739,7 +732,7 @@ def binning_bc(Ncol, Ncolskip, NcolbinFPGA, NcolbinCCD, BadColumns):
         as per ICD. BadColumns - array containing the index of bad columns
                   (the index of first column is 0)
 
-    Returns: 
+    Returns:
         n_read: array, containing the number of individually read superpixels
                attributing to the given superpixel
                n_coadd:  - array, containing the number of co-added individual pixels
@@ -780,7 +773,7 @@ def desmear(image, nrskip, exptimeratio, fill=None):
         fill (np.array): values used to fill the skipped rows
         exptimeratio (float): ratio between the exposure time and the row readout time
 
-    Returns: 
+    Returns:
         desmeared_image (np.array, dtype=float64): desmeared image
 
     """
@@ -806,9 +799,9 @@ def desmear_true_image(header, image=None, fill_method='lin_row', **kwargs):
         CCDitem:  dictonary containing CCD image and information
         image (optional) np.array: If this is given then it will be used instead of the image in the CCDitem
 
-    Returns: 
+    Returns:
         image (np.array, dtype=float64): desmeared image
-        flag (np.array, dtype = uint16): error flag to indicate that the de-smearing gave a negative value as a reslut    
+        flag (np.array, dtype = uint16): error flag to indicate that the de-smearing gave a negative value as a reslut
         """
 
     if image is None:
@@ -832,7 +825,7 @@ def desmear_true_image(header, image=None, fill_method='lin_row', **kwargs):
         grad=(1 - T_row_extra /T_exposure)*(np.median(image[1,:])-np.median(image[2,:]))
         fill_function = np.expand_dims(grad*((np.arange(nrskip/nrbin)+1)[::-1]), axis=1)
         fill_array = fill_function + \
-            np.repeat(np.expand_dims(image[0, :], axis=1), fill_function.shape[0], axis=1).T       
+            np.repeat(np.expand_dims(image[0, :], axis=1), fill_function.shape[0], axis=1).T
     else:
         raise Exception("Fill method invalid")
 
@@ -948,53 +941,56 @@ def calculate_time_per_row(header):
 
 def artifact_correction(ccditem,image=None):
     """
-    Function computing and applying a correction mask on the nadir images. The correction masks are computed 
-    by assuming a constant bias between the expected pixel value and the measured one in the artifact. Several 
-    azimuth angles intervals are defined and the corresponding mask is applied to the image.
-   
+    Function computing and applying a correction mask on the nadir images. The
+    correction masks are computed by assuming a constant bias between the
+    expected pixel value and the measured one in the artifact. Several azimuth
+    angles intervals are defined and the corresponding mask is applied to the
+    image.
+
     Arguments:
         ccditem : Panda series
             Panda series containing the ccditem
         image (optional) : np.array
-            If this is given then it will be used instead of the image in the CCDitem
-        
+            If this is given then it will be used instead of the image in the
+            CCDitem
+
     Returns:
         corrected_image : np.array(float.64)
-            numpy array representing the corrected image  
+            numpy array representing the corrected image
         error_flag : np.array(float.64)
             numpy array representing the corrected pixels
     """
 
-
-
     if image is None:
-        image = ccditem["IMAGE"]   
-               
+        image = ccditem["IMAGE"]
+
     artifact_masks = ccditem['CCDunit'].get_artifact_mask()
 
-    if len(artifact_masks)==1 and np.sum(np.abs(artifact_masks.iloc[0]['bias_mask'])==0.0): # if an empty mask is applied
-        warnings.warn("Empty mask applied (no correction applied)")
-        corrected_im = image
-        error_flag_mask = np.zeros(corrected_im.shape, dtype=np.uint16)
-        error_flag_no_correction = np.ones(corrected_im.shape, dtype=np.uint16)        
-        error_flag = combine_flags([error_flag_mask,error_flag_no_correction],[1,1])
+    corrected_im = image
+    error_flag_mask = np.zeros_like(corrected_im, dtype=np.uint16)
+    error_flag_no_correction = np.ones_like(corrected_im, dtype=np.uint16)
+    error_flag = combine_flags([error_flag_mask, error_flag_no_correction], [1, 1])
 
-        return(corrected_im,error_flag)
+    # if an empty mask is applied
+    if (
+        len(artifact_masks) == 1
+        and np.sum(np.abs(artifact_masks.iloc[0]['bias_mask']) == 0.0)
+    ):
+        warnings.warning("Empty mask applied (no correction applied)")
+        return corrected_im, error_flag
 
-    MASK_AZIMUTH = artifact_masks['azimuth'] # list of all the azimuth values in the dataframe
+    # list of all the azimuth values in the dataframe
+    MASK_AZIMUTH = artifact_masks['azimuth']
     m = len(artifact_masks)
 
-    try : 
-        azimuth = nadir_az(ccditem) # nadir azimuth angle of the ccditem
-    except: # if no azimuth angle can be calculated, no correction is applied
-        warnings.warn("Unable to compute the nadir solar azimuth angle (no correction applied)")
-        corrected_im = image
-        error_flag_mask = np.zeros(corrected_im.shape, dtype=np.uint16)
-        error_flag_no_correction = np.ones(corrected_im.shape, dtype=np.uint16)        
-        error_flag = combine_flags([error_flag_mask,error_flag_no_correction],[1,1])
-        return(corrected_im,error_flag)
+    try:
+        azimuth = ccditem["nadir_az"] # nadir azimuth angle of the ccditem
+    except KeyError: # if not available, no correction is applied
+        warnings.warning("Nadir solar azimuth angle unavailable (no correction applied)")
+        return corrected_im, error_flag
 
-    # finding the mask which corresponding azimuth angle interval is the closest to the image's azimuth angle
+    # finding the mask which corresponding azimuth angle interval is the closest
+    # to the image's azimuth angle
     distance = 360.0
     best_ind = 0
     for j in range(m):
@@ -1002,28 +998,19 @@ def artifact_correction(ccditem,image=None):
             best_ind = j
             distance = abs(MASK_AZIMUTH[j]-azimuth)
     mask = artifact_masks['bias_mask'][best_ind]
-        
-    if np.shape(mask) != np.shape(image):
-        warnings.warn("Image shape doesn't match the mask shape (no correction applied)")
-        corrected_im = image
-        error_flag_mask = np.zeros(corrected_im.shape, dtype=np.uint16)
-        error_flag_no_correction = np.ones(corrected_im.shape, dtype=np.uint16)        
-        error_flag = combine_flags([error_flag_mask,error_flag_no_correction],[1,1])
 
-        return(corrected_im,error_flag)
-        
+    if np.shape(mask) != np.shape(image):
+        warnings.warning("Image shape doesn't match the mask shape (no correction applied)")
+        return corrected_im, error_flag
 
     # substracting the mask
-    corrected_im = image-mask
+    corrected_im = image - mask
     # removing all negative pixel values
-    corrected_im = corrected_im * (corrected_im>0)   
+    corrected_im = corrected_im * (corrected_im > 0)
 
     # error flag is 1 for pixels being corrected
-    error_flag_mask = np.zeros(corrected_im.shape, dtype=np.uint16)
-    error_flag_mask[mask > 0] = 1    
-    error_flag_no_correction = np.zeros(corrected_im.shape, dtype=np.uint16)        
-    error_flag = combine_flags([error_flag_mask,error_flag_no_correction],[1,1])
+    error_flag_mask[mask > 0] = 1
+    error_flag_no_correction = np.zeros_like(corrected_im, dtype=np.uint16)
+    error_flag = combine_flags([error_flag_mask, error_flag_no_correction], [1, 1])
 
     return corrected_im, error_flag
-
-    
