@@ -986,7 +986,9 @@ def artifact_correction(ccditem,image=None):
     try:
         azimuth = ccditem["nadir_az"] # nadir azimuth angle of the ccditem
     except KeyError: # if not available, no correction is applied
-        warnings.warning("Nadir solar azimuth angle unavailable (no correction applied)")
+        warnings.warning(
+            "Nadir solar azimuth angle unavailable (no correction applied)"
+        )
         return corrected_im, error_flag
 
     # finding the mask which corresponding azimuth angle interval is the closest
@@ -1000,7 +1002,9 @@ def artifact_correction(ccditem,image=None):
     mask = artifact_masks['bias_mask'][best_ind]
 
     if np.shape(mask) != np.shape(image):
-        warnings.warning("Image shape doesn't match the mask shape (no correction applied)")
+        warnings.warning(
+            "Image shape doesn't match the mask shape (no correction applied)"
+        )
         return corrected_im, error_flag
 
     # substracting the mask
