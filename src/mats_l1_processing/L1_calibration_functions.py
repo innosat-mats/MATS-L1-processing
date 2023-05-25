@@ -937,8 +937,6 @@ def calculate_time_per_row(header):
 #%%
 # nadir artifact removal
 
-
-
 def artifact_correction(ccditem,image=None):
     """
     Function computing and applying a correction mask on the nadir images. The
@@ -966,9 +964,8 @@ def artifact_correction(ccditem,image=None):
 
     artifact_masks = ccditem['CCDunit'].get_artifact_mask()
 
-    corrected_im = image
-    error_flag_mask = np.zeros_like(corrected_im, dtype=np.uint16)
-    error_flag_no_correction = np.ones_like(corrected_im, dtype=np.uint16)
+    error_flag_mask = np.zeros_like(image, dtype=np.uint16)
+    error_flag_no_correction = np.ones_like(image, dtype=np.uint16)
     error_flag = combine_flags([error_flag_mask, error_flag_no_correction], [1, 1])
 
     # if an empty mask is applied
@@ -979,38 +976,32 @@ def artifact_correction(ccditem,image=None):
         warnings.warning("Empty mask applied (no correction applied)")
         return corrected_im, error_flag
 
-    # list of all the azimuth values in the dataframe
-    MASK_AZIMUTH = artifact_masks['azimuth']
-    m = len(artifact_masks)
-
     try:
         azimuth = ccditem["nadir_az"] # nadir azimuth angle of the ccditem
     except KeyError: # if not available, no correction is applied
         warnings.warning(
             "Nadir solar azimuth angle unavailable (no correction applied)"
         )
-        return corrected_im, error_flag
+        return image, error_flag
+
+    # list of all the azimuth values in the dataframe
+    mask_azimuth = artifact_masks['azimuth']
 
     # finding the mask which corresponding azimuth angle interval is the closest
     # to the image's azimuth angle
-    distance = 360.0
-    best_ind = 0
-    for j in range(m):
-        if abs(MASK_AZIMUTH[j]-azimuth) < distance:
-            best_ind = j
-            distance = abs(MASK_AZIMUTH[j]-azimuth)
+    best_ind = np.argmin(abs(mask_azimuth - azimuth))
     mask = artifact_masks['bias_mask'][best_ind]
 
     if np.shape(mask) != np.shape(image):
         warnings.warning(
             "Image shape doesn't match the mask shape (no correction applied)"
         )
-        return corrected_im, error_flag
+        return image, error_flag
 
     # substracting the mask
     corrected_im = image - mask
     # removing all negative pixel values
-    corrected_im = corrected_im * (corrected_im > 0)
+    corrected_im *= (corrected_im > 0)
 
     # error flag is 1 for pixels being corrected
     error_flag_mask[mask > 0] = 1
