@@ -110,6 +110,7 @@ def lambda_handler(event: Event, context: Context):
                     _,
                     _,
                     _,
+                    _,
                     image_calibrated,
                     errors,
                 ) = L1_calibrate(ccd, instrument, force_table=False)
