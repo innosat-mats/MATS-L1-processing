@@ -989,7 +989,7 @@ def artifact_correction(ccditem,image=None):
 
     # finding the mask which corresponding azimuth angle interval is the closest
     # to the image's azimuth angle
-    best_ind = np.argmin(abs(mask_azimuth - azimuth))
+    best_ind = np.argmin(np.abs(mask_azimuth - azimuth))
     mask = artifact_masks['bias_mask'][best_ind]
 
     if np.shape(mask) != np.shape(image):
