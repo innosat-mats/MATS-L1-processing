@@ -974,7 +974,7 @@ def artifact_correction(ccditem,image=None):
         and np.sum(np.abs(artifact_masks.iloc[0]['bias_mask']) == 0.0)
     ):
         warnings.warning("Empty mask applied (no correction applied)")
-        return corrected_im, error_flag
+        return image, error_flag
 
     try:
         azimuth = ccditem["nadir_az"] # nadir azimuth angle of the ccditem
