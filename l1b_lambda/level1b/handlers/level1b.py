@@ -89,8 +89,8 @@ def lambda_handler(event: Event, context: Context):
         metadata.update({
             "L1BCodeVersion": code_version,
             "DataLevel": "L1B",
-            "DataBucket": output_bucket,
-            "DataPath": object_path,
+            "L1BDataBucket": output_bucket,
+            "L1BDataPath": object_path,
         })
         ccd_items = rpf.dataframe_to_ccd_items(
             ccd_data,
