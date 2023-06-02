@@ -22,8 +22,6 @@ def test_shift():
 
     CCDitem["NROWSKIP"] = 1
     assert get_shift(CCDitem,skip_comp=True) == (76, 48)
-    
-    return
 
 
 if __name__ == "__main__":
