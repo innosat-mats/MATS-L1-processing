@@ -10,7 +10,6 @@ import numpy as np
 from mats_l1_processing.L1_calibration_functions import (
     get_true_image,
     desmear_true_image,
-    CCD,
     subtract_dark,
     flatfield_calibration,
     get_linearized_image,
@@ -18,11 +17,11 @@ from mats_l1_processing.L1_calibration_functions import (
     make_binary,
     flip_image,
     handle_bad_columns,
-    artifact_correction)
+    artifact_correction,
+)
+from mats_l1_processing.instrument import CCD
 from mats_l1_processing.pointing import add_channel_quaternion
 
-
-from mats_l1_processing.grid_image import grid_image
 
 # from L1_calibration_functions import get_true_image_old, desmear_true_image_old
 #################################################

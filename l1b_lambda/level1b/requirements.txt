@@ -7,4 +7,3 @@ six==1.16.0
 joblib==1.2.0
 scipy==1.9.3
 toml==0.10.2
-skyfield==1.46
