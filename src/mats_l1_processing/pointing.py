@@ -16,13 +16,10 @@ def add_channel_quaternion(CCDitem):
     return
 
 
-
-
-
 def pix_deg(ccditem, xpixel, ypixel):
     """
     Function to get the x and y angle from a pixel relative to the center of the CCD
-        
+
     Arguments
     ----------
     ccditem : CCDitem
@@ -31,7 +28,7 @@ def pix_deg(ccditem, xpixel, ypixel):
         x coordinate of the pixel(s) in the image
     ypixel : int or array[int]
         y coordinate of the pixel(s) in the image
-        
+
     Returns
     -------
     xdeg : float or array[float]
@@ -39,14 +36,16 @@ def pix_deg(ccditem, xpixel, ypixel):
     ydeg : float or array[float]
         angular deviation along the y axis in degrees (relative to the center of the CCD) 
     """
+
     h = 6.9 # height of the CCD in mm
     d = 27.6 # width of the CCD in mm
+
     # selecting effective focal length
     if (ccditem['CCDSEL']) == 7: # NADIR channel
         f = 50.6 # effective focal length in mm
     else: # LIMB channels
-        f = 261    
-    
+        f = 261
+
     ncskip = ccditem['NCSKIP']
     try:
         ncbin = ccditem['NCBIN CCDColumns']
@@ -56,14 +55,20 @@ def pix_deg(ccditem, xpixel, ypixel):
     nrbin = ccditem['NRBIN']
     ncol = ccditem['NCOL'] # number of columns in the image MINUS 1
 
-    y_disp = (h/(f*511))
-    x_disp = (d/(f*2048))
-  
+    y_disp = h / (f * 511)
+    x_disp = d / (f * 2048)
+
     if (ccditem['CCDSEL']) in [1, 3, 5, 6, 7]:
-        xdeg = np.rad2deg(np.arctan(x_disp*((2048-ncskip - (ncol+1)*ncbin + ncbin*(xpixel+0.5)) - 2047./2)))
+        xdeg = np.rad2deg(np.arctan(
+            x_disp * ((2048 - ncskip - (ncol+1) * ncbin + ncbin*(xpixel+0.5)) - 2047. / 2)
+        ))
     else:
-        xdeg = np.rad2deg(np.arctan(x_disp*(ncskip + ncbin * (xpixel+0.5) - 2047./2)))
-        
-    ydeg = np.rad2deg(np.arctan(y_disp*(nrskip + nrbin * (ypixel+0.5) - 510./2)))
+        xdeg = np.rad2deg(np.arctan(
+            x_disp*(ncskip + ncbin * (xpixel+0.5) - 2047. / 2)
+        ))
+
+    ydeg = np.rad2deg(np.arctan(
+        y_disp * (nrskip + nrbin * (ypixel + 0.5) - 510. / 2)
+    ))
 
     return xdeg, ydeg

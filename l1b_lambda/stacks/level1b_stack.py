@@ -49,9 +49,11 @@ class Level1BStack(Stack):
             },
         )
 
+        queue_name = f"Level1AQueue{'Dev' if development else ''}"
         event_queue = Queue(
             self,
-            f"Level1AQueue{'Dev' if development else ''}",
+            queue_name,
+            queue_name=queue_name,
             retention_period=queue_retention_period,
             visibility_timeout=lambda_timeout,
             removal_policy=RemovalPolicy.RETAIN,
@@ -59,7 +61,8 @@ class Level1BStack(Stack):
                 max_receive_count=1,
                 queue=Queue(
                     self,
-                    f"FailedCalibrationQueue{'Dev' if development else ''}",
+                    "Failed" + queue_name,
+                    queue_name="Failed" + queue_name,
                     retention_period=queue_retention_period,
                 ),
             ),
