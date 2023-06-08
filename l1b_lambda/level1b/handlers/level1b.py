@@ -158,8 +158,8 @@ def lambda_handler(event: Event, context: Context):
     try:
         for key, val in metadata.items():
             l1b_data[
-                key if isinstance(key, str) else key.encode()
-            ] = val if isinstance(val, str) else val.encode()
+                key if isinstance(key, str) else key.decode()
+            ] = val if isinstance(val, str) else val.decode()
         out_table = pa.Table.from_pandas(l1b_data)
         out_table = out_table.replace_schema_metadata({
             **metadata,
