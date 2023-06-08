@@ -49,7 +49,7 @@ class Level1BStack(Stack):
             },
         )
 
-        queue_name = f"Level1AQueue{'Dev' if development else ''}"
+        queue_name = f"Level1BQueue{'Dev' if development else ''}"
         event_queue = Queue(
             self,
             queue_name,
