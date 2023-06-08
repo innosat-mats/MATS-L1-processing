@@ -156,8 +156,10 @@ def lambda_handler(event: Event, context: Context):
         raise Level1BException(msg) from err
 
     try:
-        for key in metadata.keys():
-            l1b_data[key] = metadata[key]
+        for key, val in metadata.items():
+            l1b_data[
+                key if isinstance(key, str) else key.encode()
+            ] = val if isinstance(val, str) else val.encode()
         out_table = pa.Table.from_pandas(l1b_data)
         out_table = out_table.replace_schema_metadata({
             **metadata,
