@@ -1,6 +1,7 @@
 import json
 import os
 from http import HTTPStatus
+from traceback import format_tb
 from typing import Any, Dict, Tuple
 
 import pyarrow as pa  # type: ignore
@@ -76,7 +77,9 @@ def lambda_handler(event: Event, context: Context):
                 })
             }
     except Exception as err:
-        raise Level1BException(f"Failed to initialize handler: {err}") from err
+        tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
+        msg = f"Failed to initialize handler: {err} ({type(err)}; {tb})"
+        raise Level1BException(msg) from err
 
     try:
         instrument = Instrument("/calibration_data/calibration_data.toml")
@@ -127,7 +130,8 @@ def lambda_handler(event: Event, context: Context):
             ccd["ImageCalibrated"] = image_calibrated
             ccd["CalibrationErrors"] = errors
     except Exception as err:
-        msg = f"Failed to process {object_path}: {err}"
+        tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
+        msg = f"Failed to process {object_path}: {err} ({type(err)}; {tb})"
         raise Level1BException(msg) from err
 
     try:
@@ -152,7 +156,8 @@ def lambda_handler(event: Event, context: Context):
             ce.tolist() for ce in l1b_data["CalibrationErrors"]
         ]
     except Exception as err:
-        msg = f"Failed to prepare {object_path} for storage: {err}"
+        tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
+        msg = f"Failed to prepare {object_path} for storage: {err} ({type(err)}; {tb})"  # noqa: E501
         raise Level1BException(msg) from err
 
     try:
@@ -171,5 +176,6 @@ def lambda_handler(event: Event, context: Context):
             version='2.6',
         )
     except Exception as err:
-        msg = f"Failed to store {object_path}: {err}"
+        tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
+        msg = f"Failed to store {object_path}: {err} ({type(err)}; {tb})"
         raise Level1BException(msg) from err
