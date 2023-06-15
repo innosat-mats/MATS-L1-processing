@@ -15,4 +15,3 @@ types-boto3
 types-botocore
 types-Pillow
 types-toml
-skyfield
