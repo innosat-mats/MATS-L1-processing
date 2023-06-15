@@ -20,8 +20,6 @@ import pyarrow.dataset as ds  # type: ignore
 import pyarrow.parquet as pq  # type: ignore
 from pandas import DataFrame, Timestamp  # type: ignore
 from PIL import Image
-import time as time
-
 
 
 # Map all channels to string names
@@ -69,15 +67,9 @@ def rename_ccd_item_attributes(ccd_data: DataFrame) -> None:
         inplace=True,
     )
 
-
-def add_ccd_item_attributes(ccd_data: DataFrame) -> None:
-    """Add some attributes to CCD data that we need.
-    Note that this function assumes the data has up to date names for columns,
-    not the names used in the old rac extract file (prior to May 2020).
-    Conversion to the old standard can be performed using
-    `rename_ccd_item_attributes`, but that has to be done _after_ applying this
-    function.
-
+def convert_image_data(ccd_data: DataFrame) -> None:
+    """Convert image data from PNG data to float representation.
+    
     Args:
         ccd_data (DataFrame):   CCD data to which to add attributes.
 
@@ -100,6 +92,22 @@ def add_ccd_item_attributes(ccd_data: DataFrame) -> None:
             )
             images.append(None)
     ccd_data["IMAGE"] = images
+
+
+def add_ccd_item_attributes(ccd_data: DataFrame) -> None:
+    """Add some attributes to CCD data that we need.
+    Note that this function assumes the data has up to date names for columns,
+    not the names used in the old rac extract file (prior to May 2020).
+    Conversion to the old standard can be performed using
+    `rename_ccd_item_attributes`, but that has to be done _after_ applying this
+    function.
+
+    Args:
+        ccd_data (DataFrame):   CCD data to which to add attributes.
+
+    Returns:
+        None:   Operation is performed in place.
+    """
 
     ccd_data["channel"] = [channel_num_to_str[c] for c in ccd_data["CCDSEL"]]
     ccd_data["flipped"] = False
@@ -157,6 +165,7 @@ def dataframe_to_ccd_items(
     remove_empty: bool = True,
     remove_errors: bool = True,
     remove_warnings: bool = False,
+    legacy: bool = False,
 ) -> List[CCDItem]:
     """Returns a list of CCD Items converted from the input DataFrame
 
@@ -165,6 +174,8 @@ def dataframe_to_ccd_items(
         remove_empty (bool):    Remove rows lacking image data. (Default: True)
         remove_errors (bool):   Remove rows with errors. (Default: True)
         remove_warnings (bool): Remove rows with warnings. (Default: False)
+        legacy (bool):          Add attributes previously not added in L1A.
+                                (Default: False)
 
     Returns:
         List[Dict[str, Any]]:   List of valid CCD items. List may be shorter
@@ -172,7 +183,9 @@ def dataframe_to_ccd_items(
     """
 
     data = ccd_data.copy()
-    add_ccd_item_attributes(data)
+    if legacy:
+        add_ccd_item_attributes(data)
+    convert_image_data(data)
     rename_ccd_item_attributes(data)
 
     return remove_faulty_rows(

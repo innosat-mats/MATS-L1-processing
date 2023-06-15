@@ -1,6 +1,7 @@
 import json
 import os
 from http import HTTPStatus
+from traceback import format_tb
 from typing import Any, Dict, Tuple
 
 import pyarrow as pa  # type: ignore
@@ -76,7 +77,9 @@ def lambda_handler(event: Event, context: Context):
                 })
             }
     except Exception as err:
-        raise Level1BException(f"Failed to initialize handler: {err}") from err
+        tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
+        msg = f"Failed to initialize handler: {err} ({type(err)}; {tb})"
+        raise Level1BException(msg) from err
 
     try:
         instrument = Instrument("/calibration_data/calibration_data.toml")
@@ -87,16 +90,26 @@ def lambda_handler(event: Event, context: Context):
             metadata=True,
         )
         metadata.update({
-            "L1BCodeVersion": code_version,
+            "L1BCode": code_version,
             "DataLevel": "L1B",
-            "DataBucket": output_bucket,
-            "DataPath": object_path,
+            "L1BDataBucket": output_bucket,
+            "L1BDataPath": object_path,
         })
+        if "CODE" in metadata.keys():
+            metadata["RACCode"] = metadata.pop("CODE")
+        elif b"CODE" in metadata.keys():
+            metadata["RACCode"] = metadata.pop(b"CODE")
+        if "pandas" in metadata.keys():
+            del metadata["pandas"]
+        elif b"pandas" in metadata.keys():
+            del metadata[b"pandas"]
+
         ccd_items = rpf.dataframe_to_ccd_items(
             ccd_data,
             remove_empty=False,
             remove_errors=False,
             remove_warnings=False,
+            legacy=False,
         )
 
         for ccd in ccd_items:
@@ -117,7 +130,8 @@ def lambda_handler(event: Event, context: Context):
             ccd["ImageCalibrated"] = image_calibrated
             ccd["CalibrationErrors"] = errors
     except Exception as err:
-        msg = f"Failed to process {object_path}: {err}"
+        tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
+        msg = f"Failed to process {object_path}: {err} ({type(err)}; {tb})"
         raise Level1BException(msg) from err
 
     try:
@@ -127,11 +141,6 @@ def lambda_handler(event: Event, context: Context):
                 "ImageCalibrated",
                 "CalibrationErrors",
                 "qprime",
-                "channel",
-                "flipped",
-                "temperature",
-                "temperature_HTR",
-                "temperature_ADC",
             ],
         )
         l1b_data = concat([
@@ -147,21 +156,26 @@ def lambda_handler(event: Event, context: Context):
             ce.tolist() for ce in l1b_data["CalibrationErrors"]
         ]
     except Exception as err:
-        msg = f"Failed to prepare {object_path} for storage: {err}"
+        tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
+        msg = f"Failed to prepare {object_path} for storage: {err} ({type(err)}; {tb})"  # noqa: E501
         raise Level1BException(msg) from err
 
     try:
+        for key, val in metadata.items():
+            l1b_data[
+                key if isinstance(key, str) else key.decode()
+            ] = val if isinstance(val, str) else val.decode()
         out_table = pa.Table.from_pandas(l1b_data)
         out_table = out_table.replace_schema_metadata({
-            **out_table.schema.metadata,
             **metadata,
         })
         pq.write_table(
             out_table,
-            f"{output_bucket}/{object_path}",
+            f"{output_bucket}/{object}",
             filesystem=s3,
             version='2.6',
         )
     except Exception as err:
-        msg = f"Failed to store {object_path}: {err}"
+        tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
+        msg = f"Failed to store {object_path}: {err} ({type(err)}; {tb})"
         raise Level1BException(msg) from err
