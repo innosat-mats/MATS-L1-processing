@@ -17,6 +17,7 @@ import numpy as np
 import scipy.optimize as opt
 from joblib import Parallel, delayed
 from scipy import linalg as linalg
+from math import isnan
 import warnings
 
 
@@ -983,6 +984,10 @@ def artifact_correction(ccditem,image=None):
             "Nadir solar azimuth angle unavailable (no correction applied)"
         )
         return image, error_flag
+
+    # if the nadir solar azimuth angle value is nan, an error is raised
+    if isnan(azimuth):
+        raise ValueError("nadir_az is NaN (might be an issue in the PlatformData-processing)") 
 
     # list of all the azimuth values in the dataframe
     mask_azimuth = artifact_masks['azimuth']
