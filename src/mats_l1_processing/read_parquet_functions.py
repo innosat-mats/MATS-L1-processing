@@ -277,11 +277,17 @@ def read_ccd_data_in_interval(
         & (ds.field("EXPDate") <= Timestamp(stop))
     )
     if filter != None:
-        for variable in filter.keys():
-            filterlist &= (
-                (ds.field(variable) >= filter[variable][0])
-                & (ds.field(variable) <= filter[variable][1])
-            )
+        for variable, value in filter.items():
+            if isinstance(value, list) and len(value) == 2:
+                filterlist &= (
+                    (ds.field(variable) >= value[0])
+                    & (ds.field(variable) <= value[1])
+                )
+            elif type(value) in [int,str,float,bool]:
+                filterlist &= (
+                    (ds.field(variable) == value)                    
+                ) 
+            else: raise TypeError("Illegal type given in the filter")
 
     table = dataset.to_table(filter=partition_filter & filterlist)
 
@@ -373,11 +379,17 @@ def read_instrument_data_in_interval(
         & (ds.field("TMHeaderTime") <= Timestamp(stop))
     )
     if filter != None:
-        for variable in filter.keys():
-            filterlist &= (
-                (ds.field(variable) >= filter[variable][0])
-                & (ds.field(variable) <= filter[variable][1])
-            )
+        for variable, value in filter.items():
+            if isinstance(value, list) and len(value) == 2:
+                filterlist &= (
+                    (ds.field(variable) >= value[0])
+                    & (ds.field(variable) <= value[1])
+                )
+            elif type(value) in [int,str,float,bool]:
+                filterlist &= (
+                    (ds.field(variable) == value)                    
+                ) 
+            else: raise TypeError("Illegal type given in the filter")
 
     table = dataset.to_table(filter=partition_filter & filterlist)
 
