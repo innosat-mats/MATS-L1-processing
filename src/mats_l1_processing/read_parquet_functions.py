@@ -278,10 +278,16 @@ def read_ccd_data_in_interval(
     )
     if filter != None:
         for variable in filter.keys():
-            filterlist &= (
-                (ds.field(variable) >= filter[variable][0])
-                & (ds.field(variable) <= filter[variable][1])
-            )
+            if type(filter[variable]) == list and len(filter[variable]) == 2:
+                filterlist &= (
+                    (ds.field(variable) >= filter[variable][0])
+                    & (ds.field(variable) <= filter[variable][1])
+                )
+            elif type(filter[variable]) in [int,str,float,bool]:
+                filterlist &= (
+                    (ds.field(variable) == filter[variable])                    
+                ) 
+            else: raise TypeError("Illegal type given in the filter")
 
     table = dataset.to_table(filter=partition_filter & filterlist)
 
@@ -374,10 +380,16 @@ def read_instrument_data_in_interval(
     )
     if filter != None:
         for variable in filter.keys():
-            filterlist &= (
-                (ds.field(variable) >= filter[variable][0])
-                & (ds.field(variable) <= filter[variable][1])
-            )
+            if type(filter[variable]) == list and len(filter[variable]) == 2:
+                filterlist &= (
+                    (ds.field(variable) >= filter[variable][0])
+                    & (ds.field(variable) <= filter[variable][1])
+                )
+            elif type(filter[variable]) in [int,str,float,bool]:
+                filterlist &= (
+                    (ds.field(variable) == filter[variable])                    
+                ) 
+            else: raise TypeError("Illegal type given in the filter")
 
     table = dataset.to_table(filter=partition_filter & filterlist)
 
