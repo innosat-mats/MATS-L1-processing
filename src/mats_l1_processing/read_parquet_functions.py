@@ -277,15 +277,15 @@ def read_ccd_data_in_interval(
         & (ds.field("EXPDate") <= Timestamp(stop))
     )
     if filter != None:
-        for variable in filter.keys():
-            if type(filter[variable]) == list and len(filter[variable]) == 2:
+        for variable, value in filter.items():
+            if isinstance(value, list) and len(value) == 2:
                 filterlist &= (
-                    (ds.field(variable) >= filter[variable][0])
-                    & (ds.field(variable) <= filter[variable][1])
+                    (ds.field(variable) >= value[0])
+                    & (ds.field(variable) <= value[1])
                 )
-            elif type(filter[variable]) in [int,str,float,bool]:
+            elif type(value) in [int,str,float,bool]:
                 filterlist &= (
-                    (ds.field(variable) == filter[variable])                    
+                    (ds.field(variable) == value)                    
                 ) 
             else: raise TypeError("Illegal type given in the filter")
 
@@ -379,15 +379,15 @@ def read_instrument_data_in_interval(
         & (ds.field("TMHeaderTime") <= Timestamp(stop))
     )
     if filter != None:
-        for variable in filter.keys():
-            if type(filter[variable]) == list and len(filter[variable]) == 2:
+        for variable, value in filter.items():
+            if isinstance(value, list) and len(value) == 2:
                 filterlist &= (
-                    (ds.field(variable) >= filter[variable][0])
-                    & (ds.field(variable) <= filter[variable][1])
+                    (ds.field(variable) >= value[0])
+                    & (ds.field(variable) <= value[1])
                 )
-            elif type(filter[variable]) in [int,str,float,bool]:
+            elif type(value) in [int,str,float,bool]:
                 filterlist &= (
-                    (ds.field(variable) == filter[variable])                    
+                    (ds.field(variable) == value)                    
                 ) 
             else: raise TypeError("Illegal type given in the filter")
 
