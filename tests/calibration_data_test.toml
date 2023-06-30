@@ -32,5 +32,7 @@ title = "Level 1 calibration files for testing this package"
     qprime = 'calibration_data/pointing/'
 [photometer]
     thermistor_table = 'calibration_data/photometers/AlbedoFM_Thermistors_Temp_vs_bits.mat'
-    photometer_table = 'calibration_data/photometers/AlbedoFM_Calib_Tdep_Radiance_vs_bits.mat' 
+    FM1_spline = 'calibration_data/photometers/SignFM1_Rad_raw.pkl' 
+    FM2_spline = 'calibration_data/photometers/SignFM2_Rad_raw.pkl' 
+
 

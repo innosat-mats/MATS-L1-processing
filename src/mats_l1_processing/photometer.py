@@ -31,9 +31,8 @@ def calibrate_pm(df: DataFrame, photometer: Photometer):
     TempFM1pd_raw = photometer.cal_therm['TempFM1pd_raw'] # array of float64 (1,40950)
     TempFM2if_raw = photometer.cal_therm['TempFM2if_raw'] # array of float64 (1,40950)
     TempFM2pd_raw = photometer.cal_therm['TempFM2pd_raw'] # array of float64 (1,40950)
-    Temperatur = photometer.cal_rad['Temperatur'] # -20 to +44 °C in steps of 0.1 °C,  # array of float64 (1,641)
-    SignFM1_Rad_raw = photometer.cal_rad['SignFM1_Rad_raw'] # 2D matrix, array of float64 (641,40950)
-    SignFM2_Rad_raw = photometer.cal_rad['SignFM2_Rad_raw'] # 2D matrix, array of float64 (641,40950)
+    SignFM1_Rad_raw = photometer.cal_rad_FM1 # spline representing radiance from bits and temperature
+    SignFM2_Rad_raw = photometer.cal_rad_FM2 # spline representing radiance from bits and temperature
 
 # =================================
 # Change raw temperature data to °C
@@ -60,20 +59,24 @@ def calibrate_pm(df: DataFrame, photometer: Photometer):
     pmAband_Sig = np.ones_like(PM2_Sig_bit) # A-band photometer signal
 
     for ik in range(0, len(PM1_Sig_bit)-1):
-        index21 = np.where(Temperatur == round(pmBkg_Tpd[ik],1)) #OMC 2023.04.04: Shoud interpolation be used insted of lookup table?
-        index22 = np.where(Temperatur == round(pmAband_Tpd[ik],1)) #OMC 2023.04.04: Shoud interpolation be used insted of lookup table?
+
+        pmBkg_Sig[ik] = SignFM1_Rad_raw(pmBkg_Tpd[ik],PM1_Sig_bit[ik])
+        pmAband_Sig[ik] = SignFM2_Rad_raw(pmAband_Tpd[ik],PM2_Sig_bit[ik])
+
+        # index21 = np.where(Temperatur == round(pmBkg_Tpd[ik],1)) #OMC 2023.04.04: Shoud interpolation be used insted of lookup table?
+        # index22 = np.where(Temperatur == round(pmAband_Tpd[ik],1)) #OMC 2023.04.04: Shoud interpolation be used insted of lookup table?
     
-        index23 = np.where(bitar == round(PM1_Sig_bit[ik],1)) #OMC 2023.04.04: Shoud interpolation be used insted of lookup table?
-        if index23[1].size == 0:
-            pmBkg_Sig[ik] = np.NaN
-        else:
-            pmBkg_Sig[ik] = SignFM1_Rad_raw[index21[1], index23[1]]
+        # index23 = np.where(bitar == round(PM1_Sig_bit[ik],1)) #OMC 2023.04.04: Shoud interpolation be used insted of lookup table?
+        # if index23[1].size == 0:
+        #     pmBkg_Sig[ik] = np.NaN
+        # else:
+        #     pmBkg_Sig[ik] = SignFM1_Rad_raw[index21[1], index23[1]]
     
-        index24 = np.where(bitar == round(PM2_Sig_bit[ik],1)) #OMC 2023.04.04: Should interpolation be used insted of lookup table?
-        if index24[1].size == 0:
-            pmAband_Sig[ik] = np.NaN
-        else:
-            pmAband_Sig[ik] = SignFM2_Rad_raw[index22[1], index24[1]]
+        # index24 = np.where(bitar == round(PM2_Sig_bit[ik],1)) #OMC 2023.04.04: Should interpolation be used insted of lookup table?
+        # if index24[1].size == 0:
+        #     pmAband_Sig[ik] = np.NaN
+        # else:
+        #     pmAband_Sig[ik] = SignFM2_Rad_raw[index22[1], index24[1]]
 
 # End of calibration
 # ===============================================================================================================

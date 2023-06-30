@@ -726,4 +726,9 @@ class Photometer:
         #   import matlab .mat calibration files into dicts
         calibration_data = toml.load(calibration_file)
         self.cal_therm = loadmat(calibration_data["photometer"]["thermistor_table"]) # Thermistors
-        self.cal_rad = loadmat(calibration_data["photometer"]["photometer_table"]) # Phot signal
+
+        #read in splines for photometer calibration
+        with open(calibration_data["photometer"]["FM1_spline"], 'rb') as fp:
+            self.cal_rad_FM1 = pickle.load(fp)
+        with open(calibration_data["photometer"]["FM2_spline"], 'rb') as fp:
+            self.cal_rad_FM2 = pickle.load(fp)
