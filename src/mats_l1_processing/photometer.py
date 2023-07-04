@@ -93,7 +93,7 @@ def calibrate_pm(df: DataFrame, photometer: Photometer):
     df["pmBkg_Sig"] = pmBkg_Sig # Background photometer signal [photons cm-2 str-1 s-1]
     df["pmBkg_Tpd"] = pmBkg_Tpd # Temperature of the background photometer photodiode [°C]
     df["pmBkg_Tif"] = pmBkg_Tif # Temperature of the background photometer interference filter [°C]
-    df["pm_texp"] = pm_texp # The photometer exposure time [s]
+    df["pmTEXPMS"] = pm_texp*1000 # The photometer exposure time [s]
 
     return(df)
 # %%
