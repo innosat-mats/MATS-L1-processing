@@ -3,11 +3,11 @@ import mats_l1_processing
 import numpy as np
 from PIL import Image
 from mats_l1_processing.instrument import CCD
-from mats_l1_processing.experimental_utils import (
+from database_generation.experimental_utils import (
     plot_CCDimage,
     read_all_files_in_protocol,
 )
-from mats_l1_processing.experimental_utils import readprotocol
+from database_generation.experimental_utils import readprotocol
 import matplotlib.pyplot as plt
 
 # from scipy import signal
@@ -22,7 +22,7 @@ def read_flatfield(CCDunit, mode, flatfield_directory):
     from mats_l1_processing.items_units_functions import (
         read_files_in_protocol_as_ItemsUnits,
     )
-    from mats_l1_processing.experimental_utils import readprotocol
+    from database_generation.experimental_utils import readprotocol
 
     if mode == 'HSM': 
         directory = flatfield_directory
