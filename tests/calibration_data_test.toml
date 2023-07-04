@@ -34,5 +34,6 @@ title = "Level 1 calibration files for testing this package"
     thermistor_table = 'calibration_data/photometers/AlbedoFM_Thermistors_Temp_vs_bits.mat'
     FM1_spline = 'calibration_data/photometers/SignFM1_Rad_raw.pkl' 
     FM2_spline = 'calibration_data/photometers/SignFM2_Rad_raw.pkl' 
-
-
+[artifact]
+    nadir = 'calibration_data/artifact/nadir_correction_masks.pk1'
+    blank = 'calibration_data/artifact/blank_mask.pk1'
