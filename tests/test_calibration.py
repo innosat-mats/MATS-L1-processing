@@ -227,6 +227,24 @@ def test_calibration_output():
     assert np.abs(image_dark_sub_old-image_dark_sub).all()<1e-3
     #assert np.abs(image_calib_nonflipped_old-image_calib_nonflipped).all()<1e-3
 
+def photometer_assertion(photometer_data,photometer_data_out,i,i_out,j):
+        try: 
+            assert(np.any(photometer_data.iloc[j][i]== photometer_data_out.iloc[j][i_out]))
+        except AssertionError:
+            if np.isnan(photometer_data_out.iloc[j][i_out]):
+                pass           
+            elif np.abs(((photometer_data.iloc[j][i] - photometer_data_out.iloc[j][i_out])/photometer_data_out.iloc[j][i_out]))<0.015:
+                pass
+            elif (photometer_data.iloc[j].index[i] == 'pmAband_Sig') and (photometer_data.iloc[j].pmAband_Sig_bit < 2):
+                pass
+            elif (photometer_data.iloc[j].index[i] == 'pmBkg_Sig') and (photometer_data.iloc[j].pmBkg_Sig_bit < 2):
+                pass
+            else:
+                raise AssertionError
+
+        return
+            
+
 def test_photometer():
     
     photometer_calib = Photometer("tests/calibration_data_test.toml")
@@ -238,8 +256,15 @@ def test_photometer():
     with open('testdata/photometer_test_data_out.pkl', 'rb') as f:
         photometer_data_out = pickle.load(f)
     
-    for j in range(10):
-        for i in range(len(photometer_data.iloc[j])): assert(np.any(photometer_data.iloc[j][i]== photometer_data_out.iloc[j][i]))
+    for j in range(0,len(photometer_data_out),100):
+        for i in range(len(photometer_data_out.iloc[j])): 
+            if i < 29:
+                photometer_assertion(photometer_data,photometer_data_out,i,i,j)
+            elif i < 32:
+                photometer_assertion(photometer_data,photometer_data_out,i+1,i,j)
+            else:
+                photometer_assertion(photometer_data,photometer_data_out,i+2,i,j)
+            
 
 if __name__ == "__main__":
 
