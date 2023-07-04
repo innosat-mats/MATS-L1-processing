@@ -31,7 +31,7 @@ from mats_l1_processing.pointing import add_channel_quaternion
 
 def calibrate_all_items(CCDitems, instrument, plot=False):
     import matplotlib.pyplot as plt
-    from mats_l1_processing.experimental_utils import plot_CCDimage
+    from database_generation.experimental_utils import plot_CCDimage
 
     for CCDitem in CCDitems:
         (

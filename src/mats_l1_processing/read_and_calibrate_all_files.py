@@ -11,14 +11,14 @@ Main function, loops though all images in a folder an calibrates them
 
 # %%
 
-from mats_l1_processing.experimental_utils import plotCCDitem
+from database_generation.experimental_utils import plotCCDitem
 
 
 from mats_l1_processing.read_in_functions import read_CCDitems
 import matplotlib.pyplot as plt
 
 from mats_l1_processing.L1_calibrate import L1_calibrate
-from mats_l1_processing.experimental_utils import plot_CCDimage
+from database_generation.experimental_utils import plot_CCDimage
 from mats_l1_processing.instrument import Instrument
 
 import argparse
