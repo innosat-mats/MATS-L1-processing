@@ -1,7 +1,9 @@
 import pytest
 
 from mats_l1_processing.read_and_calibrate_all_files_parallel import main
-from mats_l1_processing.instrument import Instrument, CCD
+from mats_l1_processing.instrument import Instrument, CCD, Photometer
+from mats_l1_processing import photometer
+import pandas as pd
 from mats_l1_processing.L1_calibration_functions import inverse_model_real,inverse_model_table,make_binary,combine_flags,desmear,artifact_correction
 
 import pickle
@@ -280,15 +282,54 @@ def test_calibration_output():
 
 
 
+def photometer_assertion(photometer_data,photometer_data_out,i,i_out,j):
+        try: 
+            assert(np.any(photometer_data.iloc[j][i]== photometer_data_out.iloc[j][i_out]))
+        except AssertionError:
+            if np.isnan(photometer_data_out.iloc[j][i_out]):
+                pass           
+            elif np.abs(((photometer_data.iloc[j][i] - photometer_data_out.iloc[j][i_out])/photometer_data_out.iloc[j][i_out]))<0.015:
+                pass
+            elif (photometer_data.iloc[j].index[i] == 'pmAband_Sig') and (photometer_data.iloc[j].pmAband_Sig_bit < 2):
+                pass
+            elif (photometer_data.iloc[j].index[i] == 'pmBkg_Sig') and (photometer_data.iloc[j].pmBkg_Sig_bit < 2):
+                pass
+            else:
+                raise AssertionError
+
+        return
+            
+
+def test_photometer():
+    
+    photometer_calib = Photometer("tests/calibration_data_test.toml")
+    with open('testdata/photometer_test_data_in.pkl', 'rb') as f:
+        photometer_data = pickle.load(f)
+    
+    photometer.calibrate_pm(photometer_data,photometer_calib)
+
+    with open('testdata/photometer_test_data_out.pkl', 'rb') as f:
+        photometer_data_out = pickle.load(f)
+    
+    for j in range(0,len(photometer_data_out),100):
+        for i in range(len(photometer_data_out.iloc[j])): 
+            if i < 29:
+                photometer_assertion(photometer_data,photometer_data_out,i,i,j)
+            elif i < 32:
+                photometer_assertion(photometer_data,photometer_data_out,i+1,i,j)
+            else:
+                photometer_assertion(photometer_data,photometer_data_out,i+2,i,j)
+            
 
 if __name__ == "__main__":
 
-    test_calibrate()
-    test_calibration_output() 
-    test_readfunctions()
-    test_CCDunit()
-    test_non_linearity_fullframe()
-    test_non_linearity_binned()
-    test_calibrate()
-    test_error_algebra()
-    test_channel_quaterion()
+    # test_calibrate()
+    # test_calibration_output() 
+    # test_readfunctions()
+    # test_CCDunit()
+    # test_non_linearity_fullframe()
+    # test_non_linearity_binned()
+    # test_calibrate()
+    # test_error_algebra()
+    # test_channel_quaterion()
+    test_photometer()
