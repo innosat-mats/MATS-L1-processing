@@ -42,7 +42,7 @@ def calibrate_pm(df: DataFrame, photometer: Photometer):
     pmAband_Tpd = np.NaN * np.ones_like(PM2_Tpd_bit) # Temperature of the A-band photometer photodiode
     pmAband_Tif = np.NaN * np.ones_like(PM2_Tif_bit) # Temperature of the A-band photometer filter
 
-    for ij in range(0, len(PM1_Tpd_bit)-1):
+    for ij in range(len(PM1_Tpd_bit)):
         index11 =  np.where(bitar == round(PM1_Tpd_bit[ij],1))
         pmBkg_Tpd[ij] = TempFM1pd_raw[index11]
         index12 =  np.where(bitar == round(PM1_Tif_bit[ij],1))
@@ -58,7 +58,7 @@ def calibrate_pm(df: DataFrame, photometer: Photometer):
     pmBkg_Sig = np.ones_like(PM1_Sig_bit)   # Background photometer signal
     pmAband_Sig = np.ones_like(PM2_Sig_bit) # A-band photometer signal
 
-    for ik in range(0, len(PM1_Sig_bit)-1):
+    for ik in range(len(PM1_Sig_bit)):
 
         pmBkg_Sig[ik] = SignFM1_Rad_raw(pmBkg_Tpd[ik],PM1_Sig_bit[ik])
         pmAband_Sig[ik] = SignFM2_Rad_raw(pmAband_Tpd[ik],PM2_Sig_bit[ik])
