@@ -184,7 +184,7 @@ def lambda_handler(event: Event, context: Context):
             del metadata[b"pandas"]
     except Exception as err:
         tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
-        msg = f"Failed to update metadata for {object_path}: {err} ({type(err)}; {tb})"
+        msg = f"Failed to update metadata for {object_path}: {err} ({type(err)}; {tb})"  # noqa: E501
         raise Level1BException(msg) from err
 
     try:
