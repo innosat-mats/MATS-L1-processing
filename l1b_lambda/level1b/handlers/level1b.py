@@ -1,6 +1,7 @@
 import json
 import os
 from http import HTTPStatus
+from traceback import format_tb
 from typing import Any, Dict, Tuple
 
 import pyarrow as pa  # type: ignore
@@ -140,7 +141,9 @@ def lambda_handler(event: Event, context: Context):
                 })
             }
     except Exception as err:
-        raise Level1BException(f"Failed to initialize handler: {err}") from err
+        tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
+        msg = f"Failed to initialize handler: {err} ({type(err)}; {tb})"
+        raise Level1BException(msg) from err
 
     try:
         data, metadata = rpf.read_ccd_data(
@@ -168,8 +171,8 @@ def lambda_handler(event: Event, context: Context):
         metadata.update({
             "L1BCode": code_version,
             "DataLevel": "L1B",
-            "DataBucket": output_bucket,
-            "DataPath": object_path,
+            "L1BDataBucket": output_bucket,
+            "L1BDataPath": object_path,
         })
         if "CODE" in metadata.keys():
             metadata["RACCode"] = metadata.pop("CODE")
@@ -180,14 +183,68 @@ def lambda_handler(event: Event, context: Context):
         elif b"pandas" in metadata.keys():
             del metadata[b"pandas"]
 
-        for key in metadata.keys():
-            l1b_data[key] = metadata[key]
+        ccd_items = rpf.dataframe_to_ccd_items(
+            ccd_data,
+            remove_empty=False,
+            remove_errors=False,
+            remove_warnings=False,
+            legacy=False,
+        )
+
+        for ccd in ccd_items:
+            if ccd["IMAGE"] is None:
+                image_calibrated = None
+                errors = None
+            else:
+                (
+                    _,
+                    _,
+                    _,
+                    _,
+                    _,
+                    _,
+                    image_calibrated,
+                    errors,
+                ) = L1_calibrate(ccd, instrument, force_table=False)
+            ccd["ImageCalibrated"] = image_calibrated
+            ccd["CalibrationErrors"] = errors
     except Exception as err:
-        msg = f"Failed to update metadata for {object_path}: {err}"
+        tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
+        msg = f"Failed to process {object_path}: {err} ({type(err)}; {tb})"
         raise Level1BException(msg) from err
 
     try:
-        out_table = pa.Table.from_pandas(l1b_data.reset_index(inplace=True))
+        calibrated = DataFrame.from_records(
+            ccd_items,
+            columns=[
+                "ImageCalibrated",
+                "CalibrationErrors",
+                "qprime",
+            ],
+        )
+        l1b_data = concat([
+            ccd_data,
+            calibrated,
+        ], axis=1).set_index("EXPDate").sort_index()
+        l1b_data.drop(["ImageData", "Errors", "Warnings"], axis=1, inplace=True)
+        l1b_data = l1b_data[l1b_data.ImageCalibrated != None]  # noqa: E711
+        l1b_data["ImageCalibrated"] = [
+            ic.tolist() for ic in l1b_data["ImageCalibrated"]
+        ]
+        l1b_data["CalibrationErrors"] = [
+            ce.tolist() for ce in l1b_data["CalibrationErrors"]
+        ]
+    except Exception as err:
+        tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
+        msg = f"Failed to prepare {object_path} for storage: {err} ({type(err)}; {tb})"  # noqa: E501
+        raise Level1BException(msg) from err
+
+    try:
+        for key, val in metadata.items():
+            l1b_data[
+                key if isinstance(key, str) else key.decode()
+            ] = val if isinstance(val, str) else val.decode()
+        out_table = pa.Table.from_pandas(l1b_data)
         out_table = out_table.replace_schema_metadata({
             **metadata,
         })
@@ -198,5 +255,6 @@ def lambda_handler(event: Event, context: Context):
             version='2.6',
         )
     except Exception as err:
-        msg = f"Failed to store {object_path}: {err}"
+        tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
+        msg = f"Failed to store {object_path}: {err} ({type(err)}; {tb})"
         raise Level1BException(msg) from err

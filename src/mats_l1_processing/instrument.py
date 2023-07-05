@@ -321,6 +321,15 @@ class CCD:
                             'formats':('S5','f4','f4','f4','f4')})
         self.qprime = np.array([(d['q0'],d['q1'],d['q2'],d['q3']) for d in qprimes if d['Channel'].decode('utf8')==self.channel][0])
 
+        # artifact correction
+        if channel=="NADIR":
+            filename = calibration_data['artifact']['nadir']
+            self.artifact_masks = pd.read_pickle(filename)
+            
+        else :        
+            filename = calibration_data['artifact']['blank']
+            self.artifact_masks = pd.read_pickle(filename)
+
                 
     def calib_denominator(self, mode): 
         """Get calibration constant that should be divided by to get unit 10^10 ph cm-2 s-1 str-1 nm-1.
@@ -483,6 +492,16 @@ class CCD:
             quaternion
         """
         return self.qprime
+
+    def get_artifact_mask(self):
+        """Read the artifact masks from file
+        Args:
+            CCDitem (dict): Dictionary of type CCDitem
+
+        Returns:
+            artifact_masks (dataframe): panda dataframe containing the masks correcting for the artifact in nadir images
+        """
+        return self.artifact_masks
 
 class nonLinearity:
     """Class to represent a non-linearity for a MATS CCD.
@@ -725,7 +744,10 @@ class Photometer:
         """
         #   import matlab .mat calibration files into dicts
         calibration_data = toml.load(calibration_file)
-        calibration_data["photometer"]["thermistor_table"]
-        calibration_data["photometer"]["photometer_table"]
         self.cal_therm = loadmat(calibration_data["photometer"]["thermistor_table"]) # Thermistors
-        self.cal_rad = loadmat(calibration_data["photometer"]["photometer_table"]) # Phot signal
+
+        #read in splines for photometer calibration
+        with open(calibration_data["photometer"]["FM1_spline"], 'rb') as fp:
+            self.cal_rad_FM1 = pickle.load(fp)
+        with open(calibration_data["photometer"]["FM2_spline"], 'rb') as fp:
+            self.cal_rad_FM2 = pickle.load(fp)

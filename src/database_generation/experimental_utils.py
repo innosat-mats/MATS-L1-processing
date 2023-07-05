@@ -16,15 +16,29 @@ import numpy as np
 #   Plotting Functions                                                      #
 #############################################################################
 
-def plotCCDitem(CCDitem, fig, axis, title="", clim=999, aspect="auto"):
+def plotCCDitem(CCDitem, fig, axis, title="", clim=999, aspect="auto", altvec=None):
+    """Plots a CCDitem in a figure, 
+    note that optional argument altvec ONLY specifies the upper and lower limit of the y-axis, 
+    not the actual altitudes of the image"""
+
     image = CCDitem["IMAGE"]
-    sp = plot_CCDimage(image, fig, axis, title, clim, aspect)
+    sp = plot_CCDimage(image, fig, axis, title, clim, aspect, altvec=altvec)
     return sp
 
 
-def plot_CCDimage(image, fig, axis, title="", clim=999, aspect="auto"):
-    sp = axis.imshow(image, cmap="magma", origin="lower", interpolation="none")
-    # sp=axis.pcolormesh(image, , cmap='viridis')
+def plot_CCDimage(image, fig, axis, title="", clim=999, aspect="auto", altvec=None):
+    """Plots a CCD image in a figure, 
+    note that optional argument altvec ONLY specifies the upper and lower limit of the y-axis,
+    not the actual altitudes of the image"""
+    
+    if altvec is not None:
+        sp = axis.imshow(image, cmap="magma", origin="lower", interpolation="none", extent=[0, image.shape[1], altvec[0], altvec[-1]])
+        axis.set_ylabel('Altitude')        
+        #x_indices = np.arange(image.shape[1])
+        #x_grid, y_grid = np.meshgrid(x_indices, altvec)
+    else:
+        sp = axis.imshow(image, cmap="magma", origin="lower", interpolation="none")
+
     if clim == 999:
         [col, row]=image.shape
         #Take the mean and std of the middle of the image, not boarders
@@ -112,7 +126,7 @@ def plot_full_temperature_info(temperaturedata, relativetimedata):
 def read_all_files_in_protocol(df, read_from, root_directory):
     from database_generation.read_in_imgview_functions import read_CCDitem_from_imgview
     from mats_l1_processing.read_in_functions import read_CCDitem_image, find_CCDitem_matching_PicID, add_and_rename_CCDitem_info
-    from .get_temperature import add_rac_temp_data
+    from mats_l1_processing.get_temperature import add_rac_temp_data
     import pandas as pd 
     CCDitems = []
     for PicID in list(df["PicID"]):
