@@ -182,61 +182,9 @@ def lambda_handler(event: Event, context: Context):
             del metadata["pandas"]
         elif b"pandas" in metadata.keys():
             del metadata[b"pandas"]
-
-        ccd_items = rpf.dataframe_to_ccd_items(
-            ccd_data,
-            remove_empty=False,
-            remove_errors=False,
-            remove_warnings=False,
-            legacy=False,
-        )
-
-        for ccd in ccd_items:
-            if ccd["IMAGE"] is None:
-                image_calibrated = None
-                errors = None
-            else:
-                (
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    image_calibrated,
-                    errors,
-                ) = L1_calibrate(ccd, instrument, force_table=False)
-            ccd["ImageCalibrated"] = image_calibrated
-            ccd["CalibrationErrors"] = errors
     except Exception as err:
         tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
-        msg = f"Failed to process {object_path}: {err} ({type(err)}; {tb})"
-        raise Level1BException(msg) from err
-
-    try:
-        calibrated = DataFrame.from_records(
-            ccd_items,
-            columns=[
-                "ImageCalibrated",
-                "CalibrationErrors",
-                "qprime",
-            ],
-        )
-        l1b_data = concat([
-            ccd_data,
-            calibrated,
-        ], axis=1).set_index("EXPDate").sort_index()
-        l1b_data.drop(["ImageData", "Errors", "Warnings"], axis=1, inplace=True)
-        l1b_data = l1b_data[l1b_data.ImageCalibrated != None]  # noqa: E711
-        l1b_data["ImageCalibrated"] = [
-            ic.tolist() for ic in l1b_data["ImageCalibrated"]
-        ]
-        l1b_data["CalibrationErrors"] = [
-            ce.tolist() for ce in l1b_data["CalibrationErrors"]
-        ]
-    except Exception as err:
-        tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
-        msg = f"Failed to prepare {object_path} for storage: {err} ({type(err)}; {tb})"  # noqa: E501
+        msg = f"Failed to update metadata for {object_path}: {err} ({type(err)}; {tb})"
         raise Level1BException(msg) from err
 
     try:
