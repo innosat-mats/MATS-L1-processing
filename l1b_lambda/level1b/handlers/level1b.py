@@ -160,7 +160,7 @@ def lambda_handler(event: Event, context: Context):
             instrument = Instrument("/calibration_data/calibration_data.toml")
             l1b_data = handle_ccd_data(data, instrument)
         elif data_source.upper() == "PM":
-            photometer = Instrument("/calibration_data/calibration_data.toml")
+            photometer = Photometer("/calibration_data/calibration_data.toml")
             l1b_data = handle_ccd_data(data, photometer)
         else:
             raise UnknownDataSource(f"Unknown data source {data_source}")
