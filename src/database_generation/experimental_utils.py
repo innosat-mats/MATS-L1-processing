@@ -126,7 +126,7 @@ def plot_full_temperature_info(temperaturedata, relativetimedata):
 def read_all_files_in_protocol(df, read_from, root_directory):
     from database_generation.read_in_imgview_functions import read_CCDitem_from_imgview
     from mats_l1_processing.read_in_functions import read_CCDitem_image, find_CCDitem_matching_PicID, add_and_rename_CCDitem_info
-    from ..mats_l1_processing.get_temperature import add_rac_temp_data
+    from mats_l1_processing.get_temperature import add_rac_temp_data
     import pandas as pd 
     CCDitems = []
     for PicID in list(df["PicID"]):
