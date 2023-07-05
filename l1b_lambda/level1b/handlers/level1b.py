@@ -11,7 +11,7 @@ from pandas import (  # type: ignore
     concat,
 )
 
-from mats_l1_processing.instrument import Instrument  # type: ignore
+from mats_l1_processing.instrument import Instrument, Photometer  # type: ignore
 from mats_l1_processing.L1_calibrate import L1_calibrate  # type: ignore
 from mats_l1_processing.photometer import calibrate_pm  # type: ignore
 from mats_l1_processing import read_parquet_functions as rpf  # type: ignore
@@ -156,11 +156,12 @@ def lambda_handler(event: Event, context: Context):
         raise Level1BException(msg) from err
 
     try:
-        instrument = Instrument("/calibration_data/calibration_data.toml")
         if data_source.upper() == "CCD":
+            instrument = Instrument("/calibration_data/calibration_data.toml")
             l1b_data = handle_ccd_data(data, instrument)
         elif data_source.upper() == "PM":
-            l1b_data = handle_ccd_data(data, instrument)
+            photometer = Instrument("/calibration_data/calibration_data.toml")
+            l1b_data = handle_ccd_data(data, photometer)
         else:
             raise UnknownDataSource(f"Unknown data source {data_source}")
     except Exception as err:
