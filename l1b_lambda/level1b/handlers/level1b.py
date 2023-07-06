@@ -73,6 +73,7 @@ def handle_ccd_data(ccd_data: DataFrame, instrument: Instrument) -> DataFrame:
                 _,
                 _,
                 _,
+                _,
                 image_calibrated,
                 errors,
             ) = L1_calibrate(ccd, instrument, force_table=False)
