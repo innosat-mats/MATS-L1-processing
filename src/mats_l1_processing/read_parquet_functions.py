@@ -459,7 +459,7 @@ def read_ccd_data(
         path,
         filesystem=filesystem,
     )
-    dataframe = table.to_pandas().reset_index()
+    dataframe = table.to_pandas().reset_index(drop=True)
     if metadata:
         return dataframe, table.schema.metadata
     return dataframe
