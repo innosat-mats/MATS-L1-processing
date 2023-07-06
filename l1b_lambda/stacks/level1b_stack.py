@@ -16,6 +16,7 @@ class Level1BStack(Stack):
         id: str,
         input_bucket_name: str,
         output_bucket_name: str,
+        data_source: str,
         lambda_timeout: Duration = Duration.seconds(900),
         queue_retention_period: Duration = Duration.days(14),
         code_version: str = "",
@@ -26,19 +27,19 @@ class Level1BStack(Stack):
 
         input_bucket = Bucket.from_bucket_name(
             self,
-            f"Level1ABucket{'Dev' if development else ''}",
+            f"Level1ABucket{data_source}{'Dev' if development else ''}",
             input_bucket_name,
         )
 
         output_bucket = Bucket.from_bucket_name(
             self,
-            f"Level1BBucket{'Dev' if development else ''}",
+            f"Level1BBucket{data_source}{'Dev' if development else ''}",
             output_bucket_name,
         )
 
         level1b_lambda = DockerImageFunction(
             self,
-            f"Level1BLambda{'Dev' if development else ''}",
+            f"Level1BLambda{data_source}{'Dev' if development else ''}",
             code=DockerImageCode.from_image_asset("."),
             timeout=lambda_timeout,
             architecture=Architecture.X86_64,
@@ -46,10 +47,11 @@ class Level1BStack(Stack):
             environment={
                 "L1B_BUCKET": output_bucket.bucket_name,
                 "L1B_VERSION": code_version,
+                "L1A_DATA_SOURCE": data_source,
             },
         )
 
-        queue_name = f"Level1BQueue{'Dev' if development else ''}"
+        queue_name = f"Level1BQueue{data_source}{'Dev' if development else ''}"
         event_queue = Queue(
             self,
             queue_name,
