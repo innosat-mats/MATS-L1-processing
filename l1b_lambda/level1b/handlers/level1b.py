@@ -73,6 +73,7 @@ def handle_ccd_data(ccd_data: DataFrame, instrument: Instrument) -> DataFrame:
                 _,
                 _,
                 _,
+                _,
                 image_calibrated,
                 errors,
             ) = L1_calibrate(ccd, instrument, force_table=False)
@@ -161,7 +162,7 @@ def lambda_handler(event: Event, context: Context):
             l1b_data = handle_ccd_data(data, instrument)
         elif data_source.upper() == "PM":
             photometer = Photometer("/calibration_data/calibration_data.toml")
-            l1b_data = handle_ccd_data(data, photometer)
+            l1b_data = handle_pm_data(data, photometer)
         else:
             raise UnknownDataSource(f"Unknown data source {data_source}")
     except Exception as err:
