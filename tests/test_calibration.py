@@ -191,44 +191,44 @@ def test_desmearing():
 
 
 
-# def test_artifact(): Test fails @Louis test data not uploaded to box
+def test_artifact(): #Test fails @Louis test data not uploaded to box
 
-#     with open('testdata/artifact_correction/CCDitem_artifact_IR2.pkl', 'rb') as f:
-#         CCDitem_IR2 = pickle.load(f)
+    with open('testdata/artifact_correction/CCDitem_artifact_IR2.pkl', 'rb') as f:
+        CCDitem_IR2 = pickle.load(f)
 
-#     with open('testdata/artifact_correction/CCDitem_artifact_NADIR.pkl', 'rb') as f:
-#         CCDitem_nadir = pickle.load(f)
+    with open('testdata/artifact_correction/CCDitem_artifact_NADIR.pkl', 'rb') as f:
+        CCDitem_nadir = pickle.load(f)
 
-#     instrument = Instrument("tests/calibration_data_test.toml")
-#     CCDunit_IR2=instrument.get_CCD("IR2")
-#     CCDitem_IR2['CCDunit']=CCDunit_IR2
-#     CCDunit_nadir=instrument.get_CCD("NADIR")
-#     CCDitem_nadir['CCDunit']=CCDunit_nadir
+    instrument = Instrument("tests/calibration_data_test.toml")
+    CCDunit_IR2=instrument.get_CCD("IR2")
+    CCDitem_IR2['CCDunit']=CCDunit_IR2
+    CCDunit_nadir=instrument.get_CCD("NADIR")
+    CCDitem_nadir['CCDunit']=CCDunit_nadir
     
     
     
 
-#     #ccd channel other than NADIR shouldn't be modified
-#     image = CCDitem_IR2['IMAGE']
-#     image_no_artifact, error_artifact = artifact_correction(CCDitem_IR2)
-#     np.testing.assert_allclose(image_no_artifact,image,atol=1e-9)
-#     expected_error_flag = np.full(np.shape(image),2,dtype=np.uint16)
-#     np.testing.assert_allclose(expected_error_flag,error_artifact,atol=1e-9)
+    #ccd channel other than NADIR shouldn't be modified
+    image = CCDitem_IR2['IMAGE']
+    image_no_artifact, error_artifact = artifact_correction(CCDitem_IR2)
+    np.testing.assert_allclose(image_no_artifact,image,atol=1e-9)
+    expected_error_flag = np.full(np.shape(image),2,dtype=np.uint16)
+    np.testing.assert_allclose(expected_error_flag,error_artifact,atol=1e-9)
 
     
-#     image = CCDitem_nadir['IMAGE']
-#     image_expected = np.load('testdata/artifact_correction/image_artifact_corrected.npy')
-#     error_expected =  np.load('testdata/artifact_correction/artifact_error.npy')
-#     image_no_artifact, error_artifact = artifact_correction(CCDitem_nadir)
-#     np.testing.assert_allclose(image_no_artifact,image_expected,atol=1e-9)
-#     np.testing.assert_allclose(error_expected,error_artifact,atol=1e-9)
+    image = CCDitem_nadir['IMAGE']
+    image_expected = np.load('testdata/artifact_correction/image_artifact_corrected.npy')
+    error_expected =  np.load('testdata/artifact_correction/artifact_error.npy')
+    image_no_artifact, error_artifact = artifact_correction(CCDitem_nadir)
+    np.testing.assert_allclose(image_no_artifact,image_expected,atol=1e-9)
+    np.testing.assert_allclose(error_expected,error_artifact,atol=1e-9)
 
-#     image = np.load('testdata/artifact_correction/image_artifact.npy')
-#     image_expected = np.load('testdata/artifact_correction/image_artifact_corrected2.npy')
-#     error_expected =  np.load('testdata/artifact_correction/artifact_error.npy')
-#     image_no_artifact, error_artifact = artifact_correction(CCDitem_nadir,image)
-#     np.testing.assert_allclose(image_expected,image_no_artifact,atol=1e-9)
-#     np.testing.assert_allclose(error_expected,error_artifact,atol=1e-9)
+    image = np.load('testdata/artifact_correction/image_artifact.npy')
+    image_expected = np.load('testdata/artifact_correction/image_artifact_corrected2.npy')
+    error_expected =  np.load('testdata/artifact_correction/artifact_error.npy')
+    image_no_artifact, error_artifact = artifact_correction(CCDitem_nadir,image)
+    np.testing.assert_allclose(image_expected,image_no_artifact,atol=1e-9)
+    np.testing.assert_allclose(error_expected,error_artifact,atol=1e-9)
 
 
     
@@ -242,19 +242,23 @@ def test_calibration_output():
         subtract_dark,
         flatfield_calibration,
         get_linearized_image,
-        artifact_correction
+        artifact_correction,
+        flip_image
     )
     
-   # from mats_l1_processing.read_in_functions import read_CCDitems    
-    # directory='testdata/binning_test_20200812/RacFiles_out/'
-    # CCDitems = read_CCDitems(directory) 
-    # instrument = Instrument("tests/calibration_data_test.toml")
+    
     
     with open('testdata/CCDitem_NSKIP_example.pkl', 'rb') as f:
         CCDitem = pickle.load(f)
     
-    
-    image_bias_sub,error_flags_bias = get_true_image(CCDitem)
+    instrument = Instrument("tests/calibration_data_test.toml")
+    CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
+
+    # removing the NADIR artifact (subject to change)
+    image_lsb = CCDitem['IMAGE']
+    image_lsb_no_art,error_artifact = artifact_correction(CCDitem,image_lsb)
+
+    image_bias_sub,error_flags_bias = get_true_image(CCDitem,image_lsb_no_art)
 
     image_linear,error_flags_linearity = get_linearized_image(CCDitem, image_bias_sub)
 
@@ -267,19 +271,18 @@ def test_calibration_output():
 
 
     # no test for image flipping yet
-    image_calibrated_flipped = image_calib_nonflipped
+    image_calibrated= flip_image(CCDitem, image_calib_nonflipped)
 
-    #image_calibrated, error_artifact = artifact_correction(CCDitem,image_calibrated_flipped) #Test does not work @Louis
-    
+   
     with open('testdata/calibration_output.pkl', 'rb') as f:
-            [image_bias_sub_old, image_desmeared_old, image_dark_sub_old, image_calib_nonflipped_old]=pickle.load(f) #Test does not work @Louis
+            [image_lsb_old,image_lsb_no_art_old,image_bias_sub_old,image_desmeared_old,image_dark_sub_old,image_calib_nonflipped_old,image_calibrated_old]=pickle.load(f) 
     
     assert np.abs(image_bias_sub_old-image_bias_sub).all()<1e-3
     assert np.abs(image_desmeared_old-image_desmeared).all()<1e-3
     assert np.abs(image_dark_sub_old-image_dark_sub).all()<1e-3
-    #assert np.abs(image_calib_nonflipped_old-image_calib_nonflipped).all()<1e-3 chec #Test does not work @Louis
-    #assert np.abs(image_no_artifact_old-image_calibrated).all()<1e-3 #Test does not work @Louis
-
+    # assert np.abs(image_calib_nonflipped_old-image_calib_nonflipped).all()<1e-3 #Test does not work @Linda
+    assert np.abs(image_lsb_no_art_old-image_lsb_no_art).all()<1e-3 
+    assert np.abs(image_calibrated_old-image_calibrated).all()<1e-3
 
 
 def photometer_assertion(photometer_data,photometer_data_out,i,i_out,j):
