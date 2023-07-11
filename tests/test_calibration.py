@@ -258,6 +258,8 @@ def test_calibration_output():
     image_lsb = CCDitem['IMAGE']
     image_lsb_no_art,error_artifact = artifact_correction(CCDitem,image_lsb)
 
+    # IF CHANNEL NOT NADIR check is the artifact correction is not applied
+
     image_bias_sub,error_flags_bias = get_true_image(CCDitem,image_lsb_no_art)
 
     image_linear,error_flags_linearity = get_linearized_image(CCDitem, image_bias_sub)
@@ -277,12 +279,12 @@ def test_calibration_output():
     with open('testdata/calibration_output.pkl', 'rb') as f:
             [image_lsb_old,image_lsb_no_art_old,image_bias_sub_old,image_desmeared_old,image_dark_sub_old,image_calib_nonflipped_old,image_calibrated_old]=pickle.load(f) 
     
-    assert np.abs(image_bias_sub_old-image_bias_sub).all()<1e-3
-    assert np.abs(image_desmeared_old-image_desmeared).all()<1e-3
-    assert np.abs(image_dark_sub_old-image_dark_sub).all()<1e-3
-    # assert np.abs(image_calib_nonflipped_old-image_calib_nonflipped).all()<1e-3 #Test does not work @Linda
-    assert np.abs(image_lsb_no_art_old-image_lsb_no_art).all()<1e-3 
-    assert np.abs(image_calibrated_old-image_calibrated).all()<1e-3
+    assert (np.abs(image_bias_sub_old-image_bias_sub)<1e-3).all()
+    assert (np.abs(image_desmeared_old-image_desmeared)<1e-3).all()
+    assert (np.abs(image_dark_sub_old-image_dark_sub)<1e-3).all()
+    assert (np.abs(image_calib_nonflipped_old-image_calib_nonflipped)<1e-3).all()
+    assert (np.abs(image_lsb_no_art_old-image_lsb_no_art)<1e-3).all() 
+    assert (np.abs(image_calibrated_old-image_calibrated)<1e-3).all()
 
 
 def photometer_assertion(photometer_data,photometer_data_out,i,i_out,j):
