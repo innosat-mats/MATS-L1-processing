@@ -41,8 +41,8 @@ def calibrate_all_items(CCDitems, instrument, plot=False):
             image_desmeared,
             image_dark_sub,
             image_calib_nonflipped,
-            image_calibrated_flipped,
-            image_calib_no_art,
+            image_calib_flipped,
+            image_calibrated,
             errors,
         ) = L1_calibrate(CCDitem, instrument)
 
@@ -53,8 +53,8 @@ def calibrate_all_items(CCDitems, instrument, plot=False):
             plot_CCDimage(image_desmeared, fig, ax[2], " Desmeared LSB")
             plot_CCDimage(image_dark_sub, fig, ax[3], " Dark current subtracted LSB")
             plot_CCDimage(image_calib_nonflipped, fig, ax[4], " Flat field compensated LSB")
-            plot_CCDimage(image_calibrated_flipped, fig, ax[5], " Flipped images")
-            plot_CCDimage(image_calib_no_art, fig, ax[6], "Artifact corrected LSB (only for nadir)")
+            plot_CCDimage(image_calib_flipped, fig, ax[5], " Flipped images")
+            plot_CCDimage(image_calibrated, fig, ax[6], "Artifact corrected LSB (only for nadir)")
             fig.suptitle(CCDitem["channel"])
 
 
@@ -87,7 +87,7 @@ def L1_calibrate(CCDitem, instrument, force_table: bool = True):  # This used to
     image_calib_nonflipped, error_flags_flatfield = flatfield_calibration(CCDitem, image_dark_sub)
     
     # Flip image for IR2 and IR4
-    image_calibrated_flipped= flip_image(CCDitem, image_calib_nonflipped)
+    image_calib_flipped= flip_image(CCDitem, image_calib_nonflipped)
     
     # Add channel quaterion to image
     add_channel_quaternion(CCDitem)
@@ -101,7 +101,7 @@ def L1_calibrate(CCDitem, instrument, force_table: bool = True):  # This used to
     # Step 8 Transform from LSB to electrons and then to photons. TBD.
 
     # Step 9 Remove artifact from nadir images
-    image_calibrated, error_artifact = artifact_correction(CCDitem,image_calibrated_flipped)
+    image_calibrated, error_artifact = artifact_correction(CCDitem,image_calib_flipped)
 
     CCDitem["image_calibrated"] = image_calibrated
 
@@ -109,4 +109,4 @@ def L1_calibrate(CCDitem, instrument, force_table: bool = True):  # This used to
     error_flags_dark,error_flags_flatfield,error_ghost,error_artifact],
     [1,1,2,1,3,2,1,2])
     
-    return image_lsb, image_bias_sub, image_desmeared, image_dark_sub, image_calib_nonflipped, image_calibrated_flipped, image_calibrated, errors
+    return image_lsb, image_bias_sub, image_desmeared, image_dark_sub, image_calib_nonflipped, image_calib_flipped, image_calibrated, errors
