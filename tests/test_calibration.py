@@ -256,11 +256,11 @@ def test_calibration_output():
 
     # removing the NADIR artifact (subject to change)
     image_lsb = CCDitem['IMAGE']
-    image_lsb_no_art,error_artifact = artifact_correction(CCDitem,image_lsb)
+    
 
     # IF CHANNEL NOT NADIR check is the artifact correction is not applied
 
-    image_bias_sub,error_flags_bias = get_true_image(CCDitem,image_lsb_no_art)
+    image_bias_sub,error_flags_bias = get_true_image(CCDitem,image_lsb)
 
     image_linear,error_flags_linearity = get_linearized_image(CCDitem, image_bias_sub)
 
@@ -273,17 +273,19 @@ def test_calibration_output():
 
 
     # no test for image flipping yet
-    image_calibrated= flip_image(CCDitem, image_calib_nonflipped)
+    image_calib_flipped = flip_image(CCDitem, image_calib_nonflipped)
 
+    image_calibrated, error_artifact = artifact_correction(CCDitem,image_calib_flipped)
+   
    
     with open('testdata/calibration_output.pkl', 'rb') as f:
-            [image_lsb_old,image_lsb_no_art_old,image_bias_sub_old,image_desmeared_old,image_dark_sub_old,image_calib_nonflipped_old,image_calibrated_old]=pickle.load(f) 
+            [image_lsb_old,image_bias_sub_old,image_desmeared_old,image_dark_sub_old,image_calib_nonflipped_old,image_calib_flipped_old,image_calibrated_old,error_flags_old]=pickle.load(f) 
     
     assert (np.abs(image_bias_sub_old-image_bias_sub)<1e-3).all()
     assert (np.abs(image_desmeared_old-image_desmeared)<1e-3).all()
     assert (np.abs(image_dark_sub_old-image_dark_sub)<1e-3).all()
     assert (np.abs(image_calib_nonflipped_old-image_calib_nonflipped)<1e-3).all()
-    assert (np.abs(image_lsb_no_art_old-image_lsb_no_art)<1e-3).all() 
+    assert (np.abs(image_calib_flipped_old-image_calib_flipped)<1e-3).all() 
     assert (np.abs(image_calibrated_old-image_calibrated)<1e-3).all()
 
 
