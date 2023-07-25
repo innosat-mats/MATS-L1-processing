@@ -184,7 +184,8 @@ def artifact_regression(x_cor,y_cor,az_min,az_max,im_points,NADIR_AZ,EXP_DATE,sa
                     if (not np.isnan(ref_val)) and (not np.isnan(cor_val)): # if the pixel is not saturated
                         X.append(ref_val)
                         Y.append(cor_val)
-                        REG_AZ.append(NADIR_AZ[art_ind])
+                        # REG_AZ.append(NADIR_AZ[art_ind])
+                        REG_AZ.append(EXP_DATE[art_ind].timestamp())
 
         if len(X) + len(Y) > 0:  # linear regression, the slope is set to 1
             fit_param, cov = curve_fit(func,X,Y)
@@ -195,12 +196,14 @@ def artifact_regression(x_cor,y_cor,az_min,az_max,im_points,NADIR_AZ,EXP_DATE,sa
             if show_plots:
                 plt.figure()
                 plt.scatter(X,Y,c=REG_AZ)
+                # plt.scatter(X,Y,c=[expdate.timestamp() for expdate in EXP_DATE])
                 plt.plot(X,intercept + X,color='red')
-                plt.title(f"Offset of {step} images. Slope = {slope:.3f}, intercept = {intercept:.1f}, R**2 = {rsquare:.3f}")
+                plt.title(f"Offset of {step} images. Slope = {slope:.3f}, intercept = {intercept:.1f}, R**2 = {rsquare:.3f}, {len(X)} points")
                 # plt.title(f"Artifact correlation, offset of {step} images. Slope = {slope:.3f}, intercept = {intercept:.1f}, R**2 = {rsquare:.3f}")
                 plt.xlabel(f'Reference pixel ({x_ref},{y_ref})')
                 plt.ylabel(f'Corrected pixel ({x_cor},{y_cor})')
-                plt.colorbar(label='nadir azimuth')
+                # plt.colorbar(label='nadir azimuth')
+                plt.colorbar(label='EXPDate')
                 plt.show()
 
             return intercept,rsquare
@@ -210,7 +213,7 @@ def artifact_regression(x_cor,y_cor,az_min,az_max,im_points,NADIR_AZ,EXP_DATE,sa
 def extract_info(ccditems):
     """
     Function extracting the images, the nadir azimuth angles and the exposition dates from a dataframe. If a pixel is saturated
-    in an image column, the whole column is discarded (desmearing))
+    in an image column, the pixel is not taken into account.
 
     Arguments:
         ccditems : Panda dataframe
@@ -253,8 +256,8 @@ def extract_info(ccditems):
             ccditem = ccditems.iloc[i]
             im_l1a = ccditem['IMAGE']
             im_sat = im_l1a>=sat_pix
-            for x in range(b):
-                im_sat[:,x] = np.any(im_sat[:,x]) # discarding whole image column
+            # for x in range(b):
+            #     im_sat[:,x] = np.any(im_sat[:,x]) # discarding whole image column
             im_points_sat[i,:,:] = im_sat
         im_points[im_points_sat] = np.nan
 
@@ -320,7 +323,7 @@ def azimuth_bias_mask(ccditems,bias_threshold,az_list=None,sampling_rate=def_sam
 
         for x_cor in range(b):
             for y_cor in range(a):
-                intercept,rsquare = artifact_regression(x_cor,y_cor,az_min,az_max,im_points,NADIR_AZ,EXP_DATE,sampling_rate,pix_shift,show_plots=False)
+                intercept,rsquare = artifact_regression(x_cor,y_cor,az_min,az_max,im_points,NADIR_AZ,EXP_DATE,sampling_rate,pix_shift,show_plots=show_plots)
                 im_R2[y_cor,x_cor] = rsquare
                 im_bias[y_cor,x_cor] = intercept
 
@@ -437,7 +440,7 @@ def bias_analysis_angle(x_cor,y_cor,az_list=None,ccditems=None,azimuth_masks=Non
             im_R2 = np.ones_like(im_points[0,:,:]) # R2 values for each pixel
             im_bias = np.zeros_like(im_points[0,:,:]) # bias value for each pixel
 
-            intercept,rsquare = artifact_regression(x_cor,y_cor,az_min,az_max,im_points,NADIR_AZ,EXP_DATE,sampling_rate,pix_shift,show_plots=False)
+            intercept,rsquare = artifact_regression(x_cor,y_cor,az_min,az_max,im_points,NADIR_AZ,EXP_DATE,sampling_rate,pix_shift,show_plots=True)
             im_R2[y_cor,x_cor] = rsquare
             im_bias[y_cor,x_cor] = intercept
 
@@ -515,7 +518,7 @@ def bias_analysis_histo(az_min,az_max,ccditems=None,azimuth_masks=None,sampling_
 
                 plt.figure()
                 plt.title(f'Bias histogram (solar azimuth angle : {az:.2f} deg)')
-                plt.hist(bias_mask.ravel(),30)
+                plt.hist(bias_mask.ravel(),100)
                 plt.xlabel('Bias value')
                 plt.ylabel('Number of pixels')
                 plt.show()
@@ -572,22 +575,25 @@ from mats_utils.rawdata.calibration import calibrate_dataframe
 import pickle
 import os
 
+plt.figure()
+plt.title()
+
 os.chdir('/home/louis/MATS')
 calibration_file='/home/louis/MATS/calibration_data/calibration_data_artifact_analysis.toml' # modified calibration file without artifact correction
-instrument=Instrument(calibration_file)
+instrument_no_art=Instrument(calibration_file)
 
 start_time = datetime(2023,4,13)
 stop_time = datetime(2023,4,14)
 
 df1a = read_MATS_data(start_time,stop_time,level='1a',version='0.6',filter={'CCDSEL':7})
 
-df1b_no_art_correction = calibrate_dataframe(df1a,instrument)
+df1b_no_art_correction = calibrate_dataframe(df1a,instrument_no_art)
 save_dir = 'df1b_no_art_correction.pkl'
 df1b_no_art_correction.to_pickle(save_dir)
 
 
 #%%
-reg_analysis(df1b_no_art_correction,15,10,-91,-90)
+reg_analysis(15,10,-91,-90,df1b_no_art_correction)
 #bias_analysis_angle(15,10,azimuth_masks=azimuth_masks_v2)
 bias_analysis_angle(15,10,ccditems=df1b_no_art_correction,az_list=np.linspace(-100,-80,30))
 #bias_analysis_histo(-91,-90,azimuth_masks=azimuth_masks_v2)
@@ -595,3 +601,5 @@ bias_analysis_histo(-91,-90,ccditems=df1b_no_art_correction)
 
 azimuth_masks_l1b = azimuth_bias_mask(df1b_no_art_correction,bias_threshold=-56780,az_list=None,sampling_rate=def_sampling_rate,pix_shift=def_pix_shift)
 
+
+# %%
