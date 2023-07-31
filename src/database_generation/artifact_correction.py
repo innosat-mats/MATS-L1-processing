@@ -528,45 +528,45 @@ def bias_analysis_histo(az_min,az_max,ccditems=None,azimuth_masks=None,sampling_
 
 
 #%%
-# SIMPLE EXAMPLE (UNCOMMENT TO RUN)
-# this example quickly shows how to use the functions to create the azimuth bias masks on a limited dataset of 3 hours of data (fast processing)
+# # SIMPLE EXAMPLE (UNCOMMENT TO RUN)
+# # this example quickly shows how to use the functions to create the azimuth bias masks on a limited dataset of 3 hours of data (fast processing)
 
-# run calibration on L1b data
-# the artifact correction is the last correction to be applied during the l1a to l1b processing. The data used to determine the different masks is L1b data processed locally
-# with a modified version of the calibration_data.toml file applying blank artifact calibration masks.
-os.chdir(MATS_dir)
-calibration_file=f'{MATS_dir}/calibration_data/calibration_data_artifact_analysis.toml' # modified calibration file without artifact correction
-instrument_no_art=Instrument(calibration_file)
+# # run calibration on L1b data
+# # the artifact correction is the last correction to be applied during the l1a to l1b processing. The data used to determine the different masks is L1b data processed locally
+# # with a modified version of the calibration_data.toml file applying blank artifact calibration masks.
+# os.chdir(MATS_dir)
+# calibration_file=f'{MATS_dir}/calibration_data/calibration_data_artifact_analysis.toml' # modified calibration file without artifact correction
+# instrument_no_art=Instrument(calibration_file)
 
-start_time = datetime(2023,4,1)
-stop_time = datetime(2023,4,1,3)
-df1a = read_MATS_data(start_time,stop_time,level='1a',version='0.6',filter={'CCDSEL':7})
-# processing from l1a to l1a without applying the artifact correction
-df1b_no_art_correction = calibrate_dataframe(df1a,instrument_no_art,debug_outputs=True)
-# dropping unused columns, keeping image_lsb, which corresponds to the l1a image in order to know which pixel is saturated
-df1b_no_art_correction = df1b_no_art_correction.drop(["image_bias_sub","image_desmeared","image_dark_sub","image_calib_nonflipped","image_calibrated_flipped"],axis=1)
+# start_time = datetime(2023,3,5)
+# stop_time = datetime(2023,3,6)
+# df1a = read_MATS_data(start_time,stop_time,level='1a',version='0.6',filter={'CCDSEL':7})
+# # processing from l1a to l1a without applying the artifact correction
+# df1b_no_art_correction = calibrate_dataframe(df1a,instrument_no_art,debug_outputs=True)
+# # dropping unused columns, keeping image_lsb, which corresponds to the l1a image in order to know which pixel is saturated
+# df1b_no_art_correction = df1b_no_art_correction.drop(["image_bias_sub","image_desmeared","image_dark_sub","image_calib_nonflipped","image_calibrated_flipped"],axis=1)
 
-# saving the dataframe
-save_dir_l1b = 'df1b_no_art_correction.pkl'
-df1b_no_art_correction.reset_index(drop=True,inplace=True)
-df1b_no_art_correction.to_pickle(save_dir_l1b)
+# # saving the dataframe
+# save_dir_l1b = 'df1b_no_art_correction.pkl'
+# df1b_no_art_correction.reset_index(drop=True,inplace=True)
+# df1b_no_art_correction.to_pickle(save_dir_l1b)
 
-# loading the dataframe
-save_dir_l1b = 'df1b_no_art_correction.pkl'
-with open(save_dir_l1b,'rb') as f:
-    df1b_no_art_correction = pickle.load(f)
+# # loading the dataframe
+# save_dir_l1b = 'df1b_no_art_correction.pkl'
+# with open(save_dir_l1b,'rb') as f:
+#     df1b_no_art_correction = pickle.load(f)
 
-# examples of analysis function calls (they don't have to be used in order to create the masks, but are usefull to check the results)
-reg_analysis(15,10,-91,-90,df1b_no_art_correction)
-bias_analysis_angle(15,10,ccditems=df1b_no_art_correction,az_list=np.linspace(-100,-80,30))
-bias_analysis_histo(-91,-90,ccditems=df1b_no_art_correction)
+# # examples of analysis function calls (they don't have to be used in order to create the masks, but are usefull to check the results)
+# reg_analysis(15,10,-91,-90,df1b_no_art_correction)
+# bias_analysis_angle(15,10,ccditems=df1b_no_art_correction,az_list=np.linspace(-100,-80,30))
+# bias_analysis_histo(-91,-90,ccditems=df1b_no_art_correction)
 
 
-# computing the masks
-azimuth_masks_l1b = azimuth_bias_mask(df1b_no_art_correction,az_list=None,sampling_rate=def_sampling_rate,pix_shift=def_pix_shift)
+# # computing the masks
+# azimuth_masks_l1b = azimuth_bias_mask(df1b_no_art_correction,az_list=None,sampling_rate=def_sampling_rate,pix_shift=def_pix_shift)
 
-# saving the masks
-azimuth_masks_l1b.to_pickle('calibration_data/artifact/mask_op_example.pkl')
+# # saving the masks
+# azimuth_masks_l1b.to_pickle('calibration_data/artifact/mask_op_example.pkl')
 
 
 # %%
