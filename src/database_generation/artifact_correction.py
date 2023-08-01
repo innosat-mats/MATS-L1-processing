@@ -2,80 +2,55 @@
 #%matplotlib qt5
 import datetime as DT
 from tqdm import tqdm
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+from matplotlib.patches import Patch
 import pandas as pd
 import numpy as np
 from scipy.optimize import curve_fit
 from datetime import datetime, timedelta
+import pickle
 import warnings
 from mats_utils.rawdata.read_data import read_MATS_data
-
-
+from scipy.stats import norm
+from mats_l1_processing.instrument import Instrument
+from mats_l1_processing.L1_calibrate import L1_calibrate,calibrate_all_items
+from mats_l1_processing.read_parquet_functions import dataframe_to_ccd_items
+from mats_utils.rawdata.calibration import calibrate_dataframe
+import pickle
+import os
+import scipy.ndimage as ndimage
 
 #%%
-im_ref_def = np.array([[1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
-        1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
-        1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
-        1., 1., 1., 1., 1., 1., 1., 1.],
-       [1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
-        1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
-        1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
-        1., 1., 1., 1., 1., 1., 1., 1.],
-       [1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
-        1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
-        1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
-        1., 1., 1., 1., 1., 1., 1., 1.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0.]])
+####### TO BE MODIFIED BY THE USER ########
+MATS_dir = '/home/louis/MATS'
 
 def_sampling_rate = timedelta(seconds=2) # sampling rate of the NADIR images
 def_pix_shift = 2.6 # pixel shift along the y axis between 2 consecutive images. For a sampling time of 2s it is equivalent to 2.6 pixels
 sat_pix = 32880.0 # saturation value of the pixels
 
+######### END OF USER MODIFICATIONS ########
 
-def nadir_shift(im_ref,sampling_rate=def_sampling_rate,pix_shift=def_pix_shift):
+#%%
+
+im_ref_def = np.zeros((14,56))
+im_ref_def[0:3,0:40] = 1.0
+im_ref_def[8:11,40:45] = 1.0
+im_ref_def[0:3,45:56] =1.0
+
+plt.figure()
+plt.imshow(im_ref_def,origin='lower')
+plt.title('default reference image')
+legend_elements = [Patch(facecolor=mpl.colormaps['viridis'](1.0),label='reference pixel'),Patch(facecolor=mpl.colormaps['viridis'](0.0),label='corrected pixel')]
+plt.legend(handles=legend_elements,loc='upper left')
+plt.show()
+
+
+#%%
+# defining usefull functions
+
+def nadir_shift(im_ref=im_ref_def,sampling_rate=def_sampling_rate,pix_shift=def_pix_shift):
     """
     Function calculating which pixels in the nadir images should be taken as reference for the correction of the other pixels. The Nadir sensors
     sees the same feature on the ground in consecutive images. By choosing pixels as reference, they can be compared to pixels to be corrected in
@@ -173,19 +148,19 @@ def artifact_regression(x_cor,y_cor,az_min,az_max,im_points,NADIR_AZ,EXP_DATE,sa
         if step > 0:
             cor_indexes = np.arange(n)[az_index_cor][:-step] # indices of the corresponding reference images where the reference pixel is taken
         else:
-            cor_indexes = np.arange(n)[az_index_cor][step:] # indices of the corresponding reference images where the reference pixel is taken
+            cor_indexes = np.arange(n)[az_index_cor][-step:] # indices of the corresponding reference images where the reference pixel is taken
         # selecting the pixels for the regression
         if len(cor_indexes) > 0 :
             for art_ind in cor_indexes: # iterating over the images (image index of the artifact pixel)
                 ref_ind = art_ind + step # image index of the reference
-                if (EXP_DATE[art_ind] - EXP_DATE[ref_ind] - step*sampling_rate) < timedelta(seconds= 0.01): #check if the image taken as reference is indeed taken the right amount of time after the other image
+                if (EXP_DATE[ref_ind] - EXP_DATE[art_ind] - step*sampling_rate) < timedelta(seconds= 0.01): #check if the image taken as reference is indeed taken the right amount of time after the other image
                     ref_val = im_points[ref_ind,y_ref,x_ref] # value of the reference pixel
                     cor_val = im_points[art_ind,y_cor,x_cor] # value of the artifact pixel
                     if (not np.isnan(ref_val)) and (not np.isnan(cor_val)): # if the pixel is not saturated
                         X.append(ref_val)
                         Y.append(cor_val)
-                        # REG_AZ.append(NADIR_AZ[art_ind])
-                        REG_AZ.append(EXP_DATE[art_ind].timestamp())
+                        REG_AZ.append(NADIR_AZ[art_ind])
+                        # REG_AZ.append(EXP_DATE[art_ind].timestamp())
 
         if len(X) + len(Y) > 0:  # linear regression, the slope is set to 1
             fit_param, cov = curve_fit(func,X,Y)
@@ -202,8 +177,8 @@ def artifact_regression(x_cor,y_cor,az_min,az_max,im_points,NADIR_AZ,EXP_DATE,sa
                 # plt.title(f"Artifact correlation, offset of {step} images. Slope = {slope:.3f}, intercept = {intercept:.1f}, R**2 = {rsquare:.3f}")
                 plt.xlabel(f'Reference pixel ({x_ref},{y_ref})')
                 plt.ylabel(f'Corrected pixel ({x_cor},{y_cor})')
-                # plt.colorbar(label='nadir azimuth')
-                plt.colorbar(label='EXPDate')
+                plt.colorbar(label='nadir azimuth')
+                # plt.colorbar(label='EXPDate')
                 plt.show()
 
             return intercept,rsquare
@@ -254,7 +229,7 @@ def extract_info(ccditems):
         im_points_sat = np.full((n,a,b),False) # array with true value for pixels in columns with saturated pixels
         for i in tqdm(range(n),desc='removing saturated pixels'):
             ccditem = ccditems.iloc[i]
-            im_l1a = ccditem['IMAGE']
+            im_l1a = ccditem['image_lsb']
             im_sat = im_l1a>=sat_pix
             # for x in range(b):
             #     im_sat[:,x] = np.any(im_sat[:,x]) # discarding whole image column
@@ -264,7 +239,7 @@ def extract_info(ccditems):
     return im_points,NADIR_AZ,EXP_DATE
 
 
-def azimuth_bias_mask(ccditems,bias_threshold,az_list=None,sampling_rate=def_sampling_rate,pix_shift=def_pix_shift,show_plots=False):
+def azimuth_bias_mask(ccditems,az_list=None,sampling_rate=def_sampling_rate,pix_shift=def_pix_shift,show_plots=False):
     """
     Function creating correction masks dependant on solar azimuth angles. The mask
     creation follows the same rules as in the function nadir_mask. The bias and R2
@@ -273,8 +248,6 @@ def azimuth_bias_mask(ccditems,bias_threshold,az_list=None,sampling_rate=def_sam
     Arguments:
         ccditems : Panda dataframe
             dataframe containing the images
-        bias_threshhold : float
-            all bias values smaller than this value are not taken into account (set to zero)
         az_list : list of float
             list of azimuth value. The regression is made on azimuth angle intervalls with the
             given angles as center points
@@ -286,7 +259,7 @@ def azimuth_bias_mask(ccditems,bias_threshold,az_list=None,sampling_rate=def_sam
     Returns:
         azimuth_masks : Pandas dataframe
             'bias_mask' : np.array[float]
-                thresholded bias for each pixel, has the same shape as the images
+                bias for each pixel, has the same shape as the images
             'R2_mask' : np.array[float]
                 R2 value for each pixel, has the same shape as the images
             'azimuth' : float
@@ -327,13 +300,8 @@ def azimuth_bias_mask(ccditems,bias_threshold,az_list=None,sampling_rate=def_sam
                 im_R2[y_cor,x_cor] = rsquare
                 im_bias[y_cor,x_cor] = intercept
 
-        # thresholding the correction
-        mask = im_bias>bias_threshold
-        bias_mask = im_bias * mask
-        R2_mask = im_R2 * mask
-
-        IM_BIAS.append(bias_mask)
-        IM_R2.append(R2_mask)
+        IM_BIAS.append(im_bias)
+        IM_R2.append(im_R2)
 
     # creating dataframe
     azimuth_masks = pd.DataFrame({'bias_mask': IM_BIAS,
@@ -379,7 +347,7 @@ def reg_analysis(x_cor,y_cor,az_min,az_max,ccditems,sampling_rate=def_sampling_r
     n,a,b = np.shape(im_points)
 
     intercept,rsquare = artifact_regression(x_cor,y_cor,az_min,az_max,im_points,NADIR_AZ,EXP_DATE,sampling_rate,pix_shift,show_plots=True)
-    return
+    return intercept,rsquare
 
 
 def bias_analysis_angle(x_cor,y_cor,az_list=None,ccditems=None,azimuth_masks=None,sampling_rate=def_sampling_rate,pix_shift=def_pix_shift):
@@ -440,7 +408,7 @@ def bias_analysis_angle(x_cor,y_cor,az_list=None,ccditems=None,azimuth_masks=Non
             im_R2 = np.ones_like(im_points[0,:,:]) # R2 values for each pixel
             im_bias = np.zeros_like(im_points[0,:,:]) # bias value for each pixel
 
-            intercept,rsquare = artifact_regression(x_cor,y_cor,az_min,az_max,im_points,NADIR_AZ,EXP_DATE,sampling_rate,pix_shift,show_plots=True)
+            intercept,rsquare = artifact_regression(x_cor,y_cor,az_min,az_max,im_points,NADIR_AZ,EXP_DATE,sampling_rate,pix_shift,show_plots=False)
             im_R2[y_cor,x_cor] = rsquare
             im_bias[y_cor,x_cor] = intercept
 
@@ -551,55 +519,198 @@ def bias_analysis_histo(az_min,az_max,ccditems=None,azimuth_masks=None,sampling_
 
         plt.figure()
         plt.title(f'Bias histogram ; {az_min} deg < solar azimuth angle < {az_max} deg')
-        plt.hist(im_bias.ravel(),30)
+        plt.hist(im_bias.ravel(),100)
         plt.xlabel('Bias value')
         plt.ylabel('Number of pixels')
         plt.show()
 
-
-
-
-
-
-
-
-#%% # run calibration on L1b data
-# the artifact correction is the last correction to be applied during the l1a to l1b processing. The data used to determine the different masks is L1b data processed locally
-# with a modified version of the calibration_data.toml file applying blank artifact calibration masks.
-#
-
-from mats_l1_processing.instrument import Instrument
-from mats_l1_processing.L1_calibrate import L1_calibrate,calibrate_all_items
-from mats_l1_processing.read_parquet_functions import dataframe_to_ccd_items
-from mats_utils.rawdata.calibration import calibrate_dataframe
-import pickle
-import os
-
-plt.figure()
-plt.title()
-
-os.chdir('/home/louis/MATS')
-calibration_file='/home/louis/MATS/calibration_data/calibration_data_artifact_analysis.toml' # modified calibration file without artifact correction
-instrument_no_art=Instrument(calibration_file)
-
-start_time = datetime(2023,4,13)
-stop_time = datetime(2023,4,14)
-
-df1a = read_MATS_data(start_time,stop_time,level='1a',version='0.6',filter={'CCDSEL':7})
-
-df1b_no_art_correction = calibrate_dataframe(df1a,instrument_no_art)
-save_dir = 'df1b_no_art_correction.pkl'
-df1b_no_art_correction.to_pickle(save_dir)
+    return
 
 
 #%%
-reg_analysis(15,10,-91,-90,df1b_no_art_correction)
-#bias_analysis_angle(15,10,azimuth_masks=azimuth_masks_v2)
-bias_analysis_angle(15,10,ccditems=df1b_no_art_correction,az_list=np.linspace(-100,-80,30))
-#bias_analysis_histo(-91,-90,azimuth_masks=azimuth_masks_v2)
-bias_analysis_histo(-91,-90,ccditems=df1b_no_art_correction)
+# # SIMPLE EXAMPLE (UNCOMMENT TO RUN)
+# # this example quickly shows how to use the functions to create the azimuth bias masks on a limited dataset of 3 hours of data (fast processing)
 
-azimuth_masks_l1b = azimuth_bias_mask(df1b_no_art_correction,bias_threshold=-56780,az_list=None,sampling_rate=def_sampling_rate,pix_shift=def_pix_shift)
+# # run calibration on L1b data
+# # the artifact correction is the last correction to be applied during the l1a to l1b processing. The data used to determine the different masks is L1b data processed locally
+# # with a modified version of the calibration_data.toml file applying blank artifact calibration masks.
+# os.chdir(MATS_dir)
+# calibration_file=f'{MATS_dir}/calibration_data/calibration_data_artifact_analysis.toml' # modified calibration file without artifact correction
+# instrument_no_art=Instrument(calibration_file)
+
+# start_time = datetime(2023,3,5)
+# stop_time = datetime(2023,3,6)
+# df1a = read_MATS_data(start_time,stop_time,level='1a',version='0.6',filter={'CCDSEL':7})
+# # processing from l1a to l1a without applying the artifact correction
+# df1b_no_art_correction = calibrate_dataframe(df1a,instrument_no_art,debug_outputs=True)
+# # dropping unused columns, keeping image_lsb, which corresponds to the l1a image in order to know which pixel is saturated
+# df1b_no_art_correction = df1b_no_art_correction.drop(["image_bias_sub","image_desmeared","image_dark_sub","image_calib_nonflipped","image_calibrated_flipped"],axis=1)
+
+# # saving the dataframe
+# save_dir_l1b = 'df1b_no_art_correction.pkl'
+# df1b_no_art_correction.reset_index(drop=True,inplace=True)
+# df1b_no_art_correction.to_pickle(save_dir_l1b)
+
+# # loading the dataframe
+# save_dir_l1b = 'df1b_no_art_correction.pkl'
+# with open(save_dir_l1b,'rb') as f:
+#     df1b_no_art_correction = pickle.load(f)
+
+# # examples of analysis function calls (they don't have to be used in order to create the masks, but are usefull to check the results)
+# reg_analysis(15,10,-91,-90,df1b_no_art_correction)
+# bias_analysis_angle(15,10,ccditems=df1b_no_art_correction,az_list=np.linspace(-100,-80,30))
+# bias_analysis_histo(-91,-90,ccditems=df1b_no_art_correction)
+
+
+# # computing the masks
+# azimuth_masks_l1b = azimuth_bias_mask(df1b_no_art_correction,az_list=None,sampling_rate=def_sampling_rate,pix_shift=def_pix_shift)
+
+# # saving the masks
+# azimuth_masks_l1b.to_pickle('calibration_data/artifact/mask_op_example.pkl')
 
 
 # %%
+# # PRODUCING THE MASKS FOR THE CURRENT CALIBRATION L1B V0.5
+
+# generating the l1b data without artifact correction
+os.chdir(MATS_dir)
+calibration_file=f'{MATS_dir}/calibration_data/calibration_data_artifact_analysis.toml' # modified calibration file without artifact correction
+instrument_no_art=Instrument(calibration_file)
+
+# taking small datasets at different times of the year
+df1a = read_MATS_data(datetime(2023,3,5),datetime(2023,3,5,3),level='1a',version='0.6',filter={'CCDSEL':7})
+df1a = pd.concat([df1a,read_MATS_data(datetime(2023,4,13),datetime(2023,4,13,3),level='1a',version='0.6',filter={'CCDSEL':7})])
+df1a = pd.concat([df1a,read_MATS_data(datetime(2023,5,1),datetime(2023,5,1,3),level='1a',version='0.6',filter={'CCDSEL':7})])
+
+df1a.reset_index(drop=True,inplace=True)
+# processing from l1a to l1a without applying the artifact correction
+df1b_no_art_correction = calibrate_dataframe(df1a,instrument_no_art,debug_outputs=True)
+# dropping unused columns, keeping image_lsb, which corresponds to the l1a image in order to know which pixel is saturated
+df1b_no_art_correction = df1b_no_art_correction.drop(["image_bias_sub","image_desmeared","image_dark_sub","image_calib_nonflipped","image_calibrated_flipped"],axis=1)
+
+#%% saving the l1b dataframe without artifact correction
+save_dir_l1b = 'df1b_no_art_correction.pkl'
+df1b_no_art_correction.reset_index(drop=True,inplace=True)
+df1b_no_art_correction.to_pickle(save_dir_l1b)
+
+#%% loading the l1b dataframe without artifact correction
+save_dir_l1b = 'df1b_no_art_correction.pkl'
+with open(save_dir_l1b,'rb') as f:
+    df1b_no_art_correction = pickle.load(f)
+
+
+#%%
+
+# list of azimuth angles used to create the masks. The resolution (0.5 deg or 0.1 deg) has been determined empirically in order to accomodate for the change in the bias values in the middle of the artifact
+az_min = np.min(df1b_no_art_correction['nadir_az'])
+az_max = np.max(df1b_no_art_correction['nadir_az'])
+az_list =  np.concatenate([np.linspace(az_min,-82.5,int((-82.5-az_min)/0.5)),np.linspace(-82,-79,30),np.linspace(-78.5,-76,5),np.linspace(-75.5,-74.5,10),np.linspace(-74,az_max,int((az_max+74)/0.5))])
+
+# # default az_list
+# az_list = np.linspace(az_min,az_max,150)
+
+#%% generating the masks
+azimuth_masks_l1b = azimuth_bias_mask(df1b_no_art_correction,az_list=az_list,sampling_rate=def_sampling_rate,pix_shift=def_pix_shift)
+azimuth_masks_l1b.to_pickle('mask_op_tmp.pkl')
+
+#%% loading the masks
+with open('mask_op_tmp.pkl','rb') as f:
+    azimuth_masks_l1b = pickle.load(f)
+
+#%%
+# Thresholding the masks.
+# In each image bias values outside the artifact follow a normal distribution around 0. These biases are set to zero by thresholding the masks at sigma_threshold*sigma.
+# Regions on the right and left side are then set to zero in order to remove the straylight effects
+# In order to avoid sharp edges, the mask is smoothed with an average filter. Biases in the artifact remain unchanged, only pixels outside the artifact are smoothed.
+
+sigma_threshold = 5 # biases above sigma_threshold*sigma are considered inside the artifacts and kept
+smoothing_kernel_size = 5 # size for the smoothing kernel
+show_plots = True # if True, plots are shown every ten azimuth angle intervals
+
+# defining the regions containing straylight
+mask_straylight = np.ones((14,56))
+mask_straylight[:,0:10] = 0.0
+mask_straylight[:,46:56] = 0.0
+plt.figure()
+plt.imshow(mask_straylight,origin='lower')
+plt.title('straylight mask')
+legend_elements = [Patch(facecolor=mpl.colormaps['viridis'](1.0),label='no straylight (bias kept)'),Patch(facecolor=mpl.colormaps['viridis'](0.0),label='straylight region (bias=0)')]
+plt.legend(handles=legend_elements,loc='upper left')
+plt.show()
+
+
+# intermediate function
+def Gaussian(x,sigma,mu,alpha):
+    return alpha*norm.pdf(x, loc=mu, scale=sigma)
+
+IM_BIAS = [] # list of bias masks
+IM_R2 = []  # list of R2 masks
+
+for i in tqdm(range(len(azimuth_masks_l1b)),desc='thresholding and smoothing masks'):
+    mask = azimuth_masks_l1b.loc[i]
+    deg = mask['azimuth']
+    im_bias,im_R2=mask['bias_mask'],mask['R2_mask']
+    if np.all(np.isnan(im_bias)):
+        new_mask = np.zeros_like(im_bias)
+    else:
+        # determining the threshold by fitting a gaussian distribution on the bias values
+        im_bias_hist = np.histogram(im_bias[~np.isnan(im_bias)].ravel(),100)
+        xdata = (im_bias_hist[1][:-1]+im_bias_hist[1][1:])/2
+        ydata = im_bias_hist[0]
+        res = curve_fit(Gaussian, xdata, ydata)
+        sig = res[0][0] # standard deviation of the gaussian fit
+        thresholded_mask = np.where(im_bias<(sigma_threshold*sig),np.full(np.shape(im_bias),np.nan),im_bias) # thresholding
+        # removing straylight regions
+        no_straylight_mask = thresholded_mask*mask_straylight
+        # smoothing areas outside the artifact to avoid sharp edges
+        tmp = np.where(no_straylight_mask>0,no_straylight_mask,0.0)
+        smooth_mask = np.where(tmp>0,tmp,ndimage.uniform_filter(tmp, size=smoothing_kernel_size))
+
+        if show_plots and i%10==0:
+            fig, axes = plt.subplots(3, 2)
+            fig.suptitle(f" solar azimuth angle = {deg:.3f} deg")
+            ax=axes[0,0]
+            subfig = ax.imshow(im_bias,origin='lower')
+            ax.set_title('bias mask')
+            plt.colorbar(subfig,ax=ax,fraction=0.02)
+            ax=axes[0,1]
+            subfig = ax.imshow(im_R2,origin='lower',vmin=0.5,vmax=1.0)
+            ax.set_title('R2 mask')
+            plt.colorbar(subfig,ax=ax,fraction=0.02)
+            ax=axes[1,0]
+            subfig = ax.imshow(thresholded_mask,origin='lower')
+            plt.colorbar(subfig,ax=ax,fraction=0.02)
+            ax.set_title(f'thresholded mask ({sigma_threshold*sig:.3f})')
+            ax=axes[1,1]
+            ax.hist(im_bias.ravel(),100)
+            ax.plot(xdata,Gaussian(xdata,res[0][0],res[0][1],res[0][2]),label=f'Gaussian fit (sigma={sig:.3f})')
+            ax.plot([res[0][1]+sigma_threshold*res[0][0],res[0][1]+sigma_threshold*res[0][0]],[0,1000],linestyle='--',color='red',label=f'threshold ({sigma_threshold:.1f}*sigma)')
+            ax.legend()
+            ax.set_xlabel('Bias value')
+            ax.set_ylabel('Number of pixels')
+            ax.set_ylim(bottom=0,top=np.max(ydata)*1.1)
+            ax.set_title('histogram')
+            ax = axes[2,0]
+            subfig = ax.imshow(np.where(no_straylight_mask>0,no_straylight_mask,np.nan),origin='lower')
+            plt.colorbar(subfig,ax=ax,fraction=0.02)
+            ax.set_title(f'thresholded mask without straylight')
+            ax = axes[2,1]
+            subfig = ax.imshow(smooth_mask,origin='lower')
+            plt.colorbar(subfig,ax=ax,fraction=0.02)
+            ax.set_title(f'smoothed mask (kernel size={smoothing_kernel_size:.2f})')
+            plt.show()
+
+    IM_BIAS.append(smooth_mask)
+    IM_R2.append(im_R2)
+
+# creating final dataframe
+azimuth_masks_l1b_final = pd.DataFrame({'bias_mask': IM_BIAS,'azimuth': az_list})
+
+
+#%% saving masks OVERWRITES THE PREVIOUSLY SAVED MASKS !!!
+azimuth_masks_l1b_final.to_pickle('calibration_data/artifact/mask_op.pkl')
+
+
+
+
+
