@@ -432,8 +432,10 @@ def handle_bad_columns(CCDitem, handle_BC=False):
 ## Flatfield ##
 
 def flatfield_calibration(CCDitem, image=None):
-    """Calibrates the image for eacvh pixel, ie, absolute relativ calibration and flatfield compensation
-
+    """Calibrates the image for each pixel, ie, absolute relativ calibration and flatfield compensation
+        Also conversion from to light per second, rather than the total light.
+        Output unit is 10^15 ph m-2 s-1 str-1 nm-1.
+    
     Args:
         CCDitem:  dictonary containing CCD image and information
         image (optional) np.array: If this is given then it will be used instead of the image in the CCDitem
@@ -449,10 +451,9 @@ def flatfield_calibration(CCDitem, image=None):
     image_flatf_fact = calculate_flatfield(CCDitem)
 
     image_calib_nonflipped = (
-        image/CCDitem["CCDunit"].calib_denominator(CCDitem["GAIN Mode"])
+        image/(int(CCDitem["TEXPMS"])/1000)/CCDitem["CCDunit"].calib_denominator(CCDitem["GAIN Mode"])
         / image_flatf_fact
     )
-    # rows,colums Note that nrow always seems to be implemented as +1 already, whereas NCOL does not, hence the missing '+1' in the column calculation /LM201204
 
     error_flag = np.zeros(image.shape, dtype=np.uint16)
     error_flag[image_calib_nonflipped < 0] = 1  # Flag for negative value

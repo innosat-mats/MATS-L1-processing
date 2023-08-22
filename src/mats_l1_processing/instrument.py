@@ -332,7 +332,7 @@ class CCD:
 
                 
     def calib_denominator(self, mode): 
-        """Get calibration constant that should be divided by to get unit 10^10 ph cm-2 s-1 str-1 nm-1.
+        """Get calibration constant that should be divided by to get unit 10^15 ph m-2 s-1 str-1 nm-1.
 
         Args:
             mode (str): Gain mode/ Signal mode for CCD 
