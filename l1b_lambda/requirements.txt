@@ -146,5 +146,5 @@ typing-extensions==4.4.0
     # via
     #   boto3-stubs
     #   jsii
-urllib3==1.26.13
+urllib3==1.26.17
     # via botocore
