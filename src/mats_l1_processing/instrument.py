@@ -220,7 +220,6 @@ class CCD:
         # Flatfields
         if channel=="NADIR":
             self.flatfield_HSM =np.ones(self.log_a_img_avr_HSM.shape)
-            self.flatfield_LSM =np.ones(self.log_a_img_avr_LSM.shape)
         else:
             self.flatfield_HSM = np.load(
                 calibration_data["flatfield"]["flatfieldfolder"]
@@ -228,12 +227,7 @@ class CCD:
                 + channel
                 + "_HSM.npy"
             )
-            self.flatfield_LSM = np.load(
-                calibration_data["flatfield"]["flatfieldfolder"]
-                + "flatfield_"
-                + channel
-                + "_LSM.npy"
-            )
+
 
         # Non-linearity
         if channel!="NADIR":
@@ -428,22 +422,16 @@ class CCD:
             raise Exception("Undefined mode")
         return alpha_avr
 
-    def flatfield(self, mode):  # return flatfield at 0C for the CCD (in LSB?)
-        """?. 
-
-        Args:
-            mode (str): Gain mode/ Signal mode for CCD 
+    def flatfield(self):  
+        """
 
         Returns:
-            Flatfield of the CCD for the given mode.
+            Flatfield of the CCD as taken in High signal mode. 
+            Flatfield is difined to be 1 in on average in the center of the image.
+            Generally a merged version between 0 C flatfield without baffle and 20C flatfield with baffle are used.
 
-        """
-        if mode == 'High':
-            flatfield = self.flatfield_HSM
-        elif mode == 'Low':
-            flatfield = self.flatfield_LSM
-        else:
-            raise Exception("Undefined mode")
+        """        
+        flatfield = self.flatfield_HSM
 
         return flatfield
 

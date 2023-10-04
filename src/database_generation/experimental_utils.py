@@ -26,10 +26,17 @@ def plotCCDitem(CCDitem, fig, axis, title="", clim=999, aspect="auto", altvec=No
     return sp
 
 
-def plot_CCDimage(image, fig, axis, title="", clim=999, aspect="auto", altvec=None):
+def plot_CCDimage(image, fig=None, axis=None, title="", clim=None, aspect="auto", altvec=None):
     """Plots a CCD image in a figure, 
     note that optional argument altvec ONLY specifies the upper and lower limit of the y-axis,
     not the actual altitudes of the image"""
+    
+    if fig is None:
+        import matplotlib.pyplot as plt
+        fig = plt.figure()
+        axis = fig.subplots(1)
+        print('Creating a new figure since no figure is given, this means ignoring any axes input')
+    
     
     if altvec is not None:
         sp = axis.imshow(image, cmap="magma", origin="lower", interpolation="none", extent=[0, image.shape[1], altvec[0], altvec[-1]])
@@ -38,8 +45,11 @@ def plot_CCDimage(image, fig, axis, title="", clim=999, aspect="auto", altvec=No
         #x_grid, y_grid = np.meshgrid(x_indices, altvec)
     else:
         sp = axis.imshow(image, cmap="magma", origin="lower", interpolation="none")
+    
+    if clim=='minmax':
+        clim=[image.min(), image.max()]
 
-    if clim == 999:
+    if clim==None:
         [col, row]=image.shape
         #Take the mean and std of the middle of the image, not boarders
         mean = image[int(col/2-col*4/10):int(col/2+col*4/10), int(row/2-row*4/10):int(row/2+row*4/10)].mean()

@@ -86,7 +86,7 @@ def L1_calibrate(CCDitem, instrument, force_table: bool = True):  # This used to
     #and relative calibration factor and their flat_field factor.
     image_calib_nonflipped, error_flags_flatfield = flatfield_calibration(CCDitem, image_dark_sub)
     
-    # Flip image for IR2 and IR4
+    # Flip flipped CCDs
     image_calib_flipped= flip_image(CCDitem, image_calib_nonflipped)
     
     # Add channel quaterion to image
