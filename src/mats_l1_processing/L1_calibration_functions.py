@@ -479,7 +479,7 @@ def calculate_flatfield(CCDitem):
         CCDunit = CCDitem["CCDunit"]
     except:
         raise Exception("No CCDunit defined for the CCDitem")
-    image_flatf = CCDunit.flatfield(CCDitem["GAIN Mode"])
+    image_flatf = CCDunit.flatfield()
 
     if (
         (CCDitem["NCSKIP"] > 1)
