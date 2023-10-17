@@ -37,3 +37,6 @@ title = "Level 1 calibration files for testing this package"
 [artifact]
     nadir = '/home/olemar/Projects/Universitetet/MATS/MATS-L1-processing/calibration_data/artifact/mask_op.pkl'
     blank = '/home/olemar/Projects/Universitetet/MATS/MATS-L1-processing/calibration_data/artifact/blank.pkl'
+[hot_pixels]
+    hot_pixels = '/home/olemar/Projects/Universitetet/MATS/MATS-L1-processing/calibration_data/hot_pixels/hpms.db'
+    single_events = '/home/olemar/Projects/Universitetet/MATS/MATS-L1-processing/calibration_data/hot_pixels/'

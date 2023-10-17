@@ -62,6 +62,9 @@ def L1_calibrate(CCDitem, instrument, force_table: bool = True):  # This used to
 
     CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
 
+    image_bias_sub, error_flags_bias  = correct_single_events(CCDitem)
+    image_bias_sub, error_flags_bias  = correct_hot_pixels(CCDitem)
+
     
     error_bad_column=handle_bad_columns(CCDitem)
 

@@ -4,7 +4,7 @@ from mats_l1_processing.read_and_calibrate_all_files_parallel import main
 from mats_l1_processing.instrument import Instrument, CCD, Photometer
 from mats_l1_processing import photometer
 import pandas as pd
-from mats_l1_processing.L1_calibration_functions import inverse_model_real,inverse_model_table,make_binary,combine_flags,desmear,artifact_correction
+from mats_l1_processing.L1_calibration_functions import inverse_model_real,inverse_model_table,make_binary,combine_flags,desmear,artifact_correction, correct_single_events,correct_hotpixels
 
 import pickle
 import numpy as np
@@ -290,23 +290,23 @@ def test_calibration_output():
 
 
 def photometer_assertion(photometer_data,photometer_data_out,i,i_out,j):
-        try: 
-            assert(np.any(photometer_data.iloc[j][i]== photometer_data_out.iloc[j][i_out]))
-        except AssertionError:
-            if np.isnan(photometer_data_out.iloc[j][i_out]):
-                pass           
-            elif np.abs(((photometer_data.iloc[j][i] - photometer_data_out.iloc[j][i_out])/photometer_data_out.iloc[j][i_out]))<0.015:
-                pass
-            elif (photometer_data.iloc[j].index[i] == 'pmTEXPMS'):
-                pass
-            elif (photometer_data.iloc[j].index[i] == 'pmAband_Sig') and (photometer_data.iloc[j].pmAband_Sig_bit < 2):
-                pass
-            elif (photometer_data.iloc[j].index[i] == 'pmBkg_Sig') and (photometer_data.iloc[j].pmBkg_Sig_bit < 2):
-                pass
-            else:
-                raise AssertionError
+    try: 
+        assert(np.any(photometer_data.iloc[j][i]== photometer_data_out.iloc[j][i_out]))
+    except AssertionError:
+        if np.isnan(photometer_data_out.iloc[j][i_out]):
+            pass           
+        elif np.abs(((photometer_data.iloc[j][i] - photometer_data_out.iloc[j][i_out])/photometer_data_out.iloc[j][i_out]))<0.015:
+            pass
+        elif (photometer_data.iloc[j].index[i] == 'pmTEXPMS'):
+            pass
+        elif (photometer_data.iloc[j].index[i] == 'pmAband_Sig') and (photometer_data.iloc[j].pmAband_Sig_bit < 2):
+            pass
+        elif (photometer_data.iloc[j].index[i] == 'pmBkg_Sig') and (photometer_data.iloc[j].pmBkg_Sig_bit < 2):
+            pass
+        else:
+            raise AssertionError
 
-        return
+    return
             
 
 def test_photometer():
@@ -329,16 +329,49 @@ def test_photometer():
             else:
                 photometer_assertion(photometer_data,photometer_data_out,i+2,i,j)
             
+def test_se_correction():
+    
+    with open('testdata/CCD_items_in_orbit_nightglow_example.pkl', 'rb') as f:
+        CCDitems = pickle.load(f)
+    
+    CCDitem = CCDitems[4]
+
+    
+    instrument = Instrument("tests/calibration_data_test.toml")
+
+
+    CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
+    se_corrected,se_mask = correct_single_events(CCDitem,CCDitem['IMAGE'])
+
+    return
+
+def test_hp_correction():
+    
+    with open('testdata/CCD_items_in_orbit_nightglow_example.pkl', 'rb') as f:
+        CCDitems = pickle.load(f)
+
+    CCDitem = CCDitems[4]
+        
+    
+    instrument = Instrument("tests/calibration_data_test.toml")
+
+
+    CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
+    se_corrected,se_mask = correct_hotpixels(CCDitem,CCDitem['IMAGE'])
+
+    return se_corrected,se_mask
 
 if __name__ == "__main__":
 
-    test_calibrate()
-    test_calibration_output() 
-    test_readfunctions()
-    test_CCDunit()
-    test_non_linearity_fullframe()
-    test_non_linearity_binned()
-    test_calibrate()
-    test_error_algebra()
-    test_channel_quaterion()
-    test_photometer()
+    # test_calibrate()
+    # test_calibration_output() 
+    # test_readfunctions()
+    # test_CCDunit()
+    # test_non_linearity_fullframe()
+    # test_non_linearity_binned()
+    # test_calibrate()
+    # test_error_algebra()
+    # test_channel_quaterion()
+    # test_photometer()
+    #test_hp_correction()
+    test_se_correction()

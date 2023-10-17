@@ -15,6 +15,7 @@ The MATLAB script can be found here: https://github.com/OleMartinChristensen/MAT
 
 import numpy as np
 import scipy.optimize as opt
+from scipy.ndimage import median_filter
 from joblib import Parallel, delayed
 from scipy import linalg as linalg
 from math import isnan
@@ -1017,3 +1018,21 @@ def artifact_correction(ccditem,image=None):
     error_flag = combine_flags([error_flag_mask, error_flag_no_correction], [1, 1])
 
     return corrected_im, error_flag
+
+#Single events
+def correct_single_events(CCDitem,image):
+    se_mask = CCDitem['CCDunit'].get_single_event(CCDitem)
+    kernel_size = 3  
+    median_filtered_data = median_filter(CCDitem['image'], size=kernel_size, mode='constant', cval=np.nan)
+    # Replace NaN values in the original array with corresponding values from the median filtered data
+    se_corrected = image
+    se_corrected[se_mask==1] = median_filtered_data[se_mask==1]
+    
+    return se_corrected,se_mask
+
+def correct_hotpixels(CCDitem,image):
+    mapdate,hotpixel_map = CCDitem['CCDunit'].get_hotpixel_map(CCDitem)
+    image_corrected = image-hotpixel_map
+    hotpixel_mask = [hotpixel_map>0]
+    
+    return image_corrected,hotpixel_mask

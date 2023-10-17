@@ -16,7 +16,8 @@ import pickle
 import pandas as pd
 import scipy.io
 from scipy.io import loadmat
-
+import sqlite3 as sqlite
+from datetime import datetime
 
 class CCD:
     """Class to represent a single physical CCD on MATS, a.k.a CCDunit
@@ -324,6 +325,14 @@ class CCD:
             filename = calibration_data['artifact']['blank']
             self.artifact_masks = pd.read_pickle(filename)
 
+        # single event correction
+        filename = calibration_data['hot_pixels']['single_events']
+        self.single_event = filename
+
+        # single event correction
+        filename = calibration_data['hot_pixels']['hot_pixels']
+        self.hot_pixels = filename
+
                 
     def calib_denominator(self, mode): 
         """Get calibration constant that should be divided by to get unit 10^15 ph m-2 s-1 str-1 nm-1.
@@ -474,7 +483,6 @@ class CCD:
     def get_channel_quaternion(self):
         """Read the channel quaternion from file
         Args:
-            CCDitem (dict): Dictionary of type CCDitem
 
         Returns:
             quaternion
@@ -484,12 +492,65 @@ class CCD:
     def get_artifact_mask(self):
         """Read the artifact masks from file
         Args:
-            CCDitem (dict): Dictionary of type CCDitem
 
         Returns:
             artifact_masks (dataframe): panda dataframe containing the masks correcting for the artifact in nadir images
         """
         return self.artifact_masks
+
+    def get_single_event(self,CCDitem):
+        """Read the artifact masks from file
+        Args:
+            CCDitem (dict): Dictionary of type CCDitem
+
+        Returns:
+            se_mask (np.array): numpy array which marks any single event in image
+        """
+        date = CCDitem['TEXPMS'] ##Change to datetime?
+        channel = CCDitem['Channel'] ##Change to datetime?
+        single_event_rows = self.single_event[self.single_event.date == date & self.single_event.channel == channel].row
+        single_event_columns = self.single_event[self.single_event.date == date & self.single_event.channel == channel].row
+
+        se_mask = np.zeros(CCDitem['image'].shape)
+        for i in len(single_event_columns):
+            se_mask[single_event_rows[i],single_event_columns[i]] = 1
+
+        return se_mask
+
+    def get_hotpixel_map(self,CCDitem):
+        """
+        Function to get the hotpixel map for a given date
+
+        Arguments
+        ----------
+        date : datetime item specifing the desired date
+        channelname : The name of the channel (eg 'IR1') for which the map is required
+
+        Returns
+        -------
+        mapdate : datetime item giving the date of the map
+            if no valid map this will be the same as the date requested 
+            
+        HPM : array[unit16] or empty array if no valid data
+            map of hotpixel counts for the given date 
+        """
+
+        db = sqlite.connect(self.hot_pixels)
+        cur = db.cursor()
+        selectstr= 'select datetime, HPM from hotpixelmaps WHERE  datetime <= "{}"  and channel ==  "{}"  ORDER BY datetime DESC limit 1'
+        date = np.datetime64(CCDitem['EXP Date'],'s').astype(datetime)
+        channelname = CCDitem["channel"]
+        cur.execute(selectstr.format (date,channelname))
+        row=cur.fetchall()
+        if row :
+            row=row[0]
+            mapdate=row[0]
+            hotpixel_map=pickle.loads(row[1])
+        else:
+            mapdate= date
+            hotpixel_map=np.array([])
+
+        return mapdate,hotpixel_map
 
 class nonLinearity:
     """Class to represent a non-linearity for a MATS CCD.
