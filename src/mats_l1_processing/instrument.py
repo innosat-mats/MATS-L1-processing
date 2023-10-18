@@ -327,12 +327,18 @@ class CCD:
 
         # single event correction
         filename = calibration_data['hot_pixels']['single_events']
-        self.single_event = filename
+        file_conn = sqlite.connect(filename)
+        self.single_event = sqlite.connect(':memory:')
+        file_conn.backup(self.single_event)
+        file_conn.close()
 
-        # single event correction
+
+        # hot pixel correction
         filename = calibration_data['hot_pixels']['hot_pixels']
-        self.hot_pixels = filename
-
+        file_conn = sqlite.connect(filename)
+        self.hot_pixels = sqlite.connect(':memory:')
+        file_conn.backup(self.hot_pixels)
+        file_conn.close()
                 
     def calib_denominator(self, mode): 
         """Get calibration constant that should be divided by to get unit 10^15 ph m-2 s-1 str-1 nm-1.
@@ -506,7 +512,7 @@ class CCD:
         Returns:
             se_mask (np.array): numpy array which marks any single event in image
         """
-        db = sqlite.connect(self.single_event)
+        db = self.single_event
         cur = db.cursor()
 
         channelname = CCDitem["channel"]
@@ -528,19 +534,18 @@ class CCD:
 
         Arguments
         ----------
-        date : datetime item specifing the desired date
-        channelname : The name of the channel (eg 'IR1') for which the map is required
+        CCDitem : Dict holding information about the image to get hotpixel map for.
 
         Returns
         -------
         mapdate : datetime item giving the date of the map
             if no valid map this will be the same as the date requested 
             
-        HPM : array[unit16] or empty array if no valid data
+        hotpixel_map : array[unit16] or empty array if no valid data
             map of hotpixel counts for the given date 
         """
 
-        db = sqlite.connect(self.hot_pixels)
+        db = self.hot_pixels
         cur = db.cursor()
         selectstr= 'select datetime, HPM from hotpixelmaps WHERE  datetime <= "{}"  and channel ==  "{}"  ORDER BY datetime DESC limit 1'
         date = np.datetime64(CCDitem['EXP Date'],'s').astype(datetime)
@@ -555,7 +560,7 @@ class CCD:
             mapdate= date
             hotpixel_map=np.array([])
 
-        return mapdate,hotpixel_map
+        return mapdate, hotpixel_map
 
 class nonLinearity:
     """Class to represent a non-linearity for a MATS CCD.

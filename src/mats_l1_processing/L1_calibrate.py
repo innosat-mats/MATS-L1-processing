@@ -18,6 +18,8 @@ from mats_l1_processing.L1_calibration_functions import (
     flip_image,
     handle_bad_columns,
     artifact_correction,
+    correct_hotpixels,
+    correct_single_events
 )
 from mats_l1_processing.instrument import CCD
 from mats_l1_processing.pointing import add_channel_quaternion
@@ -61,17 +63,16 @@ def calibrate_all_items(CCDitems, instrument, plot=False):
 def L1_calibrate(CCDitem, instrument, force_table: bool = True):  # This used to take in a calibration_file instread of instrument object
 
     CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
-
-    image_bias_sub, error_flags_bias  = correct_single_events(CCDitem)
-    image_bias_sub, error_flags_bias  = correct_hot_pixels(CCDitem)
-
     
     error_bad_column=handle_bad_columns(CCDitem)
 
     image_lsb = CCDitem["IMAGE"]
+
+    image_se_corrected, error_flags_se  = correct_single_events(CCDitem,image_lsb)
+    image_hot_pixel_corrected, error_flags_hp  = correct_hotpixels(CCDitem,image_se_corrected)
     
     # Step 1 and 2: Remove bias and compensate for bad columns, image still in LSB
-    image_bias_sub,error_flags_bias = get_true_image(CCDitem)
+    image_bias_sub,error_flags_bias = get_true_image(CCDitem,image_hot_pixel_corrected)
 
     # step 3: correct for non-linearity (image is converted into float??)
 
@@ -108,8 +109,8 @@ def L1_calibrate(CCDitem, instrument, force_table: bool = True):  # This used to
 
     CCDitem["image_calibrated"] = image_calibrated
 
-    errors = combine_flags([error_bad_column,error_flags_bias,error_flags_linearity,error_flags_desmear,
+    errors = combine_flags([error_bad_column,error_flags_se, error_flags_hp, error_flags_bias,error_flags_linearity,error_flags_desmear,
     error_flags_dark,error_flags_flatfield,error_ghost,error_artifact],
-    [1,1,2,1,3,2,1,2])
+    [1,1, 1,1,2,1,3,2,1,2])
     
-    return image_lsb, image_bias_sub, image_desmeared, image_dark_sub, image_calib_nonflipped, image_calib_flipped, image_calibrated, errors
+    return image_lsb, image_se_corrected, image_hot_pixel_corrected, image_bias_sub, image_desmeared, image_dark_sub, image_calib_nonflipped, image_calib_flipped, image_calibrated, errors
