@@ -343,23 +343,44 @@ def test_se_correction():
     CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
     se_corrected,se_mask = correct_single_events(CCDitem,CCDitem['IMAGE'])
 
+    plt.figure()
+    plt.imshow(CCDitem['IMAGE'],origin='lower')
+    plt.axis('auto')
+    plt.colorbar()
+    plt.title('original image')
+    plt.show()
+
+    plt.figure()
+    plt.imshow(se_corrected,origin='lower')
+    plt.axis('auto')
+    plt.colorbar()
+    plt.title('corrected image')
+    plt.show()
+
+    plt.figure()
+    plt.imshow(CCDitem['IMAGE']-se_corrected,origin='lower')
+    plt.axis('auto')
+    plt.colorbar()
+    plt.title('difference')
+    plt.show()
+
     return
 
-def test_hp_correction():
+# def test_hp_correction():
     
-    with open('testdata/CCD_items_in_orbit_nightglow_example.pkl', 'rb') as f:
-        CCDitems = pickle.load(f)
+#     with open('testdata/CCD_items_in_orbit_nightglow_example.pkl', 'rb') as f:
+#         CCDitems = pickle.load(f)
 
-    CCDitem = CCDitems[4]
+#     CCDitem = CCDitems[4]
         
     
-    instrument = Instrument("tests/calibration_data_test.toml")
+#     instrument = Instrument("tests/calibration_data_test.toml")
 
 
-    CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
-    se_corrected,se_mask = correct_hotpixels(CCDitem,CCDitem['IMAGE'])
+#     CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
+#     se_corrected,se_mask = correct_hotpixels(CCDitem,CCDitem['IMAGE'])
 
-    return se_corrected,se_mask
+#     return se_corrected,se_mask
 
 if __name__ == "__main__":
 

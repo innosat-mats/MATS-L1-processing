@@ -1023,9 +1023,10 @@ def artifact_correction(ccditem,image=None):
 def correct_single_events(CCDitem,image):
     se_mask = CCDitem['CCDunit'].get_single_event(CCDitem)
     kernel_size = 3  
-    median_filtered_data = median_filter(CCDitem['image'], size=kernel_size, mode='constant', cval=np.nan)
+    se_corrected = image.copy()
+    se_corrected[se_mask==1] = -np.inf
+    median_filtered_data = median_filter(se_corrected, size=kernel_size, mode='nearest')
     # Replace NaN values in the original array with corresponding values from the median filtered data
-    se_corrected = image
     se_corrected[se_mask==1] = median_filtered_data[se_mask==1]
     
     return se_corrected,se_mask

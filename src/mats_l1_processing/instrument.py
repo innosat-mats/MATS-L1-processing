@@ -506,14 +506,19 @@ class CCD:
         Returns:
             se_mask (np.array): numpy array which marks any single event in image
         """
-        date = CCDitem['TEXPMS'] ##Change to datetime?
-        channel = CCDitem['Channel'] ##Change to datetime?
-        single_event_rows = self.single_event[self.single_event.date == date & self.single_event.channel == channel].row
-        single_event_columns = self.single_event[self.single_event.date == date & self.single_event.channel == channel].row
+        db = sqlite.connect(self.single_event)
+        cur = db.cursor()
 
-        se_mask = np.zeros(CCDitem['image'].shape)
-        for i in len(single_event_columns):
-            se_mask[single_event_rows[i],single_event_columns[i]] = 1
+        channelname = CCDitem["channel"]
+        
+        selectstr= 'select datetime, X, Y, BildNumber, channel from SingleEvents WHERE  datetime == "{}"  and channel ==  "{}"  ORDER BY datetime'
+        date = np.datetime64(CCDitem['EXP Date'],'s').astype(datetime)
+        cur.execute(selectstr.format (date,channelname))
+        single_events=cur.fetchall()
+        
+        se_mask = np.zeros(CCDitem['IMAGE'].shape)
+        for i in range(len(single_events)):
+            se_mask[single_events[i][2],single_events[i][1]] = 1
 
         return se_mask
 
