@@ -770,7 +770,7 @@ def binning_bc(Ncol, Ncolskip, NcolbinFPGA, NcolbinCCD, BadColumns):
     return n_read, n_coadd
 
 
-def desmear(image, nrskip, exptimeratio, fill=None):
+def desmear(image, nrextra, exptimeratio, fill=None):
     """Subtracts the smearing (due to no shutter) from the image taking into account crop.
 
     Args:
@@ -785,10 +785,10 @@ def desmear(image, nrskip, exptimeratio, fill=None):
     """
 
     nrow, ncol = image.shape
-    nr = nrow-nrskip
+    nr = nrow-nrextra
     weights = np.tril(
-        exptimeratio*np.ones([nrow, nrow]), -(nrskip+1))+np.diag(np.ones([nrow]))
-    if nrskip > 0:
+        exptimeratio*np.ones([nrow, nrow]), -(nrextra+1))+np.diag(np.ones([nrow]))
+    if nrextra > 0:
         extimage = image - \
             np.tril(exptimeratio*np.ones([nrow, nrow]), -
                     1) @ np.vstack((fill, np.zeros([nr, ncol])))
