@@ -19,16 +19,20 @@ from pathlib import Path
 calibration_file='/Users/lindamegner/MATS/MATS-retrieval/MATS-analysis/Linda/calibration_data_linda.toml'
 
 
-channels=['IR1','IR2','IR3','IR4','UV1','UV2']#,'NADIR' ]
+channels=['IR4','IR2','IR3','IR4','UV1','UV2']#,'NADIR' ]
 
 
 
 for channel in channels:
      #Note, only using HSM mode images for making flatfield now LM230925
-    flatfield_morphed, zs, ratiofield, flatfield_w_baffle, flatfield_wo_baffle=flatfield.make_flatfield(channel, calibration_file, plotresult=True, plotallplots=True)
+    flatfield_morphed=flatfield.make_flatfield(channel, calibration_file, plotresult=True, plotallplots=True)
     Path("output").mkdir(parents=True, exist_ok=True)
     np.savetxt('output/flatfield_'+channel+'_HSM.csv', flatfield_morphed)
     np.save('output/flatfield_'+channel+'_HSM.npy', flatfield_morphed)
+
+
+#
+    
 
 
 # %%

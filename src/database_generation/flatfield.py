@@ -343,15 +343,20 @@ def scalefieldtoedgevalue(ratiofield, colstart, colstop, rowstart, rowstop, nnpi
 def make_flatfield(channel, calibration_file, plotresult=False, plotallplots=False):
     import mats_l1_processing
     from sgolay2 import SGolayFilter2
+    from scipy.signal import medfilt
 
     #Note the high signal mode flatfields are used even if in low signal mode. They are scaled to be 1 in the middle of the field anyway.
     flatfield_wo_baffle=read_flatfield_wo_baffle(calibration_file, channel, sigmode='HSM')
     flatfield_w_baffle=read_flatfield_w_baffle(calibration_file, channel)
-   
+    # Remove hot pixels by pplying a median filter to every row in the 2D array
+    flatfield_s_wo_baffle = np.apply_along_axis(lambda x: medfilt(x, kernel_size=3), axis=1, arr=flatfield_wo_baffle)
+    flatfield_s_w_baffle = np.apply_along_axis(lambda x: medfilt(x, kernel_size=3), axis=1, arr=flatfield_w_baffle)       
 
-    flatfield_wo_baffle_scaled=scale_field(flatfield_wo_baffle)
-    flatfield_w_baffle_scaled=scale_field(flatfield_w_baffle)
+
+    flatfield_wo_baffle_scaled=scale_field(flatfield_s_wo_baffle)
+    flatfield_w_baffle_scaled=scale_field(flatfield_s_w_baffle)
     ratio_w_to_wo_scaled=flatfield_w_baffle_scaled/flatfield_wo_baffle_scaled
+
     zs = SGolayFilter2(window_size=31, poly_order=1)(ratio_w_to_wo_scaled)
     grad2d=select_edge_of_baffle_by_plotting(ratio_w_to_wo_scaled,zs, plot=plotallplots)
 
@@ -361,30 +366,35 @@ def make_flatfield(channel, calibration_file, plotresult=False, plotallplots=Fal
     colstart, colstop, rowstart, rowstop=define_edge_of_baffle(channel) #Note: a manual selection is needed based on select_edge_of_baffle_by_plotting
     scalefield=scalefieldtoedgevalue(zs, colstart, colstop, rowstart, rowstop, nnpix=2, npix=50)
 
+    flatfield=scalefield*flatfield_wo_baffle_scaled
 
 
 
     if plotresult:
-        fig, ax = plt.subplots(4,2, figsize=[8,10])
+        fig, ax = plt.subplots(6,2, figsize=[8,14])
+        plot_CCDimage(flatfield_wo_baffle,fig, ax[0,0], title=channel+' wo baffle')
+        plot_CCDimage(flatfield_w_baffle,fig, ax[0,1], title=channel+ ' w baffle')
 
-        plot_CCDimage(flatfield_wo_baffle_scaled,fig, ax[0,0], title=channel+' wo flatfield scaled')
-        plot_CCDimage(flatfield_w_baffle_scaled,fig, ax[0,1], title=channel+ 'w flatfield scaled')
+        plot_CCDimage(flatfield_wo_baffle-flatfield_s_wo_baffle,fig, ax[1,0], title=channel+'diff smooth and non smooth wo baffle')
+        plot_CCDimage(flatfield_w_baffle-flatfield_s_w_baffle,fig, ax[1,1], title=channel+ 'diff smooth and non smooth w baffle')
 
-        plot_CCDimage(ratio_w_to_wo_scaled,fig, ax[1,0], title=channel+' ratio btw scaled w and scaled wo ')
-        plot_CCDimage(zs,fig, ax[1,1], clim=[0.7, 1.1], title=channel+' sav golay fit')
-
-        plot_CCDimage(scalefield,fig, ax[2,0], clim=[0.7, 1.1], title=channel+' scalefield')
-        myflatfield=scalefield*flatfield_wo_baffle_scaled
-        plot_CCDimage(myflatfield,fig, ax[2,1], title=channel+' merged flatfield')
-        plot_CCDimage(flatfield_wo_baffle_scaled-myflatfield,fig, ax[3,0], title='difference wo flatfield -  merged flatfield')
-        plot_CCDimage(flatfield_w_baffle_scaled-myflatfield,fig, ax[3,1], title='difference w flatfield - merged flatfield')
-
+        plot_CCDimage(flatfield_wo_baffle_scaled,fig, ax[2,0], title=channel+' wo flatfield scaled')
+        plot_CCDimage(flatfield_w_baffle_scaled,fig, ax[2,1], title=channel+ 'w flatfield scaled')
+        plot_CCDimage(ratio_w_to_wo_scaled,fig, ax[3,0], title=channel+' ratio btw scaled w and scaled wo ')
+        plot_CCDimage(zs,fig, ax[3,1], clim=[0.7, 1.1], title=channel+' sav golay fit')
+        plot_CCDimage(scalefield,fig, ax[4,0], clim=[0.7, 1.1], title=channel+' scalefield')
+        plot_CCDimage(flatfield,fig, ax[4,1], title=channel+' merged flatfield')
+        plot_CCDimage(flatfield_wo_baffle_scaled-flatfield,fig, ax[5,0], title='difference wo flatfield -  merged flatfield')
+        plot_CCDimage(flatfield_w_baffle_scaled-flatfield,fig, ax[5,1], title='difference w flatfield - merged flatfield')
         plt.tight_layout()
         Path("output").mkdir(parents=True, exist_ok=True)
         fig.savefig("output/Merged_Flatfield_" + channel + ".jpg")
 
+        # figS, axS = plt.subplots(2,1)
+        # plot_CCDimage(flatfield, figS, axS[0],title=channel+' smoothed')
+        # plot_CCDimage(smooth_flatfield, figS, axS[1],title=channel+' smoothed')
 
-    return myflatfield
+    return flatfield
 
 
 
