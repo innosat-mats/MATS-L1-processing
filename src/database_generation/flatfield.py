@@ -342,7 +342,7 @@ def scalefieldtoedgevalue(ratiofield, colstart, colstop, rowstart, rowstop, nnpi
 
 def make_flatfield(channel, calibration_file, plotresult=False, plotallplots=False):
     import mats_l1_processing
-    from sgolay2 import SGolayFilter2
+    from database_generation.sgolay2 import SGolayFilter2
     from scipy.signal import medfilt
 
     #Note the high signal mode flatfields are used even if in low signal mode. They are scaled to be 1 in the middle of the field anyway.

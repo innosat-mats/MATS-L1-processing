@@ -65,7 +65,7 @@ def add_temperature_info(CCDitem, temperaturedata=None, relativetimedata=None, t
         else:
             raise Exception("the CCD lacks defined temperature")
 
-        CCDitem["temperature_HTR"] = HTR8A
+        CCDitem["temperature_HTR"] = (HTR8A+HTR8B)/2.0
         
         try: 
             CCDitem["temperature_ADC"]
