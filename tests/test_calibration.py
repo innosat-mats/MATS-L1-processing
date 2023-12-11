@@ -5,6 +5,7 @@ from mats_l1_processing.instrument import Instrument, CCD, Photometer
 from mats_l1_processing import photometer
 import pandas as pd
 from mats_l1_processing.L1_calibration_functions import inverse_model_real,inverse_model_table,make_binary,combine_flags,desmear,artifact_correction, correct_single_events,correct_hotpixels
+from mats_l1_processing.L1_calibrate import L1_calibrate
 
 import pickle
 import numpy as np
@@ -19,68 +20,47 @@ __license__ = "MIT"
 def test_calibrate():
     main("testdata/RacFiles_out/", "tests/calibration_data_test.toml")
 
+def make_calibration_plots(images):
 
-# def test_plot():
-#     main(
-#         "testdata/RacFiles_out/",
-#         "tests/calibration_data_test.toml",
-#         calibrate=False,
-#         plot=True,
-#     )
+    (image_lsb, 
+    image_se_corrected, 
+    image_hot_pixel_corrected, 
+    image_bias_sub, 
+    image_desmeared, 
+    image_dark_sub, 
+    image_calib_nonflipped, 
+    image_calib_flipped, 
+    image_calibrated, 
+    errors,
+    ) = images
 
-def test_readfunctions():
-    from mats_l1_processing.read_in_functions import read_all_files_in_root_directory
-    from database_generation.experimental_utils import read_all_files_in_protocol, readprotocol
+    fig, axs = plt.subplots(3,3)
+    fig.suptitle('Vertically stacked subplots')
+    axs[0,0].imshow(image_lsb)
+    axs[1,0].imshow(image_se_corrected)
+    axs[2,0].imshow(image_hot_pixel_corrected)
+    axs[0,1].imshow(image_bias_sub)
+    axs[1,1].imshow(image_desmeared)
+    axs[2,1].imshow(image_dark_sub)
+    axs[0,2].imshow(image_calib_nonflipped)
+    axs[1,2].imshow(image_calib_flipped)
+    axs[2,2].imshow(image_calibrated)
+
+    plt.show()
+
+    return
+
+def test_calibrate_plots():
+    from mats_l1_processing.read_in_functions import read_CCDitems 
+    instrument = Instrument("tests/calibration_data_test.toml")    
+
+    CCDitems = pickle.load("testdata/CCD_items_in_orbit_dayglow_example.pkl")
+
+    CCDitems[0]
     
+    images = L1_calibrate(CCDitems[0], instrument)
 
-    directory='testdata/210215OHBLimbImage/'
-    protocol='protocol_dark_bright_100um_incl_IR3.txt'
-
-
-    read_from="rac" 
-    df_protocol=readprotocol(directory+protocol)
-
-    df_bright=df_protocol[df_protocol.DarkBright=='B']
-    CCDitems=read_all_files_in_protocol(df_bright, read_from,directory)
-
-    with open('testdata/CCDitem_example.pkl', 'wb') as f:
-        pickle.dump(CCDitems[0], f)
-
-    CCDitems=read_all_files_in_root_directory(read_from,directory)
-    
-    read_from="imgview" 
-    CCDitems=read_all_files_in_root_directory(read_from,directory)
-    
-# def test_CCDunit():
-#     intrument = Instrument("tests/calibration_data_test.toml")
-#     CCDunit_IR1=intrument.get_CCD("IR1")
-#     with open('testdata/CCDunit_IR1_example.pkl', 'wb') as f:
-#         pickle.dump(CCDunit_IR1, f)
-
-#     intrument = Instrument("tests/calibration_data_test.toml")
-#     CCDunit_IR1=intrument.get_CCD("UV1")
-#     with open('testdata/CCDunit_UV1_example.pkl', 'wb') as f:
-#         pickle.dump(CCDunit_IR1, f)
-
-# def test_forward_backward(): 
-#     """
-#     This tests the forward and backward calibration. 
-#     The backward calibraton should completely reverse everything the forward 
-#     calibration has done thus giving back the original image.
-#     This test needs a CCDitem and a CCDunit, which are created and saved in 
-#     test_reafunctions and test_CCDunit.
-    
-#     """
-#     from mats_l1_processing.forward_model import  forward_and_backward
-    
-#     with open('testdata/CCDitem_example.pkl', 'rb') as f:
-#         CCDitem = pickle.load(f)
-    
-#     with open('testdata/CCDunit_IR1_example.pkl', 'rb') as f:
-#         CCDunit_IR1=pickle.load(f)        
-#     CCDitem['CCDunit']=CCDunit_IR1
-
-#     forward_and_backward(CCDitem,  photons=1000, plot=False)
+    make_calibration_plots(images)
 
 def test_non_linearity_fullframe():
     with open('testdata/CCDitem_example.pkl', 'rb') as f:
@@ -401,15 +381,10 @@ def test_hp_correction():
 
 if __name__ == "__main__":
 
-    test_calibrate()
-    test_calibration_output() 
-    test_readfunctions()
-    # test_CCDunit()
-    # test_non_linearity_fullframe()
-    # test_non_linearity_binned()
-    test_calibrate()
-    test_error_algebra()
-    test_channel_quaterion()
-    test_photometer()
-    test_hp_correction()
-    test_se_correction()
+    #test_calibrate()
+    test_calibrate_plots()
+    #test_error_algebra()
+    #test_channel_quaterion()
+    #test_photometer()
+    #test_hp_correction()
+    #test_se_correction()

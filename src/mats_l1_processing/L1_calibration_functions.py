@@ -835,7 +835,7 @@ def desmear_true_image(header, image=None, fill_method='lin_row', **kwargs):
     else:
         raise Exception("Fill method invalid")
 
-    image = desmear(image, nrskip=fill_function.shape[0], exptimeratio=T_row_extra /
+    image = desmear(image, nrextra=fill_function.shape[0], exptimeratio=T_row_extra /
                     T_exposure, fill=fill_array)
 
     # row 0 here is the first row to read out from the chip
