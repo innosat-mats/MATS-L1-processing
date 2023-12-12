@@ -290,12 +290,18 @@ def read_ccd_data_in_interval(
             else: raise TypeError("Illegal type given in the filter")
 
     table = dataset.to_table(filter=partition_filter & filterlist)
-
     dataframe = table.to_pandas()
-    dataframe.reset_index(inplace=True)
-    dataframe.set_index('TMHeaderTime',inplace=True)
-    dataframe.sort_index(inplace=True)
-    dataframe.reset_index(inplace=True)
+
+    if dataframe.index.name == 'EXPDate':
+        dataframe.reset_index(inplace=True)
+        dataframe.set_index('TMHeaderTime',inplace=True)
+        dataframe.sort_index(inplace=True)
+        dataframe.reset_index(inplace=True)
+    else:
+        dataframe.reset_index(drop=True,inplace=True)
+        dataframe.set_index('TMHeaderTime',inplace=True)
+        dataframe.sort_index(inplace=True)
+        dataframe.reset_index(inplace=True)
 
     if metadata:
         return dataframe, table.schema.metadata
@@ -459,7 +465,7 @@ def read_ccd_data(
         path,
         filesystem=filesystem,
     )
-    dataframe = table.to_pandas().reset_index()
+    dataframe = table.to_pandas().reset_index(drop=True)
     if metadata:
         return dataframe, table.schema.metadata
     return dataframe

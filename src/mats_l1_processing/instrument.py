@@ -16,7 +16,8 @@ import pickle
 import pandas as pd
 import scipy.io
 from scipy.io import loadmat
-
+import sqlite3 as sqlite
+from datetime import datetime
 
 class CCD:
     """Class to represent a single physical CCD on MATS, a.k.a CCDunit
@@ -220,7 +221,6 @@ class CCD:
         # Flatfields
         if channel=="NADIR":
             self.flatfield_HSM =np.ones(self.log_a_img_avr_HSM.shape)
-            self.flatfield_LSM =np.ones(self.log_a_img_avr_LSM.shape)
         else:
             self.flatfield_HSM = np.load(
                 calibration_data["flatfield"]["flatfieldfolder"]
@@ -228,12 +228,7 @@ class CCD:
                 + channel
                 + "_HSM.npy"
             )
-            self.flatfield_LSM = np.load(
-                calibration_data["flatfield"]["flatfieldfolder"]
-                + "flatfield_"
-                + channel
-                + "_LSM.npy"
-            )
+
 
         # Non-linearity
         if channel!="NADIR":
@@ -330,9 +325,23 @@ class CCD:
             filename = calibration_data['artifact']['blank']
             self.artifact_masks = pd.read_pickle(filename)
 
+        # single event correction
+        filename = calibration_data['hot_pixels']['single_events']
+        file_conn = sqlite.connect(filename)
+        self.single_event = sqlite.connect(':memory:')
+        file_conn.backup(self.single_event)
+        file_conn.close()
+
+
+        # hot pixel correction
+        filename = calibration_data['hot_pixels']['hot_pixels']
+        file_conn = sqlite.connect(filename)
+        self.hot_pixels = sqlite.connect(':memory:')
+        file_conn.backup(self.hot_pixels)
+        file_conn.close()
                 
     def calib_denominator(self, mode): 
-        """Get calibration constant that should be divided by to get unit 10^10 ph cm-2 s-1 str-1 nm-1.
+        """Get calibration constant that should be divided by to get unit 10^15 ph m-2 s-1 str-1 nm-1.
 
         Args:
             mode (str): Gain mode/ Signal mode for CCD 
@@ -428,22 +437,16 @@ class CCD:
             raise Exception("Undefined mode")
         return alpha_avr
 
-    def flatfield(self, mode):  # return flatfield at 0C for the CCD (in LSB?)
-        """?. 
-
-        Args:
-            mode (str): Gain mode/ Signal mode for CCD 
+    def flatfield(self):  
+        """
 
         Returns:
-            Flatfield of the CCD for the given mode.
+            Flatfield of the CCD as taken in High signal mode. 
+            Flatfield is difined to be 1 in on average in the center of the image.
+            Generally a merged version between 0 C flatfield without baffle and 20C flatfield with baffle are used.
 
-        """
-        if mode == 'High':
-            flatfield = self.flatfield_HSM
-        elif mode == 'Low':
-            flatfield = self.flatfield_LSM
-        else:
-            raise Exception("Undefined mode")
+        """        
+        flatfield = self.flatfield_HSM
 
         return flatfield
 
@@ -486,7 +489,6 @@ class CCD:
     def get_channel_quaternion(self):
         """Read the channel quaternion from file
         Args:
-            CCDitem (dict): Dictionary of type CCDitem
 
         Returns:
             quaternion
@@ -496,12 +498,69 @@ class CCD:
     def get_artifact_mask(self):
         """Read the artifact masks from file
         Args:
-            CCDitem (dict): Dictionary of type CCDitem
 
         Returns:
             artifact_masks (dataframe): panda dataframe containing the masks correcting for the artifact in nadir images
         """
         return self.artifact_masks
+
+    def get_single_event(self,CCDitem):
+        """Read the artifact masks from file
+        Args:
+            CCDitem (dict): Dictionary of type CCDitem
+
+        Returns:
+            se_mask (np.array): numpy array which marks any single event in image
+        """
+        db = self.single_event
+        cur = db.cursor()
+
+        channelname = CCDitem["channel"]
+        
+        selectstr= 'select datetime, X, Y, BildNumber, channel from SingleEvents WHERE  datetime == "{}"  and channel ==  "{}"  ORDER BY datetime'
+        date = np.datetime64(CCDitem['EXP Date'],'s').astype(datetime)
+        cur.execute(selectstr.format (date,channelname))
+        single_events=cur.fetchall()
+        
+        se_mask = np.zeros(CCDitem['IMAGE'].shape)
+        for i in range(len(single_events)):
+            se_mask[single_events[i][2],single_events[i][1]] = 1
+
+        return se_mask
+
+    def get_hotpixel_map(self,CCDitem):
+        """
+        Function to get the hotpixel map for a given date
+
+        Arguments
+        ----------
+        CCDitem : Dict holding information about the image to get hotpixel map for.
+
+        Returns
+        -------
+        mapdate : datetime item giving the date of the map
+            if no valid map this will be the same as the date requested 
+            
+        hotpixel_map : array[unit16] or empty array if no valid data
+            map of hotpixel counts for the given date 
+        """
+
+        db = self.hot_pixels
+        cur = db.cursor()
+        selectstr= 'select datetime, HPM from hotpixelmaps WHERE  datetime <= "{}"  and channel ==  "{}"  ORDER BY datetime DESC limit 1'
+        date = np.datetime64(CCDitem['EXP Date'],'s').astype(datetime)
+        channelname = CCDitem["channel"]
+        cur.execute(selectstr.format (date,channelname))
+        row=cur.fetchall()
+        if row :
+            row=row[0]
+            mapdate=row[0]
+            hotpixel_map=pickle.loads(row[1])
+        else:
+            mapdate= date
+            hotpixel_map=np.array([])
+
+        return mapdate, hotpixel_map
 
 class nonLinearity:
     """Class to represent a non-linearity for a MATS CCD.

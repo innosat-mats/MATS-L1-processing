@@ -18,6 +18,8 @@ from mats_l1_processing.L1_calibration_functions import (
     flip_image,
     handle_bad_columns,
     artifact_correction,
+    correct_hotpixels,
+    correct_single_events
 )
 from mats_l1_processing.instrument import CCD
 from mats_l1_processing.pointing import add_channel_quaternion
@@ -32,15 +34,16 @@ from mats_l1_processing.pointing import add_channel_quaternion
 def calibrate_all_items(CCDitems, instrument, plot=False):
     import matplotlib.pyplot as plt
     from database_generation.experimental_utils import plot_CCDimage
+    
 
     for CCDitem in CCDitems:
         (
             image_lsb,
-            image_lsb_no_art,
             image_bias_sub,
             image_desmeared,
             image_dark_sub,
             image_calib_nonflipped,
+            image_calib_flipped,
             image_calibrated,
             errors,
         ) = L1_calibrate(CCDitem, instrument)
@@ -48,37 +51,35 @@ def calibrate_all_items(CCDitems, instrument, plot=False):
         if plot == True:
             fig, ax = plt.subplots(7, 1)
             plot_CCDimage(image_lsb, fig, ax[0], "Original LSB")
-            plot_CCDimage(image_lsb_no_art, fig, ax[1], "Artifact corrected LSB (only for nadir)")
-            plot_CCDimage(image_bias_sub, fig, ax[2], "Bias subtracted")
-            plot_CCDimage(image_desmeared, fig, ax[3], " Desmeared LSB")
-            plot_CCDimage(image_dark_sub, fig, ax[4], " Dark current subtracted LSB")
-            plot_CCDimage(image_calib_nonflipped, fig, ax[5], " Flat field compensated LSB")
-            plot_CCDimage(image_calibrated, fig, ax[6], " Calibrated image")
-            
+            plot_CCDimage(image_bias_sub, fig, ax[1], "Bias subtracted")
+            plot_CCDimage(image_desmeared, fig, ax[2], " Desmeared LSB")
+            plot_CCDimage(image_dark_sub, fig, ax[3], " Dark current subtracted LSB")
+            plot_CCDimage(image_calib_nonflipped, fig, ax[4], " Flat field compensated LSB")
+            plot_CCDimage(image_calib_flipped, fig, ax[5], " Flipped images")
+            plot_CCDimage(image_calibrated, fig, ax[6], "Artifact corrected LSB (only for nadir)")
             fig.suptitle(CCDitem["channel"])
 
 
-def L1_calibrate(CCDitem, instrument, force_table: bool = True):  # This used to take in a calibration_file instread of instrument object
+def L1_calibrate(CCDitem, instrument, force_table: bool = True, return_steps=False):  # This used to take in a calibration_file instread of instrument object
 
     CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
-
     
     error_bad_column=handle_bad_columns(CCDitem)
 
     image_lsb = CCDitem["IMAGE"]
 
-    # Step 0: Remove artifact from nadir images
-    image_lsb_no_art,error_artifact = artifact_correction(CCDitem,image_lsb)
+    image_se_corrected, error_flags_se  = correct_single_events(CCDitem,image_lsb)
+    image_hot_pixel_corrected, error_flags_hp  = correct_hotpixels(CCDitem,image_se_corrected)
     
     # Step 1 and 2: Remove bias and compensate for bad columns, image still in LSB
-    image_bias_sub,error_flags_bias = get_true_image(CCDitem,image=image_lsb_no_art)
+    image_bias_sub,error_flags_bias = get_true_image(CCDitem,image_hot_pixel_corrected)
 
     # step 3: correct for non-linearity (image is converted into float??)
 
     image_linear,error_flags_linearity = get_linearized_image(CCDitem, image_bias_sub, force_table)
 
     # Step 4: Desmear
-    image_desmeared, error_flags_desmear= desmear_true_image(CCDitem, image_linear)
+    image_desmeared, error_flags_desmear= desmear_true_image(CCDitem, image_linear,fill_method="lin_row_median")
     #    image_desmeared = desmear_true_image(CCDitem)
 
     # Step 5 Remove dark current
@@ -87,28 +88,28 @@ def L1_calibrate(CCDitem, instrument, force_table: bool = True):  # This used to
 
     # Step 6 The true calibration: All pixels are scaled by the i.e. absolute 
     #and relative calibration factor and their flat_field factor.
-    image_calib_nonflipped, error_flags_flatfield = flatfield_calibration(CCDitem, image_dark_sub)
+    image_flatfielded, error_flags_flatfield = flatfield_calibration(CCDitem, image_dark_sub)
     
-    # Flip image for IR2 and IR4
-    image_calibrated= flip_image(CCDitem, image_calib_nonflipped)
+    # Flip flipped CCDs
+    image_flipped= flip_image(CCDitem, image_flatfielded)
+        
+    # Step 7 Remove ghost imaging. TBD.
+    # error_ghost =  make_binary(np.zeros(CCDitem["IMAGE"].shape,dtype=np.uint16),1)
+
+    image_calibrated = image_flipped
+
+    CCDitem["image_calibrated"] = image_calibrated
     
     # Add channel quaterion to image
     add_channel_quaternion(CCDitem)
-    
-    #Shift image, i.e. put image on common field of view
-    #valid_area,_,_ = grid_image(CCDitem)
-    
-    # Step 7 Remove ghost imaging. TBD.
-    error_ghost =  make_binary(np.zeros(CCDitem["IMAGE"].shape,dtype=np.uint16),1)
 
-    # Step 8 Transform from LSB to electrons and then to photons. TBD.
-
+    errors = combine_flags([error_bad_column,error_flags_se, error_flags_hp, error_flags_bias,error_flags_linearity,error_flags_desmear,
+    error_flags_dark,error_flags_flatfield],
+    [1,1,1,1,2,1,3,2])
     
+    CCDitem["errors"] = image_calibrated
 
-    CCDitem["image_calibrated"] = image_calibrated
-
-    errors = combine_flags([error_bad_column,error_flags_bias,error_flags_linearity,error_flags_desmear,
-    error_flags_dark,error_flags_flatfield,error_ghost,error_artifact],
-    [1,1,2,1,3,2,1,2])
-    
-    return image_lsb, image_lsb_no_art, image_bias_sub, image_desmeared, image_dark_sub, image_calib_nonflipped, image_calibrated, errors
+    if return_steps:
+        return image_lsb, image_se_corrected, image_hot_pixel_corrected, image_bias_sub, image_linear, image_desmeared, image_dark_sub, image_flatfielded, image_flipped, image_calibrated, errors
+    else:
+        return image_calibrated

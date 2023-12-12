@@ -15,10 +15,12 @@ The MATLAB script can be found here: https://github.com/OleMartinChristensen/MAT
 
 import numpy as np
 import scipy.optimize as opt
+from scipy.ndimage import median_filter
 from joblib import Parallel, delayed
 from scipy import linalg as linalg
 from math import isnan
 import warnings
+
 
 
 def flip_image(CCDitem, image=None):
@@ -37,7 +39,9 @@ def flip_image(CCDitem, image=None):
     if (CCDitem['channel'] == 'IR1'
         or CCDitem['channel'] == 'IR3'
         or CCDitem['channel'] == 'UV1'
-            or CCDitem['channel'] == 'UV2'):
+        or CCDitem['channel'] == 'UV2'
+        or CCDitem['channel'] == 'NADIR'
+    ):
         image = np.fliplr(image)
         CCDitem['flipped'] = True
 
@@ -59,6 +63,12 @@ def make_binary(flag, bits):
     # binary_repr_vector = np.vectorize(np.binary_repr)
 
     return flag
+
+# Function to convert decimal to binary and split into 16 bits
+def decimal_to_binary_with_bits(decimal):
+    binary_str = np.binary_repr(decimal)[2:].zfill(16)  # Convert to binary, remove '0b' prefix, and ensure 16 bits
+    return [int(bit) for bit in binary_str]
+
 
 
 # Utility functions
@@ -430,8 +440,10 @@ def handle_bad_columns(CCDitem, handle_BC=False):
 ## Flatfield ##
 
 def flatfield_calibration(CCDitem, image=None):
-    """Calibrates the image for eacvh pixel, ie, absolute relativ calibration and flatfield compensation
-
+    """Calibrates the image for each pixel, ie, absolute relativ calibration and flatfield compensation
+        Also conversion from to light per second, rather than the total light.
+        Output unit is 10^15 ph m-2 s-1 str-1 nm-1.
+    
     Args:
         CCDitem:  dictonary containing CCD image and information
         image (optional) np.array: If this is given then it will be used instead of the image in the CCDitem
@@ -447,10 +459,9 @@ def flatfield_calibration(CCDitem, image=None):
     image_flatf_fact = calculate_flatfield(CCDitem)
 
     image_calib_nonflipped = (
-        image/CCDitem["CCDunit"].calib_denominator(CCDitem["GAIN Mode"])
+        image/(int(CCDitem["TEXPMS"])/1000)/CCDitem["CCDunit"].calib_denominator(CCDitem["GAIN Mode"])
         / image_flatf_fact
     )
-    # rows,colums Note that nrow always seems to be implemented as +1 already, whereas NCOL does not, hence the missing '+1' in the column calculation /LM201204
 
     error_flag = np.zeros(image.shape, dtype=np.uint16)
     error_flag[image_calib_nonflipped < 0] = 1  # Flag for negative value
@@ -476,7 +487,7 @@ def calculate_flatfield(CCDitem):
         CCDunit = CCDitem["CCDunit"]
     except:
         raise Exception("No CCDunit defined for the CCDitem")
-    image_flatf = CCDunit.flatfield(CCDitem["GAIN Mode"])
+    image_flatf = CCDunit.flatfield()
 
     if (
         (CCDitem["NCSKIP"] > 1)
@@ -765,7 +776,7 @@ def binning_bc(Ncol, Ncolskip, NcolbinFPGA, NcolbinCCD, BadColumns):
     return n_read, n_coadd
 
 
-def desmear(image, nrskip, exptimeratio, fill=None):
+def desmear(image, nrextra, exptimeratio, fill=None):
     """Subtracts the smearing (due to no shutter) from the image taking into account crop.
 
     Args:
@@ -780,10 +791,10 @@ def desmear(image, nrskip, exptimeratio, fill=None):
     """
 
     nrow, ncol = image.shape
-    nr = nrow-nrskip
+    nr = nrow-nrextra
     weights = np.tril(
-        exptimeratio*np.ones([nrow, nrow]), -(nrskip+1))+np.diag(np.ones([nrow]))
-    if nrskip > 0:
+        exptimeratio*np.ones([nrow, nrow]), -(nrextra+1))+np.diag(np.ones([nrow]))
+    if nrextra > 0:
         extimage = image - \
             np.tril(exptimeratio*np.ones([nrow, nrow]), -
                     1) @ np.vstack((fill, np.zeros([nr, ncol])))
@@ -827,10 +838,19 @@ def desmear_true_image(header, image=None, fill_method='lin_row', **kwargs):
         fill_function = np.expand_dims(grad*((np.arange(nrskip/nrbin)+1)[::-1]), axis=1)
         fill_array = fill_function + \
             np.repeat(np.expand_dims(image[0, :], axis=1), fill_function.shape[0], axis=1).T
+    elif fill_method == "lin_row_median":
+        #make a rough correction for the fact row 2 has some row 1 in it
+        grad=(1 - T_row_extra /T_exposure)*(np.median(image[1,:])-np.median(image[2,:]))
+        fill_function = np.expand_dims(grad*((np.arange(nrskip/nrbin)+1)[::-1]), axis=1)
+        
+        filtered_row = median_filter(image[0, :], size=11, mode='mirror')
+        print(len(filtered_row))
+        fill_array = fill_function + \
+            np.repeat(np.expand_dims(filtered_row, axis=1), fill_function.shape[0], axis=1).T
     else:
         raise Exception("Fill method invalid")
 
-    image = desmear(image, nrskip=fill_function.shape[0], exptimeratio=T_row_extra /
+    image = desmear(image, nrextra=fill_function.shape[0], exptimeratio=T_row_extra /
                     T_exposure, fill=fill_array)
 
     # row 0 here is the first row to read out from the chip
@@ -1014,3 +1034,64 @@ def artifact_correction(ccditem,image=None):
     error_flag = combine_flags([error_flag_mask, error_flag_no_correction], [1, 1])
 
     return corrected_im, error_flag
+
+#%%
+#Single events and hot pixels
+
+def correct_single_events(CCDitem,image):
+    """
+    Function to correct for single events. It uses a median filter to fill in values where single
+    events are identified. Positions are gotten from database generated by Nickolay Ivchenko.
+
+    Arguments
+    ----------
+    CCDitem : Dict holding information about the image to get single event for.
+    image : image to correct
+
+
+    Returns
+    -------
+    image_corrected : Image corrected for single events
+        
+    se_mask : A binary mask of pixels where correction is done 
+    """
+
+    se_mask = CCDitem['CCDunit'].get_single_event(CCDitem)
+    kernel_size = 3  
+    image_corrected = image.copy()
+    image_corrected[se_mask==1] = -np.inf
+    median_filtered_data = median_filter(image_corrected, size=kernel_size, mode='nearest')
+    image_corrected[se_mask==1] = median_filtered_data[se_mask==1]
+    se_mask = se_mask.astype(np.uint16) 
+
+    return image_corrected,se_mask
+
+def correct_hotpixels(CCDitem,image):
+    """
+    Function to correct for hot pixels. Values and positions are gotten from database generated
+    by Nickolay Ivchenko.
+
+    Arguments
+    ----------
+    CCDitem : Dict holding information about the image to get hotpixel map for.
+    image : image to correct
+
+
+    Returns
+    -------
+    image_corrected : Image corrected for hot pixels
+        
+    hotpixel_mask : A binary mask of pixels where correction is done 
+    """
+
+    _,hotpixel_map = CCDitem['CCDunit'].get_hotpixel_map(CCDitem)
+    if len(hotpixel_map) == 0:
+        hotpixel_map = np.zeros(image.shape)
+    elif hotpixel_map.shape != image.shape:
+        hotpixel_map = np.zeros(image.shape)
+        warnings.warn("Hot pixel map wrong dimension")
+
+    image_corrected = image-hotpixel_map
+    hotpixel_mask = np.array([hotpixel_map>0],dtype=np.uint16)
+
+    return image_corrected,hotpixel_mask
