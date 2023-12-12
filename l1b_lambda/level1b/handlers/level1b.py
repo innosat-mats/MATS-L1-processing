@@ -11,8 +11,9 @@ from pandas import (  # type: ignore
     concat,
 )
 
-from mats_l1_processing.instrument import Instrument  # type: ignore
+from mats_l1_processing.instrument import Instrument, Photometer  # type: ignore
 from mats_l1_processing.L1_calibrate import L1_calibrate  # type: ignore
+from mats_l1_processing.photometer import calibrate_pm  # type: ignore
 from mats_l1_processing import read_parquet_functions as rpf  # type: ignore
 
 
@@ -24,6 +25,10 @@ Context = Any
 
 
 class InvalidMessage(Exception):
+    pass
+
+
+class UnknownDataSource(Exception):
     pass
 
 
@@ -49,10 +54,70 @@ def parse_event_message(event: Event) -> Tuple[str, str]:
     return bucket, key
 
 
+def handle_ccd_data(ccd_data: DataFrame, instrument: Instrument) -> DataFrame:
+    ccd_items = rpf.dataframe_to_ccd_items(
+        ccd_data,
+        remove_empty=False,
+        remove_errors=False,
+        remove_warnings=False,
+    )
+
+    for ccd in ccd_items:
+        if ccd["IMAGE"] is None:
+            image_calibrated = None
+            errors = None
+        else:
+            (
+                _,
+                _,
+                _,
+                _,
+                _,
+                _,
+                image_calibrated,
+                errors,
+            ) = L1_calibrate(ccd, instrument, force_table=False)
+        ccd["ImageCalibrated"] = image_calibrated
+        ccd["CalibrationErrors"] = errors
+
+    calibrated = DataFrame.from_records(
+        ccd_items,
+        columns=[
+            "ImageCalibrated",
+            "CalibrationErrors",
+            "qprime",
+        ],
+    )
+    l1b_data = concat([
+        ccd_data,
+        calibrated,
+    ], axis=1).set_index("EXPDate").sort_index()
+    l1b_data.drop(["ImageData", "Errors", "Warnings"], axis=1, inplace=True)
+    l1b_data = l1b_data[l1b_data.ImageCalibrated != None]  # noqa: E711
+    l1b_data["ImageCalibrated"] = [
+        ic.tolist() for ic in l1b_data["ImageCalibrated"]
+    ]
+    l1b_data["CalibrationErrors"] = [
+        ce.tolist() for ce in l1b_data["CalibrationErrors"]
+    ]
+
+    return l1b_data
+
+
+def handle_pm_data(pm_data: DataFrame, instrument: Instrument) -> DataFrame:
+    l1b_data = calibrate_pm(
+        pm_data,
+        instrument,
+    ).set_index("PMTime").sort_index()
+    l1b_data.drop(["Errors", "Warnings"], axis=1, inplace=True)
+    return l1b_data
+
+
 def lambda_handler(event: Event, context: Context):
     try:
         output_bucket = get_env_or_raise("L1B_BUCKET")
         code_version = get_env_or_raise("L1B_VERSION")
+        data_source = get_env_or_raise("L1A_DATA_SOURCE")
         region = os.environ.get('AWS_REGION', "eu-north-1")
         s3 = pa.fs.S3FileSystem(region=region)
 
@@ -82,13 +147,29 @@ def lambda_handler(event: Event, context: Context):
         raise Level1BException(msg) from err
 
     try:
-        instrument = Instrument("/calibration_data/calibration_data.toml")
-
-        ccd_data, metadata = rpf.read_ccd_data(
+        data, metadata = rpf.read_ccd_data(
             object_path,
             filesystem=s3,
             metadata=True,
         )
+    except Exception as err:
+        msg = f"Failed to get {object_path}: {err}"
+        raise Level1BException(msg) from err
+
+    try:
+        if data_source.upper() == "CCD":
+            instrument = Instrument("/calibration_data/calibration_data.toml")
+            l1b_data = handle_ccd_data(data, instrument)
+        elif data_source.upper() == "PM":
+            photometer = Photometer("/calibration_data/calibration_data.toml")
+            l1b_data = handle_pm_data(data, photometer)
+        else:
+            raise UnknownDataSource(f"Unknown data source {data_source}")
+    except Exception as err:
+        msg = f"Failed to process {object_path}: {err}"
+        raise Level1BException(msg) from err
+
+    try:
         metadata.update({
             "L1BCode": code_version,
             "DataLevel": "L1B",
@@ -103,61 +184,9 @@ def lambda_handler(event: Event, context: Context):
             del metadata["pandas"]
         elif b"pandas" in metadata.keys():
             del metadata[b"pandas"]
-
-        ccd_items = rpf.dataframe_to_ccd_items(
-            ccd_data,
-            remove_empty=False,
-            remove_errors=False,
-            remove_warnings=False,
-            legacy=False,
-        )
-
-        for ccd in ccd_items:
-            if ccd["IMAGE"] is None:
-                image_calibrated = None
-                errors = None
-            else:
-                (
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    image_calibrated,
-                    errors,
-                ) = L1_calibrate(ccd, instrument, force_table=False)
-            ccd["ImageCalibrated"] = image_calibrated
-            ccd["CalibrationErrors"] = errors
     except Exception as err:
         tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
-        msg = f"Failed to process {object_path}: {err} ({type(err)}; {tb})"
-        raise Level1BException(msg) from err
-
-    try:
-        calibrated = DataFrame.from_records(
-            ccd_items,
-            columns=[
-                "ImageCalibrated",
-                "CalibrationErrors",
-                "qprime",
-            ],
-        )
-        l1b_data = concat([
-            ccd_data,
-            calibrated,
-        ], axis=1).set_index("EXPDate").sort_index()
-        l1b_data.drop(["ImageData", "Errors", "Warnings"], axis=1, inplace=True)
-        l1b_data = l1b_data[l1b_data.ImageCalibrated != None]  # noqa: E711
-        l1b_data["ImageCalibrated"] = [
-            ic.tolist() for ic in l1b_data["ImageCalibrated"]
-        ]
-        l1b_data["CalibrationErrors"] = [
-            ce.tolist() for ce in l1b_data["CalibrationErrors"]
-        ]
-    except Exception as err:
-        tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
-        msg = f"Failed to prepare {object_path} for storage: {err} ({type(err)}; {tb})"  # noqa: E501
+        msg = f"Failed to update metadata for {object_path}: {err} ({type(err)}; {tb})"  # noqa: E501
         raise Level1BException(msg) from err
 
     try:

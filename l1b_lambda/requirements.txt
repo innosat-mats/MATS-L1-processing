@@ -44,13 +44,11 @@ contourpy==1.0.6
     # via matplotlib
 cycler==0.11.0
     # via matplotlib
-exceptiongroup==1.0.4
-    # via cattrs
 fonttools==4.38.0
     # via matplotlib
 gitdb==4.0.10
     # via gitpython
-gitpython==3.1.30
+gitpython==3.1.37
     # via -r requirements.in
 jmespath==1.0.1
     # via
@@ -86,7 +84,7 @@ pandas==1.5.2
     # via -r requirements.in
 pep517==0.13.0
     # via build
-pillow==9.3.0
+pillow==10.0.1
     # via matplotlib
 publication==0.0.3
     # via
@@ -119,10 +117,6 @@ smmap==5.0.0
     # via gitdb
 toml==0.10.2
     # via -r requirements.in
-tomli==2.0.1
-    # via
-    #   build
-    #   pep517
 tqdm==4.64.1
     # via -r requirements.in
 typeguard==2.13.3
@@ -152,5 +146,5 @@ typing-extensions==4.4.0
     # via
     #   boto3-stubs
     #   jsii
-urllib3==1.26.13
+urllib3==1.26.18
     # via botocore

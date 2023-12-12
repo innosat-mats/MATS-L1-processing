@@ -6,6 +6,7 @@ data
 src/database_generation/output/
 scripts/calibration_data_linda.toml
 l1b_lambda/level1b/mats_l1_processing
+src/database_generation/de421.bsp
 
 # Visual studio code
 .vscode

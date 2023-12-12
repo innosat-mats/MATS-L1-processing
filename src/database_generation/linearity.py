@@ -19,11 +19,11 @@ from scipy.interpolate import CubicSpline
 import scipy.optimize as opt
 import pwlf
 import toml
-from mats_l1_processing.experimental_utils import filter_on_time
+from database_generation.experimental_utils import filter_on_time
 import pickle
 import mats_l1_processing.instrument as instrument
 from mats_l1_processing.read_in_functions import channel_num_to_str, add_and_rename_CCDitem_info
-from mats_l1_processing.L1_calibration_functions import CCD, inverse_model_real,total_model_scalar,check_true_value_max,test_for_saturation
+from mats_l1_processing.L1_calibration_functions import inverse_model_real,total_model_scalar,check_true_value_max,test_for_saturation
 
 def fit_with_polyfit(x, y, deg):
 
