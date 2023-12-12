@@ -64,6 +64,12 @@ def make_binary(flag, bits):
 
     return flag
 
+# Function to convert decimal to binary and split into 16 bits
+def decimal_to_binary_with_bits(decimal):
+    binary_str = np.binary_repr(decimal)[2:].zfill(16)  # Convert to binary, remove '0b' prefix, and ensure 16 bits
+    return [int(bit) for bit in binary_str]
+
+
 
 # Utility functions
 
@@ -832,6 +838,15 @@ def desmear_true_image(header, image=None, fill_method='lin_row', **kwargs):
         fill_function = np.expand_dims(grad*((np.arange(nrskip/nrbin)+1)[::-1]), axis=1)
         fill_array = fill_function + \
             np.repeat(np.expand_dims(image[0, :], axis=1), fill_function.shape[0], axis=1).T
+    elif fill_method == "lin_row_median":
+        #make a rough correction for the fact row 2 has some row 1 in it
+        grad=(1 - T_row_extra /T_exposure)*(np.median(image[1,:])-np.median(image[2,:]))
+        fill_function = np.expand_dims(grad*((np.arange(nrskip/nrbin)+1)[::-1]), axis=1)
+        
+        filtered_row = median_filter(image[0, :], size=11, mode='mirror')
+        print(len(filtered_row))
+        fill_array = fill_function + \
+            np.repeat(np.expand_dims(filtered_row, axis=1), fill_function.shape[0], axis=1).T
     else:
         raise Exception("Fill method invalid")
 
