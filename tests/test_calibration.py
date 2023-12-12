@@ -20,33 +20,55 @@ __license__ = "MIT"
 def test_calibrate():
     main("testdata/RacFiles_out/", "tests/calibration_data_test.toml")
 
-def make_calibration_plots(images):
+def make_calibration_plots(images,datechannel):
 
-    (image_lsb, 
-    image_se_corrected, 
-    image_hot_pixel_corrected, 
-    image_bias_sub, 
-    image_desmeared, 
-    image_dark_sub, 
-    image_calib_nonflipped, 
-    image_calib_flipped, 
-    image_calibrated, 
-    errors,
+    print(len(images))
+    (image_lsb,
+     image_se_corrected, 
+     image_hot_pixel_corrected, 
+     image_bias_sub, image_linear,
+     image_desmeared, 
+     image_dark_sub, 
+     image_flatfielded, 
+     image_flipped, 
+     image_calibrated, 
+     errors,
     ) = images
 
-    fig, axs = plt.subplots(3,3)
-    fig.suptitle('Vertically stacked subplots')
-    axs[0,0].imshow(image_lsb)
-    axs[1,0].imshow(image_se_corrected)
-    axs[2,0].imshow(image_hot_pixel_corrected)
-    axs[0,1].imshow(image_bias_sub)
-    axs[1,1].imshow(image_desmeared)
-    axs[2,1].imshow(image_dark_sub)
-    axs[0,2].imshow(image_calib_nonflipped)
-    axs[1,2].imshow(image_calib_flipped)
-    axs[2,2].imshow(image_calibrated)
+    plot_calib_step(image_lsb,image_se_corrected,'SE_correction_' + datechannel,errors)
+    plot_calib_step(image_se_corrected,image_hot_pixel_corrected,'hot-pixel_correction' + datechannel,errors)
+    plot_calib_step(image_hot_pixel_corrected,image_bias_sub,'bias_subtraction' + datechannel,errors)
+    plot_calib_step(image_bias_sub,image_linear,'linearization' + datechannel,errors)
+    plot_calib_step(image_linear,image_desmeared,'desmear' + datechannel,errors)
+    plot_calib_step(image_desmeared,image_dark_sub,'dark_subtraction' + datechannel,errors)
+    plot_calib_step(image_dark_sub,image_flatfielded,'flatfielding' + datechannel,errors,divide=True)
+    plot_calib_step(image_flatfielded,image_flipped,'flipping' + datechannel,errors)
+    #plot_calib_step(image_flipped,image_calibrated,'image_calibrated',errors)
 
+    return
+
+def plot_calib_step(step_1,step2,title,error,divide=False):
+
+    error = np.zeros(np.shape(step_1))
+
+    fig, axs = plt.subplots(1,3)
+    fig.suptitle(title, fontsize=16)
+    sc = axs[0].imshow(step_1, vmin=np.mean(step_1)-np.std(step_1), vmax=np.mean(step_1)+np.std(step_1),origin='lower')
+    cbar = fig.colorbar(sc, ax=axs[0], orientation='vertical')
+    sc = axs[1].imshow(step2, vmin=np.mean(step2)-np.std(step2), vmax=np.mean(step2)+np.std(step2),origin='lower')
+    cbar = fig.colorbar(sc, ax=axs[1], orientation='vertical')
+    if divide:
+        sc = axs[2].imshow(step2/step_1,vmin=np.median(step2/step_1)-np.std(step2/step_1), vmax=np.median(step2/step_1)+np.std(step2/step_1),origin='lower')
+    else:
+        sc = axs[2].imshow(step2-step_1,origin='lower')
+    cbar = fig.colorbar(sc, ax=axs[2], orientation='vertical')
+    # axs[3].imshow(error,origin='lower')
+    # cbar = fig.colorbar(sc, ax=axs[3], orientation='vertical')
+
+    plt.tight_layout()
+    plt.savefig(title + '.png')
     plt.show()
+
 
     return
 
@@ -54,13 +76,39 @@ def test_calibrate_plots():
     from mats_l1_processing.read_in_functions import read_CCDitems 
     instrument = Instrument("tests/calibration_data_test.toml")    
 
-    CCDitems = pickle.load("testdata/CCD_items_in_orbit_dayglow_example.pkl")
+    with open('testdata/filename.pickle', 'rb') as f:
+        CCDitems = pickle.load(f)
 
-    CCDitems[0]
+
+    #IR1
+    i = 7
+    images = L1_calibrate(CCDitems[i], instrument,return_steps=True)
+    datechannel = str(CCDitems[i]["TMHeaderTime"])[0:10] + '_' + CCDitems[i]["channel"]
+    make_calibration_plots(images,datechannel)
+
+    #IR2
+    i = 4
+    images = L1_calibrate(CCDitems[i], instrument,return_steps=True)
+    datechannel = str(CCDitems[i]["TMHeaderTime"])[0:10] + '_' + CCDitems[i]["channel"]
+    make_calibration_plots(images,datechannel)
+
+    #IR3
+    i = 2
+    images = L1_calibrate(CCDitems[i], instrument,return_steps=True)
+    datechannel = str(CCDitems[i]["TMHeaderTime"])[0:10] + '_' + CCDitems[i]["channel"]
+    make_calibration_plots(images,datechannel)
+
+    #IR4
+    i = 1
+    images = L1_calibrate(CCDitems[i], instrument,return_steps=True)
+    datechannel = str(CCDitems[i]["TMHeaderTime"])[0:10] + '_' + CCDitems[i]["channel"]
+    make_calibration_plots(images,datechannel)
     
-    images = L1_calibrate(CCDitems[0], instrument)
+    #UV1
 
-    make_calibration_plots(images)
+    #UV2
+
+
 
 def test_non_linearity_fullframe():
     with open('testdata/CCDitem_example.pkl', 'rb') as f:
