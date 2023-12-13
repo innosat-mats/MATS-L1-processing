@@ -553,7 +553,7 @@ def calculate_dark(CCDitem):
     Returns:
         dark_calc_image: Full frame dark current image for given CCD item.
     """
-
+    from scipy.ndimage import median_filter
     try:
         CCDunit = CCDitem["CCDunit"]
     except:
@@ -561,15 +561,17 @@ def calculate_dark(CCDitem):
     #    CCDunit=CCD(CCDitem['channel'])
 
     # First estimate dark current using 0D algorithm
-    totdarkcurrent = (CCDunit.darkcurrent(CCDitem["temperature"], CCDitem["GAIN Mode"])
+    totdarkcurrent0D = (CCDunit.darkcurrent(CCDitem["temperature"], CCDitem["GAIN Mode"])
                       * int(CCDitem["TEXPMS"])/1000.0)  # tot dark current in electrons
+    totdarkcurrent2D = (CCDunit.darkcurrent2D(CCDitem["temperature"], CCDitem["GAIN Mode"])
+            * int(CCDitem["TEXPMS"])/ 1000.0)
+
     # Then based on how large the dark current is , decide on whether to use 0D or 2D subtraction
-    if totdarkcurrent.mean() > CCDunit.dc_2D_limit:
-        totdarkcurrent = (
-            CCDunit.darkcurrent2D(CCDitem["temperature"], CCDitem["GAIN Mode"])
-            * int(CCDitem["TEXPMS"])
-            / 1000.0
-        )
+    if totdarkcurrent0D.mean() > CCDunit.dc_2D_limit:
+        totdarkcurrent = median_filter(totdarkcurrent2D, size=3)
+    else:
+        totdarkcurrent = totdarkcurrent0D.mean() * np.ones(totdarkcurrent2D.shape)
+
 
     dark_calc_image = (
         CCDunit.ampcorrection
@@ -578,8 +580,8 @@ def calculate_dark(CCDitem):
     )
 
     if (
-        (CCDitem["NRSKIP"] > 1)  # changed to NR from NC Donal 20230210
-        or (CCDitem["NCSKIP"] > 1)
+        (CCDitem["NRSKIP"] > 0)  
+        or (CCDitem["NCSKIP"] > 0)
         or (CCDitem["NCBIN CCDColumns"] > 1)
         or (CCDitem["NCBIN FPGAColumns"] > 1)
         or (CCDitem["NRBIN"] > 1)
