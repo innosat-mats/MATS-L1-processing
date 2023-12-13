@@ -67,13 +67,15 @@ def read_flatfield(CCDunit, mode, flatfield_directory):
 
 def scale_field(field):
     # Now scale the average of the middle part of the flatfield with baffle
-    # to be the same as the average of flatfield_wo_baffle_lin_scaled .
+    # to be unity.
 
-    # # The values of the below should give an area not affected by the baffle
-    FirstRow = 350 #100
-    LastRow = 400 #400
-    FirstCol =400 #200
-    LastCol =1600 #1850
+    # # The values of the below should give an area not affected by the baffle and is the area that the 
+    # calibration factors from the lab is defined by
+
+    FirstRow = 350 
+    LastRow = 400 
+    FirstCol =524
+    LastCol =1523
 
     field_scaled =field/field[FirstRow:LastRow, FirstCol + 1 : LastCol + 1].mean()
 
