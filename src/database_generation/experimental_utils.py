@@ -26,7 +26,7 @@ def plotCCDitem(CCDitem, fig, axis, title="", clim=999, aspect="auto", altvec=No
     return sp
 
 
-def plot_CCDimage(image, fig=None, axis=None, title="", clim=None, aspect="auto", altvec=None):
+def plot_CCDimage(image, fig=None, axis=None, title="", clim=None, aspect="auto", altvec=None, borders=False, nrsig=2):
     """Plots a CCD image in a figure, 
     note that optional argument altvec ONLY specifies the upper and lower limit of the y-axis,
     not the actual altitudes of the image"""
@@ -51,10 +51,15 @@ def plot_CCDimage(image, fig=None, axis=None, title="", clim=None, aspect="auto"
 
     if clim==None:
         [col, row]=image.shape
-        #Take the mean and std of the middle of the image, not boarders
-        mean = image[int(col/2-col*4/10):int(col/2+col*4/10), int(row/2-row*4/10):int(row/2+row*4/10)].mean()
-        std = image[int(col/2-col*4/10):int(col/2+col*4/10), int(row/2-row*4/10):int(row/2+row*4/10)].std()
-        sp.set_clim([mean - 2 * std, mean + 2 * std])
+        if borders:
+            #Take the mean and std of the middle of the image,including borders
+            mean=image.mean()
+            std=image.std()
+        else:
+            #Take the mean and std of the middle of the image, not boarders
+            mean = image[int(col/2-col*4/10):int(col/2+col*4/10), int(row/2-row*4/10):int(row/2+row*4/10)].mean()
+            std = image[int(col/2-col*4/10):int(col/2+col*4/10), int(row/2-row*4/10):int(row/2+row*4/10)].std()
+        sp.set_clim([mean - nrsig * std, mean + nrsig * std])
     else:
         sp.set_clim(clim)
     fig.colorbar(sp, ax=axis)
