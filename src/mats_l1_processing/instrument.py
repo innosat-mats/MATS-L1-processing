@@ -166,9 +166,6 @@ class CCD:
         self.default_temp = calibration_data["darkcurrent"]["default_temp"]
         # Limit to choose 1D or 2D dark current subtraction
         self.dc_2D_limit=calibration_data["darkcurrent"]["dc_2D_limit"]
-        if self.dc_2D_limit!=0: 
-            # Raising hte below error since thresholds are yet to be decided  upon LM 20220928
-            raise NotImplementedError('Only threshold of zero supported')
 
         # Read in Gabriels calibration data from a .mat file
         filename = (
