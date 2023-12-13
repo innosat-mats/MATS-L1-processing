@@ -41,7 +41,7 @@ class Level1BStack(Stack):
 
         aux_data_bucket = Bucket.from_bucket_name(
             self,
-            f"MatsAuxDataBucket",
+            "MatsAuxDataBucket",
             AUX_DATA_BUCKET,
         )
 
