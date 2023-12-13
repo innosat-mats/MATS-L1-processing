@@ -48,6 +48,7 @@ class Level1BStack(Stack):
                 "L1B_BUCKET": output_bucket.bucket_name,
                 "L1B_VERSION": code_version,
                 "L1A_DATA_SOURCE": data_source,
+                "MATS_SQLITE_S3": "YES",
             },
         )
 

@@ -8,16 +8,18 @@ is included.
 
 """
 
-from cmath import e
+import os
 import toml
 import numpy as np
-import scipy
 import pickle
 import pandas as pd
-import scipy.io
 from scipy.io import loadmat
-import sqlite3 as sqlite
+if (MATS_SQLITE_S3 := (os.environ.get("MATS_SQLITE_S3", "").upper() == "YES")):
+    from sqlite_s3 import Sqlite_S3_Wrapper
+else:
+    import sqlite3 as sqlite
 from datetime import datetime
+
 
 class CCD:
     """Class to represent a single physical CCD on MATS, a.k.a CCDunit
@@ -229,7 +231,6 @@ class CCD:
                 + "_HSM.npy"
             )
 
-
         # Non-linearity
         if channel!="NADIR":
             with open(calibration_data["linearity"]["pixel"]
@@ -265,7 +266,6 @@ class CCD:
             self.ampcorrection = 1
         
         # Absolute and relative calibration constants
-        
         
         df = pd.read_csv(calibration_data["abs_rel_calib"]["abs_rel_calib_constants"], comment="#",
                          skipinitialspace=True, skiprows=()) 
@@ -327,18 +327,23 @@ class CCD:
 
         # single event correction
         filename = calibration_data['hot_pixels']['single_events']
-        file_conn = sqlite.connect(filename)
-        self.single_event = sqlite.connect(':memory:')
-        file_conn.backup(self.single_event)
-        file_conn.close()
-
+        if MATS_SQLITE_S3:
+            self.single_event = Sqlite_S3_Wrapper(filename)
+        else:
+            file_conn = sqlite.connect(filename)
+            self.single_event = sqlite.connect(':memory:')
+            file_conn.backup(self.single_event)
+            file_conn.close()
 
         # hot pixel correction
         filename = calibration_data['hot_pixels']['hot_pixels']
-        file_conn = sqlite.connect(filename)
-        self.hot_pixels = sqlite.connect(':memory:')
-        file_conn.backup(self.hot_pixels)
-        file_conn.close()
+        if MATS_SQLITE_S3:
+            self.hot_pixels = Sqlite_S3_Wrapper(filename)
+        else:
+            file_conn = sqlite.connect(filename)
+            self.hot_pixels = sqlite.connect(':memory:')
+            file_conn.backup(self.hot_pixels)
+            file_conn.close()
                 
     def calib_denominator(self, mode): 
         """Get calibration constant that should be divided by to get unit 10^15 ph m-2 s-1 str-1 nm-1.
