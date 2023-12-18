@@ -643,6 +643,8 @@ def meanbin_image_with_BC(CCDitem, image_nonbinned=None, error_flag_out=False):
     if image_nonbinned is None:
         image_nonbinned = CCDitem["IMAGE"]
 
+
+
     # Check if image needs to be binned or shifted
     nbin_c = int(CCDitem["NCBIN CCDColumns"])*int(CCDitem["NCBIN FPGAColumns"])
     nbin_r = int(CCDitem["NRBIN"])
@@ -653,7 +655,8 @@ def meanbin_image_with_BC(CCDitem, image_nonbinned=None, error_flag_out=False):
     totbin = int(CCDitem["NRBIN"])*int(CCDitem["NCBIN CCDColumns"]) * \
         int(CCDitem["NCBIN FPGAColumns"])
     if nrskip+nbin_r*nrow > 511:
-        nrskip = 511-nbin_r*nrow
+        #Pad image with copies of the last row for when we are reading out row 513 to 515
+        image_nonbinned = np.pad(image_nonbinned, ((0, 3), (0, 0)), 'edge')
     if (totbin > 1 or CCDitem["NCSKIP"] > 0 or CCDitem["NRSKIP"] > 0):
         image = image_nonbinned[nrskip:nrskip+nbin_r*nrow,
                                 CCDitem["NCSKIP"]:CCDitem["NCSKIP"]+nbin_c*ncol]
