@@ -28,10 +28,10 @@ for channel in channels:
      #Note, only using HSM mode images for making flatfield now LM230925
     flatfield_morphed=flatfield.make_flatfield(channel, calibration_file, plotresult=True, plotallplots=True)
     Path("output").mkdir(parents=True, exist_ok=True)
-    #np.savetxt('output/flatfield_'+channel+'_HSM.csv', flatfield_morphed)
-    #np.save('output/flatfield_'+channel+'_HSM.npy', flatfield_morphed)
+    np.savetxt('output/flatfield_'+channel+'_HSM.csv', flatfield_morphed)
+    np.save('output/flatfield_'+channel+'_HSM.npy', flatfield_morphed)
     #pickle the flatfields
-    pickle.dump(flatfield_morphed, open('output/flatfield_'+channel+'_HSM.pkl', 'wb'))
+    #pickle.dump(flatfield_morphed, open('output/flatfield_'+channel+'_HSM.pkl', 'wb'))
 
 
 
