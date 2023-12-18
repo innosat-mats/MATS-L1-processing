@@ -643,6 +643,8 @@ def meanbin_image_with_BC(CCDitem, image_nonbinned=None, error_flag_out=False):
     if image_nonbinned is None:
         image_nonbinned = CCDitem["IMAGE"]
 
+
+
     # Check if image needs to be binned or shifted
     nbin_c = int(CCDitem["NCBIN CCDColumns"])*int(CCDitem["NCBIN FPGAColumns"])
     nbin_r = int(CCDitem["NRBIN"])
@@ -653,7 +655,7 @@ def meanbin_image_with_BC(CCDitem, image_nonbinned=None, error_flag_out=False):
     totbin = int(CCDitem["NRBIN"])*int(CCDitem["NCBIN CCDColumns"]) * \
         int(CCDitem["NCBIN FPGAColumns"])
     if nrskip+nbin_r*nrow > 511:
-        nrskip = 511-nbin_r*nrow
+        image_nonbinned=padlastrowsofimage(image_nonbinned,nrow)
     if (totbin > 1 or CCDitem["NCSKIP"] > 0 or CCDitem["NRSKIP"] > 0):
         image = image_nonbinned[nrskip:nrskip+nbin_r*nrow,
                                 CCDitem["NCSKIP"]:CCDitem["NCSKIP"]+nbin_c*ncol]
@@ -689,6 +691,10 @@ def meanbin_image_with_BC(CCDitem, image_nonbinned=None, error_flag_out=False):
     else:
         return meanbinned_image
 
+def padlastrowsofimage(image,nrow):
+    #Pad image with copies of the last row for when we are reading out row 513 to 515
+    image = np.pad(image, ((0, nrow), (0, 0)), 'edge')
+    return image
 
 def get_true_image(header, image=None):
     # calculate true image by removing readout offset (pixel blank value) and

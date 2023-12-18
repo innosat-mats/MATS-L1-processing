@@ -12,6 +12,7 @@ This script produced morfed images between the flatfield without baffle taken at
 import numpy as np
 from database_generation import flatfield as flatfield
 from pathlib import Path
+import pickle
 
 #import sys
 #sys.path.append('/Users/lindamegner/MATS/MATS-retrieval/MATS-L1-processing/src/database_generation')
@@ -29,6 +30,9 @@ for channel in channels:
     Path("output").mkdir(parents=True, exist_ok=True)
     np.savetxt('output/flatfield_'+channel+'_HSM.csv', flatfield_morphed)
     np.save('output/flatfield_'+channel+'_HSM.npy', flatfield_morphed)
+    #pickle the flatfields
+    #pickle.dump(flatfield_morphed, open('output/flatfield_'+channel+'_HSM.pkl', 'wb'))
+
 
 
 #
