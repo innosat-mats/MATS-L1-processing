@@ -15,7 +15,7 @@ calibration_file = "tests/calibration_data_test.toml"
 
 
 def test_generate_flatfield():
-    flatfield_morphed = make_flatfield("IR1", "HSM", calibration_file, plot=False)
+    flatfield_morphed = make_flatfield("IR1", calibration_file, plotresult=False, plotallplots=False)
 
 
 def test_get_linearity():

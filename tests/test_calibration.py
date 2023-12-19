@@ -38,7 +38,7 @@ def make_calibration_plots(images,datechannel):
     plot_calib_step(image_lsb,image_se_corrected,'SE_correction_' + datechannel,errors)
     plot_calib_step(image_se_corrected,image_hot_pixel_corrected,'hot-pixel_correction' + datechannel,errors)
     plot_calib_step(image_hot_pixel_corrected,image_bias_sub,'bias_subtraction' + datechannel,errors)
-    plot_calib_step(image_bias_sub,image_linear,'linearization' + datechannel,errors)
+    plot_calib_step(image_bias_sub,image_linear,'linearization' + datechannel,errors,divide=True)
     plot_calib_step(image_linear,image_desmeared,'desmear' + datechannel,errors)
     plot_calib_step(image_desmeared,image_dark_sub,'dark_subtraction' + datechannel,errors)
     plot_calib_step(image_dark_sub,image_flatfielded,'flatfielding' + datechannel,errors,divide=True)
@@ -76,38 +76,45 @@ def test_calibrate_plots():
     from mats_l1_processing.read_in_functions import read_CCDitems 
     instrument = Instrument("tests/calibration_data_test.toml")    
 
-    with open('testdata/filename.pickle', 'rb') as f:
+    with open('testdata/CCD_items_in_orbit_UVIR.pkl', 'rb') as f:
         CCDitems = pickle.load(f)
 
 
     #IR1
-    i = 7
+    i = 5
     images = L1_calibrate(CCDitems[i], instrument,return_steps=True)
     datechannel = str(CCDitems[i]["TMHeaderTime"])[0:10] + '_' + CCDitems[i]["channel"]
     make_calibration_plots(images,datechannel)
 
     #IR2
-    i = 4
-    images = L1_calibrate(CCDitems[i], instrument,return_steps=True)
-    datechannel = str(CCDitems[i]["TMHeaderTime"])[0:10] + '_' + CCDitems[i]["channel"]
-    make_calibration_plots(images,datechannel)
-
-    #IR3
     i = 2
     images = L1_calibrate(CCDitems[i], instrument,return_steps=True)
     datechannel = str(CCDitems[i]["TMHeaderTime"])[0:10] + '_' + CCDitems[i]["channel"]
     make_calibration_plots(images,datechannel)
 
-    #IR4
+    #IR3
     i = 1
+    images = L1_calibrate(CCDitems[i], instrument,return_steps=True)
+    datechannel = str(CCDitems[i]["TMHeaderTime"])[0:10] + '_' + CCDitems[i]["channel"]
+    make_calibration_plots(images,datechannel)
+
+    #IR4
+    i = 6
     images = L1_calibrate(CCDitems[i], instrument,return_steps=True)
     datechannel = str(CCDitems[i]["TMHeaderTime"])[0:10] + '_' + CCDitems[i]["channel"]
     make_calibration_plots(images,datechannel)
     
     #UV1
+    i = 3
+    images = L1_calibrate(CCDitems[i], instrument,return_steps=True)
+    datechannel = str(CCDitems[i]["TMHeaderTime"])[0:10] + '_' + CCDitems[i]["channel"]
+    make_calibration_plots(images,datechannel)
 
     #UV2
-
+    i = 4
+    images = L1_calibrate(CCDitems[i], instrument,return_steps=True)
+    datechannel = str(CCDitems[i]["TMHeaderTime"])[0:10] + '_' + CCDitems[i]["channel"]
+    make_calibration_plots(images,datechannel)
 
 
 def test_non_linearity_fullframe():
