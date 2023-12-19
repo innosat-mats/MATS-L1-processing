@@ -112,4 +112,4 @@ def L1_calibrate(CCDitem, instrument, force_table: bool = True, return_steps=Fal
     if return_steps:
         return image_lsb, image_se_corrected, image_hot_pixel_corrected, image_bias_sub, image_linear, image_desmeared, image_dark_sub, image_flatfielded, image_flipped, image_calibrated, errors
     else:
-        return image_calibrated
+        return image_calibrated, errors
