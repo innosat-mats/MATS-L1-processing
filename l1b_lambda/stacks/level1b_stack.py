@@ -45,7 +45,7 @@ class Level1BStack(Stack):
             AUX_DATA_BUCKET,
         )
 
-        l1b_name  = f"Level1BLambda{data_source}{'Dev' if development else ''}"
+        l1b_name = f"Level1BLambda{data_source}{'Dev' if development else ''}"
         level1b_lambda = DockerImageFunction(
             self,
             l1b_name,
