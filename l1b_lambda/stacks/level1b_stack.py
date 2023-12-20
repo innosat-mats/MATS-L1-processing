@@ -45,9 +45,11 @@ class Level1BStack(Stack):
             AUX_DATA_BUCKET,
         )
 
+        l1b_name  = f"Level1BLambda{data_source}{'Dev' if development else ''}"
         level1b_lambda = DockerImageFunction(
             self,
-            f"Level1BLambda{data_source}{'Dev' if development else ''}",
+            l1b_name,
+            function_name=l1b_name,
             code=DockerImageCode.from_image_asset("."),
             timeout=lambda_timeout,
             architecture=Architecture.X86_64,
