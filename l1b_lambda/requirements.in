@@ -10,6 +10,7 @@ numpy
 matplotlib
 tqdm
 boto3
+sqlite-s3-query
 gitpython
 types-boto3
 types-botocore

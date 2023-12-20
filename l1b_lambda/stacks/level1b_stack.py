@@ -8,6 +8,8 @@ from aws_cdk.aws_s3_notifications import SqsDestination
 from aws_cdk.aws_sqs import DeadLetterQueue, Queue
 from constructs import Construct
 
+AUX_DATA_BUCKET = "mats-aux-data"
+
 
 class Level1BStack(Stack):
     def __init__(
@@ -37,6 +39,12 @@ class Level1BStack(Stack):
             output_bucket_name,
         )
 
+        aux_data_bucket = Bucket.from_bucket_name(
+            self,
+            "MatsAuxDataBucket",
+            AUX_DATA_BUCKET,
+        )
+
         level1b_lambda = DockerImageFunction(
             self,
             f"Level1BLambda{data_source}{'Dev' if development else ''}",
@@ -48,6 +56,7 @@ class Level1BStack(Stack):
                 "L1B_BUCKET": output_bucket.bucket_name,
                 "L1B_VERSION": code_version,
                 "L1A_DATA_SOURCE": data_source,
+                "MATS_SQLITE_S3": "YES",
             },
         )
 
@@ -81,3 +90,4 @@ class Level1BStack(Stack):
 
         input_bucket.grant_read(level1b_lambda)
         output_bucket.grant_put(level1b_lambda)
+        aux_data_bucket.grant_read_write(level1b_lambda)
