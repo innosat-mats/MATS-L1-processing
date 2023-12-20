@@ -68,15 +68,13 @@ def handle_ccd_data(ccd_data: DataFrame, instrument: Instrument) -> DataFrame:
             errors = None
         else:
             (
-                _,
-                _,
-                _,
-                _,
-                _,
-                _,
                 image_calibrated,
                 errors,
-            ) = L1_calibrate(ccd, instrument, force_table=False)
+            ) = L1_calibrate(
+                ccd, instrument,
+                force_table=False,
+                return_steps=False,
+            )
         ccd["ImageCalibrated"] = image_calibrated
         ccd["CalibrationErrors"] = errors
 
