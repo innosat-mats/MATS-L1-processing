@@ -14,11 +14,9 @@ import numpy as np
 import pickle
 import pandas as pd
 from scipy.io import loadmat
-if (MATS_SQLITE_S3 := (os.environ.get("MATS_SQLITE_S3", "").upper() == "YES")):
-    from sqlite_s3 import Sqlite_S3_Wrapper
-else:
-    import sqlite3 as sqlite
 from datetime import datetime
+
+from .sqlite_s3 import get_sqlite_connection
 
 
 class CCD:
@@ -324,23 +322,11 @@ class CCD:
 
         # single event correction
         filename = calibration_data['hot_pixels']['single_events']
-        if MATS_SQLITE_S3:
-            self.single_event = Sqlite_S3_Wrapper(filename)
-        else:
-            file_conn = sqlite.connect(filename)
-            self.single_event = sqlite.connect(':memory:')
-            file_conn.backup(self.single_event)
-            file_conn.close()
+        self.single_event = get_sqlite_connection(filename)
 
         # hot pixel correction
         filename = calibration_data['hot_pixels']['hot_pixels']
-        if MATS_SQLITE_S3:
-            self.hot_pixels = Sqlite_S3_Wrapper(filename)
-        else:
-            file_conn = sqlite.connect(filename)
-            self.hot_pixels = sqlite.connect(':memory:')
-            file_conn.backup(self.hot_pixels)
-            file_conn.close()
+        self.hot_pixels = get_sqlite_connection(filename)
                 
     def calib_denominator(self, mode): 
         """Get calibration constant that should be divided by to get unit 10^15 ph m-2 s-1 str-1 nm-1.
