@@ -448,11 +448,11 @@ if __name__ == "__main__":
     
 
     #test_calibrate()
-    #test_calibrate_plots()
+    test_calibrate_plots()
     #test_error_algebra()
     #test_channel_quaterion()
     #test_photometer()
     #test_hp_correction()
     #test_se_correction()
-    test_image_padding()
+    #test_image_padding()
 # %%
