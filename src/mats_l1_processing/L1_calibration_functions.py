@@ -466,7 +466,7 @@ def flatfield_calibration(CCDitem, image=None):
     error_flag = np.zeros(image.shape, dtype=np.uint16)
     error_flag[image_calib_nonflipped < 0] = 1  # Flag for negative value
 
-    error_flag = make_binary(error_flag, 2)
+    error_flag = make_binary(error_flag, 1)
 
     return image_calib_nonflipped, error_flag
 
