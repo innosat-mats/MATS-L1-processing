@@ -17,9 +17,6 @@ from mats_l1_processing.photometer import calibrate_pm  # type: ignore
 from mats_l1_processing import read_parquet_functions as rpf  # type: ignore
 
 
-BotoClient = Any
-S3Client = BotoClient
-SSMClient = BotoClient
 Event = Dict[str, Any]
 Context = Any
 
@@ -62,7 +59,8 @@ def handle_ccd_data(ccd_data: DataFrame, instrument: Instrument) -> DataFrame:
         remove_warnings=False,
     )
 
-    for ccd in ccd_items:
+    for n, ccd in enumerate(ccd_items):
+        print(f"CCD item {n} / {len(ccd_items)}")
         if ccd["IMAGE"] is None:
             image_calibrated = None
             errors = None
@@ -112,12 +110,13 @@ def handle_pm_data(pm_data: DataFrame, instrument: Instrument) -> DataFrame:
 
 
 def lambda_handler(event: Event, context: Context):
+    print("Initializing job...")
     try:
         output_bucket = get_env_or_raise("L1B_BUCKET")
         code_version = get_env_or_raise("L1B_VERSION")
         data_source = get_env_or_raise("L1A_DATA_SOURCE")
         region = os.environ.get('AWS_REGION', "eu-north-1")
-        s3 = pa.fs.S3FileSystem(region=region)
+        s3fs = pa.fs.S3FileSystem(region=region)
 
         try:
             bucket, object = parse_event_message(event)
@@ -144,10 +143,11 @@ def lambda_handler(event: Event, context: Context):
         msg = f"Failed to initialize handler: {err} ({type(err)}; {tb})"
         raise Level1BException(msg) from err
 
+    print(f"Reading {object_path}...")
     try:
         data, metadata = rpf.read_ccd_data(
             object_path,
-            filesystem=s3,
+            filesystem=s3fs,
             metadata=True,
         )
     except Exception as err:
@@ -156,17 +156,22 @@ def lambda_handler(event: Event, context: Context):
 
     try:
         if data_source.upper() == "CCD":
+            print(f"Initializing instrument for {data_source}...")
             instrument = Instrument("/calibration_data/calibration_data.toml")
+            print(f"Processing {data_source} data...")
             l1b_data = handle_ccd_data(data, instrument)
         elif data_source.upper() == "PM":
+            print(f"Initializing instrument for {data_source}...")
             photometer = Photometer("/calibration_data/calibration_data.toml")
+            print(f"Processing {data_source} data...")
             l1b_data = handle_pm_data(data, photometer)
         else:
             raise UnknownDataSource(f"Unknown data source {data_source}")
     except Exception as err:
         msg = f"Failed to process {object_path}: {err}"
         raise Level1BException(msg) from err
-
+    
+    print("Updating metadata...")
     try:
         metadata.update({
             "L1BCode": code_version,
@@ -187,6 +192,7 @@ def lambda_handler(event: Event, context: Context):
         msg = f"Failed to update metadata for {object_path}: {err} ({type(err)}; {tb})"  # noqa: E501
         raise Level1BException(msg) from err
 
+    print(f"Delivering results to {output_bucket}...")
     try:
         for key, val in metadata.items():
             l1b_data[
@@ -199,10 +205,11 @@ def lambda_handler(event: Event, context: Context):
         pq.write_table(
             out_table,
             f"{output_bucket}/{object}",
-            filesystem=s3,
+            filesystem=s3fs,
             version='2.6',
         )
     except Exception as err:
         tb = '|'.join(format_tb(err.__traceback__)).replace('\n', ';')
         msg = f"Failed to store {object_path}: {err} ({type(err)}; {tb})"
         raise Level1BException(msg) from err
+    print(f"Done processing {object_path}!")

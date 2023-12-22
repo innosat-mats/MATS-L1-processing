@@ -1,4 +1,4 @@
-from aws_cdk import Duration, Stack, RemovalPolicy
+from aws_cdk import Duration, Size, Stack, RemovalPolicy
 from aws_cdk.aws_lambda import (
     Architecture, DockerImageFunction, DockerImageCode,
 )
@@ -54,11 +54,11 @@ class Level1BStack(Stack):
             timeout=lambda_timeout,
             architecture=Architecture.X86_64,
             memory_size=4096,
+            ephemeral_storage_size=Size.mebibytes(1024),
             environment={
                 "L1B_BUCKET": output_bucket.bucket_name,
                 "L1B_VERSION": code_version,
                 "L1A_DATA_SOURCE": data_source,
-                "MATS_SQLITE_S3": "YES",
             },
         )
 

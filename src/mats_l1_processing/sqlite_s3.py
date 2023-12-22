@@ -1,4 +1,5 @@
 import os
+from tempfile import gettempdir
 from typing import Any, List, Union
 
 from sqlite_s3_query import sqlite_s3_query
@@ -22,8 +23,18 @@ class Sqlite_S3_Wrapper:
 
 
 def get_sqlite_connection(filename: str):
-    if os.environ.get("MATS_SQLITE_S3", "").upper() == "YES":
+    if filename.startswith("https://"):
         return Sqlite_S3_Wrapper(filename)
+    elif filename.startswith("s3://"):
+        from boto3 import client
+        s3 = client("s3")
+        bucket = filename[5:].split("/")[0]
+        key = filename[6 + len(bucket):]
+        db_name = key.split("/")[-1]
+        db_path = f"{gettempdir()}/{db_name}"
+        if not os.path.exists(db_path):
+            s3.download_file(bucket, key, db_path)
+        return get_sqlite_connection(db_path)
     else:
         import sqlite3 as sqlite
         file_conn = sqlite.connect(filename)
