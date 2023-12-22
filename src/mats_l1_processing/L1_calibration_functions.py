@@ -456,15 +456,18 @@ def flatfield_calibration(CCDitem, image=None):
 
     if image is None:
         image = CCDitem["IMAGE"]
-    image_flatf_fact = calculate_flatfield(CCDitem)
+    image_flatf_fact,  error_flag_largeflatf = calculate_flatfield(CCDitem)
 
     image_calib_nonflipped = (
         image/(int(CCDitem["TEXPMS"])/1000)/CCDitem["CCDunit"].calib_denominator(CCDitem["GAIN Mode"])
         / image_flatf_fact
     )
 
-    error_flag = np.zeros(image.shape, dtype=np.uint16)
-    error_flag[image_calib_nonflipped < 0] = 1  # Flag for negative value
+    error_flag_negative = np.zeros(image.shape, dtype=np.uint16)
+    error_flag_negative[image_calib_nonflipped < 0] = 1  # Flag for negative value
+
+    error_flag = combine_flags(
+        [error_flag_negative, error_flag_largeflatf], [1, 1])
 
     error_flag = make_binary(error_flag, 1)
 
@@ -498,7 +501,16 @@ def calculate_flatfield(CCDitem):
     ):
         image_flatf = bin_image_with_BC(CCDitem, image_flatf)
 
-    return image_flatf
+        totbin = int(CCDitem["NRBIN"])*int(CCDitem["NCBIN CCDColumns"]) * \
+        int(CCDitem["NCBIN FPGAColumns"])
+        flatf_factor_perbin = image_flatf/totbin
+        #Report error when flatfield factor over 5 %
+        error_flag_flatf = np.zeros(image_flatf.shape, dtype=np.uint16)
+        error_flag_flatf[flatf_factor_perbin > 1.05] = 1
+        error_flag_flatf[flatf_factor_perbin < 0.95] = 1
+
+        
+    return image_flatf, error_flag_flatf
 
 
 def subtract_dark(CCDitem, image=None):
