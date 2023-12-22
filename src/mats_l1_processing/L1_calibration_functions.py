@@ -469,7 +469,7 @@ def flatfield_calibration(CCDitem, image=None):
     error_flag = combine_flags(
         [error_flag_negative, error_flag_largeflatf], [1, 1])
 
-    error_flag = make_binary(error_flag, 1)
+    error_flag = make_binary(error_flag, 2)
 
     return image_calib_nonflipped, error_flag
 
@@ -490,27 +490,19 @@ def calculate_flatfield(CCDitem):
         CCDunit = CCDitem["CCDunit"]
     except:
         raise Exception("No CCDunit defined for the CCDitem")
-    image_flatf = CCDunit.flatfield()
-
-    if (
-        (CCDitem["NCSKIP"] > 1)
-        or (CCDitem["NCSKIP"] > 1)
-        or (CCDitem["NCBIN CCDColumns"] > 1)
-        or (CCDitem["NCBIN FPGAColumns"] > 1)
-        or (CCDitem["NRBIN"] > 1)
-    ):
-        image_flatf = bin_image_with_BC(CCDitem, image_flatf)
-
-        totbin = int(CCDitem["NRBIN"])*int(CCDitem["NCBIN CCDColumns"]) * \
-        int(CCDitem["NCBIN FPGAColumns"])
-        flatf_factor_perbin = image_flatf/totbin
-        #Report error when flatfield factor over 5 %
-        error_flag_flatf = np.zeros(image_flatf.shape, dtype=np.uint16)
-        error_flag_flatf[flatf_factor_perbin > 1.05] = 1
-        error_flag_flatf[flatf_factor_perbin < 0.95] = 1
-
         
-    return image_flatf, error_flag_flatf
+    image_flat_with_binfactor = bin_image_with_BC(CCDitem, CCDunit.flatfield())
+
+    totbin = int(CCDitem["NRBIN"])*int(CCDitem["NCBIN CCDColumns"]) * \
+    int(CCDitem["NCBIN FPGAColumns"])
+    image_flat_per_singlepixel = image_flat_with_binfactor/totbin
+    #Report error when flatfield factor over 5 %
+
+    error_flag_flatf = np.zeros(image_flat_per_singlepixel.shape, dtype=np.uint16)
+    error_flag_flatf[image_flat_per_singlepixel > 1.05] = 1
+    error_flag_flatf[image_flat_per_singlepixel < 0.95] = 1
+
+    return image_flat_with_binfactor, error_flag_flatf
 
 
 def subtract_dark(CCDitem, image=None):
@@ -690,7 +682,6 @@ def meanbin_image_with_BC(CCDitem, image_nonbinned=None, error_flag_out=False):
 
         meanbinned_image = np.nanmean(np.nanmean(
             image.reshape(nchunks_r, nbin_r, nchunks_c, nbin_c), 3), 1)
-
     else:
         meanbinned_image = image_nonbinned
 
