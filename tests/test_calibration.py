@@ -18,11 +18,18 @@ __license__ = "MIT"
 
 
 def test_calibrate():
-    main("testdata/RacFiles_out/", "tests/calibration_data_test.toml")
+    instrument = Instrument("tests/calibration_data_test.toml")    
 
+    with open('testdata/CCD_items_in_orbit_UVIR.pkl', 'rb') as f:
+        CCDitems = pickle.load(f)
+
+
+    #IR1
+    i = 5
+    images = L1_calibrate(CCDitems[i], instrument,return_steps=True)
+    
 def make_calibration_plots(images,datechannel):
 
-    print(len(images))
     (image_lsb,
      image_se_corrected, 
      image_hot_pixel_corrected, 
@@ -447,8 +454,8 @@ def test_image_padding():
 if __name__ == "__main__":
     
 
-    #test_calibrate()
-    test_calibrate_plots()
+    test_calibrate()
+    #test_calibrate_plots()
     #test_error_algebra()
     #test_channel_quaterion()
     #test_photometer()
