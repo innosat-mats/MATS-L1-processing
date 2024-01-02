@@ -19,10 +19,12 @@ def read_flatfield(CCDunit, mode, flatfield_directory):
 
     if mode == 'HSM': 
         directory = flatfield_directory
-        # protocol='flatfields_200330_SigMod1_LMprotocol.txt'
-        protocol = "readin_flatfields_SigMod1.txt"
+        protocol='flatfields_200330_SigMod1_LMprotocol.txt'
+        #protocol = "readin_flatfields_SigMod1.txt"
+        #directory = '/Users/lindamegner/MATS/retrieval/Calibration/AfterLightLeakage/Flatfields/20200429_flatfields_8C/'
+        #protocol='protocolx2.txt'
 
-    elif mode == 'LSM':  # LSM
+    elif mode == 'LSM':  # LSM Should not be used anymore. Only HSM
         directory = flatfield_directory
 
         protocol = "readin_flatfields_SigMod0.txt"
@@ -41,23 +43,38 @@ def read_flatfield(CCDunit, mode, flatfield_directory):
 
     
     if CCDunit.channel == "NADIR":  # Hack since we dont have any nadir flat fields yet.
-        # Cannot be zero due to zero devision in calculate_flatfield. Should be fixed.
         raise Warning('No flatfields measurements of the NADIR channel')
-        flatfield = np.zero((511, 2048))+0.01
+        flatfield = np.ones((511, 2048))
 
     else:
         CCDItemsUnitsSelect = list(
             filter(lambda x: (x.imageItem["channel"] == CCDunit.channel), CCDItemsUnits)
         )
 
-        if len(CCDItemsUnitsSelect) > 1:
-            print("Several possible pictures found")
-        try:
-            flatfield = CCDItemsUnitsSelect[
-                0
-            ].subpic  # This is where it gets read in. The dark (including offsets and balnks) have already been subracted.
-        except:
+        if len(CCDItemsUnitsSelect) < 1:
             print("No flatfield CCDItemUnit found - undefined flatfield")
+        
+
+        #Set signal limits for when the flatfield is used since we dont want only dark current and we dont want saturation
+        if CCDunit.channel in ["IR1", "IR2", "IR3", "IR4"]:
+            signalmin=600
+            signalmax=2800
+        elif CCDunit.channel in ["UV1", "UV2"]:#lower signal must be acceptes in UV since the signal is lower
+            signalmin=200
+            signalmax=2800
+        flatfieldlist = []  # Define flatfieldlist
+        for i in range(1, len(CCDItemsUnitsSelect)): #the first image is not used since it is weird for unknown reasons
+            flatfieldtmp = CCDItemsUnitsSelect[i].subpic
+            if flatfieldtmp.mean()>signalmin and flatfieldtmp.mean()<signalmax:
+                flatfieldlist.append(CCDItemsUnitsSelect[i].subpic/(CCDItemsUnitsSelect[i].imageItem["TEXPMS"]/1000.))  # Append to flatfieldlist
+                #print('i=',i,'channel:', CCDItemsUnitsSelect[i].imageItem["channel"])
+                #plot_CCDimage(CCDItemsUnitsSelect[i].subpic, title='flatfieldlist[i]'+str(i)+ 'texpms'+str(CCDItemsUnitsSelect[i].imageItem["TEXPMS"]/1000.))
+ 
+        try:
+            flatfield = np.array(flatfieldlist).mean(axis=0)
+        except:
+            Exception("No flatfield CCDItemUnit found - undefined flatfield")
+            
 
     return flatfield
 
@@ -350,15 +367,14 @@ def make_flatfield(channel, calibration_file, plotresult=False, plotallplots=Fal
     #Note the high signal mode flatfields are used even if in low signal mode. They are scaled to be 1 in the middle of the field anyway.
     flatfield_wo_baffle=read_flatfield_wo_baffle(calibration_file, channel, sigmode='HSM')
     flatfield_w_baffle=read_flatfield_w_baffle(calibration_file, channel)
-    # Remove hot pixels by pplying a median filter to every row in the 2D array
-    flatfield_s_wo_baffle = np.apply_along_axis(lambda x: medfilt(x, kernel_size=3), axis=1, arr=flatfield_wo_baffle)
+    # Remove hot pixels by applying a median filter to every row in the 2D array
+    flatfield_s_wo_baffle = flatfield_wo_baffle #Do  not apply median filter to the flatfield without baffle
     flatfield_s_w_baffle = np.apply_along_axis(lambda x: medfilt(x, kernel_size=3), axis=1, arr=flatfield_w_baffle)       
-
+    
 
     flatfield_wo_baffle_scaled=scale_field(flatfield_s_wo_baffle)
     flatfield_w_baffle_scaled=scale_field(flatfield_s_w_baffle)
     ratio_w_to_wo_scaled=flatfield_w_baffle_scaled/flatfield_wo_baffle_scaled
-
     zs = SGolayFilter2(window_size=31, poly_order=1)(ratio_w_to_wo_scaled)
     grad2d=select_edge_of_baffle_by_plotting(ratio_w_to_wo_scaled,zs, plot=plotallplots)
 

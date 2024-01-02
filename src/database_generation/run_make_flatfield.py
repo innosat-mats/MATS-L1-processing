@@ -20,7 +20,7 @@ import pickle
 calibration_file='/Users/lindamegner/MATS/MATS-retrieval/MATS-analysis/Linda/calibration_data_linda.toml'
 
 
-channels=['IR4','IR2','IR3','IR4','UV1','UV2']#,'NADIR' ]
+channels=['IR1','IR2','IR3','IR4','UV1','UV2']#,'NADIR' ]
 
 
 
