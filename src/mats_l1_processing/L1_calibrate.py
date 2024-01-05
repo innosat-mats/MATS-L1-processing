@@ -88,7 +88,7 @@ def L1_calibrate(CCDitem, instrument, force_table: bool = True, return_steps=Fal
 
     # Step 6 The true calibration: All pixels are scaled by the i.e. absolute 
     #and relative calibration factor and their flat_field factor.
-    image_flatfielded, error_flags_flatfield = flatfield_calibration(CCDitem, image_dark_sub)
+    image_flatfielded, error_flags_flatfield= flatfield_calibration(CCDitem, image_dark_sub)
     
     # Flip flipped CCDs
     image_flipped= flip_image(CCDitem, image_flatfielded)
@@ -105,7 +105,7 @@ def L1_calibrate(CCDitem, instrument, force_table: bool = True, return_steps=Fal
 
     errors = combine_flags([error_bad_column,error_flags_se, error_flags_hp, error_flags_bias,error_flags_linearity,error_flags_desmear,
     error_flags_dark,error_flags_flatfield],
-    [1,1,1,1,2,1,3,1]).squeeze()
+    [1,1,1,1,2,1,3,2]).squeeze()
     
     CCDitem["errors"] = image_calibrated
 
