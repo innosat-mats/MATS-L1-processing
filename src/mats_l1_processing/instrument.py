@@ -17,7 +17,7 @@ import pandas as pd
 import scipy.io
 from scipy.io import loadmat
 import sqlite3 as sqlite
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class CCD:
     """Class to represent a single physical CCD on MATS, a.k.a CCDunit
@@ -84,14 +84,14 @@ class CCD:
 
     """
 
-    def __init__(self, channel, calibration_file):
+    def __init__(self, channel, calibration_file, start_datetime: datetime = datetime(2000,1,1), end_datetime: datetime = datetime(3000,1,1)):
 
         """Init method for CCD class
 
         Args:
             channel (str): Name of channel
             calibration_file (str): calibration file containing paths to calibration files
-
+            date (datetime): datetime on which to extract calibration parameters (default: None) 
         """
 
         self.channel = channel
@@ -324,11 +324,20 @@ class CCD:
 
         # single event correction
         filename = calibration_data['hot_pixels']['single_events']
-        file_conn = sqlite.connect(filename)
-        self.single_event = sqlite.connect(':memory:')
-        file_conn.backup(self.single_event)
-        file_conn.close()
+        disk_conn = sqlite.connect(filename)
 
+        # Define the SQL query to select the desired data
+        query = f'''
+            SELECT * FROM SingleEvents
+            WHERE datetime BETWEEN '{start_datetime}' AND '{end_datetime}'
+            AND channel = '{self.channel}'
+        '''
+
+        # Use Pandas to read the query result into a DataFrame
+        self.single_event = pd.read_sql_query(query, disk_conn)
+        self.single_event['datetime'] = pd.to_datetime(self.single_event['datetime'])
+        # Close both database connections if they're no longer needed
+        disk_conn.close()
 
         # hot pixel correction
         filename = calibration_data['hot_pixels']['hot_pixels']
@@ -509,19 +518,13 @@ class CCD:
         Returns:
             se_mask (np.array): numpy array which marks any single event in image
         """
-        db = self.single_event
-        cur = db.cursor()
-
-        channelname = CCDitem["channel"]
-        
-        selectstr= 'select datetime, X, Y, BildNumber, channel from SingleEvents WHERE  datetime == "{}"  and channel ==  "{}"  ORDER BY datetime'
+        df = self.single_event
         date = np.datetime64(CCDitem['EXP Date'],'s').astype(datetime)
-        cur.execute(selectstr.format (date,channelname))
-        single_events=cur.fetchall()
+        single_events = df[df.datetime==date]
         
         se_mask = np.zeros(CCDitem['IMAGE'].shape)
         for i in range(len(single_events)):
-            se_mask[single_events[i][2],single_events[i][1]] = 1
+            se_mask[single_events.iloc[i]['Y'],single_events.iloc[i]['X']] = 1
 
         return se_mask
 
@@ -729,7 +732,7 @@ class Instrument:
         calibration_file: string containing the info in the calibration file
         """
 
-    def __init__(self, calibration_file, channel=None):
+    def __init__(self, calibration_file, channel=None, start_datetime: datetime = datetime(2000,1,1), end_datetime: datetime = datetime(3000,1,1)):
 
         """Init method for Instrument class
 
@@ -753,13 +756,13 @@ class Instrument:
         self.KTH_test_channel = None
         
         if channel == None:
-            self.IR1 = CCD("IR1",calibration_file)
-            self.IR2 = CCD("IR2",calibration_file)
-            self.IR3 = CCD("IR3",calibration_file)
-            self.IR4 = CCD("IR4",calibration_file)
-            self.UV1 = CCD("UV1",calibration_file)
-            self.UV2 = CCD("UV2",calibration_file)
-            self.NADIR = CCD("NADIR",calibration_file)
+            self.IR1 = CCD("IR1",calibration_file,start_datetime,end_datetime)
+            self.IR2 = CCD("IR2",calibration_file,start_datetime,end_datetime)
+            self.IR3 = CCD("IR3",calibration_file,start_datetime,end_datetime)
+            self.IR4 = CCD("IR4",calibration_file,start_datetime,end_datetime)
+            self.UV1 = CCD("UV1",calibration_file,start_datetime,end_datetime)
+            self.UV2 = CCD("UV2",calibration_file,start_datetime,end_datetime)
+            self.NADIR = CCD("NADIR",calibration_file,start_datetime,end_datetime)
             
         elif type(channel) == str:
             setattr(self, channel, CCD("channel",calibration_file))

@@ -17,7 +17,7 @@ import numpy as np
 import scipy.optimize as opt
 from scipy.ndimage import median_filter
 from joblib import Parallel, delayed
-from scipy import linalg as linalg
+from numpy import linalg as linalg
 from math import isnan
 import warnings
 

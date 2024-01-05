@@ -6,7 +6,7 @@ from mats_l1_processing import photometer
 import pandas as pd
 from mats_l1_processing.L1_calibration_functions import inverse_model_real,inverse_model_table,make_binary,combine_flags,desmear,artifact_correction, correct_single_events,correct_hotpixels, padlastrowsofimage
 from mats_l1_processing.L1_calibrate import L1_calibrate
-
+from datetime import datetime
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,10 +18,14 @@ __license__ = "MIT"
 
 
 def test_calibrate():
-    instrument = Instrument("tests/calibration_data_test.toml")    
-
+    
     with open('testdata/CCD_items_in_orbit_UVIR.pkl', 'rb') as f:
         CCDitems = pickle.load(f)
+
+    start_date  = np.datetime64(CCDitems[0]['EXP Date'],'s').astype(datetime)
+    end_date  = np.datetime64(CCDitems[-1]['EXP Date'],'s').astype(datetime)
+
+    instrument = Instrument("tests/calibration_data_test.toml",start_datetime=start_date,end_datetime=end_date)    
 
 
     #IR1
@@ -455,11 +459,11 @@ if __name__ == "__main__":
     
 
     test_calibrate()
-    #test_calibrate_plots()
-    #test_error_algebra()
-    #test_channel_quaterion()
-    #test_photometer()
-    #test_hp_correction()
-    #test_se_correction()
-    #test_image_padding()
+    test_calibrate_plots()
+    test_error_algebra()
+    test_channel_quaterion()
+    test_photometer()
+    test_hp_correction()
+    test_se_correction()
+    test_image_padding()
 # %%
