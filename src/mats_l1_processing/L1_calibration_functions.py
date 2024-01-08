@@ -557,7 +557,6 @@ def calculate_dark(CCDitem):
     Returns:
         dark_calc_image: Full frame dark current image for given CCD item.
     """
-    from scipy.ndimage import median_filter
     try:
         CCDunit = CCDitem["CCDunit"]
     except:
@@ -572,7 +571,7 @@ def calculate_dark(CCDitem):
 
     # Then based on how large the dark current is , decide on whether to use 0D or 2D subtraction
     if totdarkcurrent0D.mean() > CCDunit.dc_2D_limit:
-        totdarkcurrent = median_filter(totdarkcurrent2D, size=3)
+        totdarkcurrent = totdarkcurrent2D
     else:
         totdarkcurrent = totdarkcurrent0D.mean() * np.ones(totdarkcurrent2D.shape)
 

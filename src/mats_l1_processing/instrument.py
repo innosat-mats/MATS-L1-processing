@@ -18,6 +18,7 @@ import scipy.io
 from scipy.io import loadmat
 import sqlite3 as sqlite
 from datetime import datetime
+from scipy.ndimage import median_filter
 
 class CCD:
     """Class to represent a single physical CCD on MATS, a.k.a CCDunit
@@ -205,15 +206,16 @@ class CCD:
         self.log_b_std_LSM = mat["log_b_std_LSM"]
 
         # 2D dark current subtraction stuff
-        self.log_a_img_avr_LSM = mat["log_a_img_avr_LSM"]
-        self.log_a_img_err_LSM = mat["log_a_img_err_LSM"]
-        self.log_b_img_avr_LSM = mat["log_b_img_avr_LSM"]
-        self.log_b_img_err_LSM = mat["log_b_img_err_LSM"]
+        self.log_a_img_avr_LSM = median_filter(mat["log_a_img_avr_LSM"], size=3)
+        self.log_a_img_err_LSM = median_filter(mat["log_a_img_err_LSM"], size=3)
+        self.log_b_img_avr_LSM = median_filter(mat["log_b_img_avr_LSM"], size=3)
+        self.log_b_img_err_LSM = median_filter(mat["log_b_img_err_LSM"], size=3)
 
-        self.log_a_img_avr_HSM = mat["log_a_img_avr_HSM"]
-        self.log_a_img_err_HSM = mat["log_a_img_err_HSM"]
-        self.log_b_img_avr_HSM = mat["log_b_img_avr_HSM"]
-        self.log_b_img_err_HSM = mat["log_b_img_err_HSM"]
+        self.log_a_img_avr_HSM = median_filter(mat["log_a_img_avr_HSM"], size=3)
+        self.log_a_img_err_HSM = median_filter(mat["log_a_img_err_HSM"], size=3)
+        self.log_b_img_avr_HSM = median_filter(mat["log_b_img_avr_HSM"], size=3)
+        self.log_b_img_err_HSM = median_filter(mat["log_b_img_err_HSM"], size=3)
+
 
         # Flatfields
         if channel=="NADIR":
