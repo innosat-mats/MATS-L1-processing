@@ -17,7 +17,7 @@ import pandas as pd
 import scipy.io
 from scipy.io import loadmat
 import sqlite3 as sqlite
-from datetime import datetime, timedelta
+from datetime import datetime
 
 class CCD:
     """Class to represent a single physical CCD on MATS, a.k.a CCDunit
@@ -91,7 +91,9 @@ class CCD:
         Args:
             channel (str): Name of channel
             calibration_file (str): calibration file containing paths to calibration files
-            date (datetime): datetime on which to extract calibration parameters (default: None) 
+            start_datetime (datetime): datetime on which start extraction calibration parameters (default: None) 
+            end_datetime (datetime): datetime on which to end extraction calibration parameters (default: None) 
+
         """
 
         self.channel = channel
@@ -739,6 +741,8 @@ class Instrument:
         Args:
             calibration_file (str): calibration file containing paths to calibration data
             channel (str, list, optional): name of channel, a list of channel names or empty which creates a oject with the 6 standard channels.            
+            start_datetime (datetime): datetime on which start extraction calibration parameters (default: None) 
+            end_datetime (datetime): datetime on which to end extraction calibration parameters (default: None) 
 
         """
 
