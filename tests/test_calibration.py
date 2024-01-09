@@ -413,14 +413,22 @@ def test_hp_correction():
     with open('testdata/CCD_items_in_orbit_nightglow_example.pkl', 'rb') as f:
         CCDitems = pickle.load(f)
 
-    CCDitem = CCDitems[4]
-        
-    
+    CCDitem = CCDitems[7]
     instrument = Instrument("tests/calibration_data_test.toml")
-
-
     CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
     hot_pixel_corrected,hot_pixel_mask = correct_hotpixels(CCDitem,CCDitem['IMAGE'])
+    test_data = np.load('hot_pixel_corrected_7.npz')
+    assert np.equal(hot_pixel_corrected,test_data["hot_pixel_corrected"]).all() 
+    assert np.equal(hot_pixel_mask,test_data["hot_pixel_mask"]).all()
+
+
+    CCDitem = CCDitems[4]
+    instrument = Instrument("tests/calibration_data_test.toml")
+    CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
+    hot_pixel_corrected,hot_pixel_mask = correct_hotpixels(CCDitem,CCDitem['IMAGE'])
+    #test_data = np.load('hot_pixel_corrected_4.npz')
+    #assert np.equal(hot_pixel_corrected,test_data["hot_pixel_corrected"]).all() 
+    #assert np.equal(hot_pixel_mask,test_data["hot_pixel_mask"]).all()
 
     # plt.figure()
     # plt.imshow(CCDitem['IMAGE'],origin='lower')
@@ -457,13 +465,12 @@ def test_image_padding():
     #print('shape of padded image',image_padded.shape)
 if __name__ == "__main__":
     
-
     test_calibrate()
-    test_calibrate_plots()
-    test_error_algebra()
-    test_channel_quaterion()
-    test_photometer()
-    test_hp_correction()
-    test_se_correction()
-    test_image_padding()
+    # test_calibrate_plots()
+    # test_error_algebra()
+    # test_channel_quaterion()
+    # test_photometer()
+    # test_hp_correction()
+    # test_se_correction()
+    # test_image_padding()
 # %%

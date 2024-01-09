@@ -19,6 +19,10 @@ from scipy.io import loadmat
 import sqlite3 as sqlite
 from datetime import datetime
 
+# Define a function to deserialize the blob data
+def deserialize_blob(blob):
+    return pickle.loads(blob)
+
 class CCD:
     """Class to represent a single physical CCD on MATS, a.k.a CCDunit
 
@@ -327,26 +331,28 @@ class CCD:
         # single event correction
         filename = calibration_data['hot_pixels']['single_events']
         disk_conn = sqlite.connect(filename)
-
-        # Define the SQL query to select the desired data
         query = f'''
             SELECT * FROM SingleEvents
             WHERE datetime BETWEEN '{start_datetime}' AND '{end_datetime}'
             AND channel = '{self.channel}'
         '''
-
-        # Use Pandas to read the query result into a DataFrame
         self.single_event = pd.read_sql_query(query, disk_conn)
         self.single_event['datetime'] = pd.to_datetime(self.single_event['datetime'])
-        # Close both database connections if they're no longer needed
         disk_conn.close()
 
         # hot pixel correction
         filename = calibration_data['hot_pixels']['hot_pixels']
-        file_conn = sqlite.connect(filename)
-        self.hot_pixels = sqlite.connect(':memory:')
-        file_conn.backup(self.hot_pixels)
-        file_conn.close()
+        disk_conn = sqlite.connect(filename)
+        query = f'''
+            SELECT * FROM hotpixelmaps
+            WHERE datetime BETWEEN '{start_datetime}' AND '{end_datetime}'
+            AND channel = '{self.channel}'
+        '''
+        self.hot_pixels = pd.read_sql_query(query, disk_conn)
+        self.hot_pixels['datetime'] = pd.to_datetime(self.hot_pixels['datetime'])
+        # Convert the HPM to a NumPy array
+        self.hot_pixels['HPM'] = self.hot_pixels['HPM'].apply(deserialize_blob)
+        disk_conn.close()
                 
     def calib_denominator(self, mode): 
         """Get calibration constant that should be divided by to get unit 10^15 ph m-2 s-1 str-1 nm-1.
@@ -547,19 +553,15 @@ class CCD:
             map of hotpixel counts for the given date 
         """
 
-        db = self.hot_pixels
-        cur = db.cursor()
-        selectstr= 'select datetime, HPM from hotpixelmaps WHERE  datetime <= "{}"  and channel ==  "{}"  ORDER BY datetime DESC limit 1'
+        df = self.hot_pixels
         date = np.datetime64(CCDitem['EXP Date'],'s').astype(datetime)
         channelname = CCDitem["channel"]
-        cur.execute(selectstr.format (date,channelname))
-        row=cur.fetchall()
-        if row :
-            row=row[0]
-            mapdate=row[0]
-            hotpixel_map=pickle.loads(row[1])
+        row = df[(df.datetime.dt.date == date.date()) & (df.channel == channelname)]
+        if len(row)>0:
+            hotpixel_map = row['HPM'].values[0]
+            mapdate = row['datetime'].values[0]
         else:
-            mapdate= date
+            mapdate = date
             hotpixel_map=np.array([])
 
         return mapdate, hotpixel_map
