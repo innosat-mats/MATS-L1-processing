@@ -170,7 +170,7 @@ def lambda_handler(event: Event, context: Context):
     except Exception as err:
         msg = f"Failed to process {object_path}: {err}"
         raise Level1BException(msg) from err
-    
+
     print("Updating metadata...")
     try:
         metadata.update({
