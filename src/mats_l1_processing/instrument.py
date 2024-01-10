@@ -8,7 +8,6 @@ is included.
 
 """
 
-import os
 import toml
 import numpy as np
 import pickle
