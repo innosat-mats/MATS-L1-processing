@@ -110,7 +110,7 @@ class CCD:
                 db_path = f"{gettempdir()}/{db_name}"
                 if not os.path.exists(db_path):
                     s3.download_file(bucket, key, db_path)
-                return get_sqlite_data(db_path)
+                return get_sqlite_data(db_path, table)
             conn = sqlite3.connect(filename)
             query = f'''
                 SELECT * FROM {table}
