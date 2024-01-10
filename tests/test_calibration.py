@@ -6,7 +6,7 @@ from mats_l1_processing import photometer
 import pandas as pd
 from mats_l1_processing.L1_calibration_functions import inverse_model_real,inverse_model_table,make_binary,combine_flags,desmear,artifact_correction, correct_single_events,correct_hotpixels, padlastrowsofimage
 from mats_l1_processing.L1_calibrate import L1_calibrate
-
+from datetime import datetime
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,11 +18,22 @@ __license__ = "MIT"
 
 
 def test_calibrate():
-    main("testdata/RacFiles_out/", "tests/calibration_data_test.toml")
+    
+    with open('testdata/CCD_items_in_orbit_UVIR.pkl', 'rb') as f:
+        CCDitems = pickle.load(f)
 
+    start_date  = np.datetime64(CCDitems[0]['EXP Date'],'s').astype(datetime)
+    end_date  = np.datetime64(CCDitems[-1]['EXP Date'],'s').astype(datetime)
+
+    instrument = Instrument("tests/calibration_data_test.toml",start_datetime=start_date,end_datetime=end_date)    
+
+
+    #IR1
+    i = 5
+    images = L1_calibrate(CCDitems[i], instrument,return_steps=True)
+    
 def make_calibration_plots(images,datechannel):
 
-    print(len(images))
     (image_lsb,
      image_se_corrected, 
      image_hot_pixel_corrected, 
@@ -402,14 +413,22 @@ def test_hp_correction():
     with open('testdata/CCD_items_in_orbit_nightglow_example.pkl', 'rb') as f:
         CCDitems = pickle.load(f)
 
-    CCDitem = CCDitems[4]
-        
-    
+    CCDitem = CCDitems[7]
     instrument = Instrument("tests/calibration_data_test.toml")
-
-
     CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
     hot_pixel_corrected,hot_pixel_mask = correct_hotpixels(CCDitem,CCDitem['IMAGE'])
+    test_data = np.load('hot_pixel_corrected_7.npz')
+    assert np.equal(hot_pixel_corrected,test_data["hot_pixel_corrected"]).all() 
+    assert np.equal(hot_pixel_mask,test_data["hot_pixel_mask"]).all()
+
+
+    CCDitem = CCDitems[4]
+    instrument = Instrument("tests/calibration_data_test.toml")
+    CCDitem["CCDunit"] =instrument.get_CCD(CCDitem["channel"])
+    hot_pixel_corrected,hot_pixel_mask = correct_hotpixels(CCDitem,CCDitem['IMAGE'])
+    #test_data = np.load('hot_pixel_corrected_4.npz')
+    #assert np.equal(hot_pixel_corrected,test_data["hot_pixel_corrected"]).all() 
+    #assert np.equal(hot_pixel_mask,test_data["hot_pixel_mask"]).all()
 
     # plt.figure()
     # plt.imshow(CCDitem['IMAGE'],origin='lower')
@@ -446,13 +465,12 @@ def test_image_padding():
     #print('shape of padded image',image_padded.shape)
 if __name__ == "__main__":
     
-
-    #test_calibrate()
-    test_calibrate_plots()
-    #test_error_algebra()
-    #test_channel_quaterion()
-    #test_photometer()
-    #test_hp_correction()
-    #test_se_correction()
-    #test_image_padding()
+    test_calibrate()
+    # test_calibrate_plots()
+    # test_error_algebra()
+    # test_channel_quaterion()
+    # test_photometer()
+    # test_hp_correction()
+    # test_se_correction()
+    # test_image_padding()
 # %%
