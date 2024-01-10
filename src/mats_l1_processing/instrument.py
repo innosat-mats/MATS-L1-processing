@@ -118,7 +118,7 @@ class CCD:
                 AND channel = '{self.channel}'
             '''
             data = pd.read_sql_query(query, conn)
-            data['datetime'] = pd.to_datetime(self.single_event['datetime'])
+            data['datetime'] = pd.to_datetime(data['datetime'])
             conn.close()
             return data
 
