@@ -1,3 +1,4 @@
+import datetime as dt
 import json
 import os
 from http import HTTPStatus
@@ -19,6 +20,8 @@ from mats_l1_processing import read_parquet_functions as rpf  # type: ignore
 
 Event = Dict[str, Any]
 Context = Any
+
+HPSE_BUFFER = dt.timedelta(minutes=1)
 
 
 class InvalidMessage(Exception):
@@ -60,7 +63,6 @@ def handle_ccd_data(ccd_data: DataFrame, instrument: Instrument) -> DataFrame:
     )
 
     for n, ccd in enumerate(ccd_items):
-        print(f"CCD item {n} / {len(ccd_items)}")
         if ccd["IMAGE"] is None:
             image_calibrated = None
             errors = None
@@ -156,8 +158,14 @@ def lambda_handler(event: Event, context: Context):
 
     try:
         if data_source.upper() == "CCD":
-            print(f"Initializing instrument for {data_source}...")
-            instrument = Instrument("/calibration_data/calibration_data.toml")
+            start = data["EXPDate"].min() - HPSE_BUFFER
+            end = data["EXPDate"].max() + HPSE_BUFFER
+            print(f"Initializing instrument for {data_source} ({start}–{end})...")  # noqa: E501
+            instrument = Instrument(
+                "/calibration_data/calibration_data.toml",
+                start_datetime=start,
+                end_datetime=end,
+            )
             print(f"Processing {data_source} data...")
             l1b_data = handle_ccd_data(data, instrument)
         elif data_source.upper() == "PM":
