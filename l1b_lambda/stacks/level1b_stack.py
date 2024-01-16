@@ -19,6 +19,7 @@ class Level1BStack(Stack):
         input_bucket_name: str,
         output_bucket_name: str,
         data_source: str,
+        memory_size: int = 4096,
         lambda_timeout: Duration = Duration.seconds(900),
         queue_retention_period: Duration = Duration.days(14),
         code_version: str = "",
@@ -53,7 +54,7 @@ class Level1BStack(Stack):
             code=DockerImageCode.from_image_asset("."),
             timeout=lambda_timeout,
             architecture=Architecture.X86_64,
-            memory_size=4096,
+            memory_size=memory_size,
             ephemeral_storage_size=Size.mebibytes(1024),
             environment={
                 "L1B_BUCKET": output_bucket.bucket_name,

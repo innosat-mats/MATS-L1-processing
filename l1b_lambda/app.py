@@ -43,6 +43,7 @@ Level1BStack(
     data_source="CCD",
     code_version=f"{tag} ({repo.head.commit})",
     development=development,
+    memory_size=5120,
 )
 
 Level1BStack(
@@ -53,6 +54,7 @@ Level1BStack(
     data_source="PM",
     code_version=f"{tag} ({repo.head.commit})",
     development=development,
+    memory_size=512,
 )
 
 app.synth()
