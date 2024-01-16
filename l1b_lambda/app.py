@@ -44,6 +44,7 @@ Level1BStack(
     code_version=f"{tag} ({repo.head.commit})",
     development=development,
     memory_size=5120,
+    storage_size=1024,
 )
 
 Level1BStack(
@@ -55,6 +56,7 @@ Level1BStack(
     code_version=f"{tag} ({repo.head.commit})",
     development=development,
     memory_size=512,
+    storage_size=512,
 )
 
 app.synth()

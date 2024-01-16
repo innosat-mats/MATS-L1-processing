@@ -20,6 +20,7 @@ class Level1BStack(Stack):
         output_bucket_name: str,
         data_source: str,
         memory_size: int = 4096,
+        storage_size: int = 1024,
         lambda_timeout: Duration = Duration.seconds(900),
         queue_retention_period: Duration = Duration.days(14),
         code_version: str = "",
@@ -55,7 +56,7 @@ class Level1BStack(Stack):
             timeout=lambda_timeout,
             architecture=Architecture.X86_64,
             memory_size=memory_size,
-            ephemeral_storage_size=Size.mebibytes(1024),
+            ephemeral_storage_size=Size.mebibytes(storage_size),
             environment={
                 "L1B_BUCKET": output_bucket.bucket_name,
                 "L1B_VERSION": code_version,
