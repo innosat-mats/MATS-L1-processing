@@ -122,11 +122,11 @@ def add_ccd_item_attributes(ccd_data: DataFrame) -> None:
     ADC_temp_in_degreeC = 1.0 / 0.85 * ADC_temp_in_mV - 296
     ccd_data["temperature_ADC"] = ADC_temp_in_degreeC
 
-    # This needs to be updated when a better temperature estimate has been
-    # designed. For now a de facto implementation of
+    # For now the temperatures of all CCDs are set to the average between
+    # UV1 and UV2 as implementated in
     # get_temperature.add_temperature_info()
-    ccd_data["temperature"] = ccd_data["HTR8A"]
-    ccd_data["temperature_HTR"] = ccd_data["HTR8A"]
+    ccd_data["temperature"] = (ccd_data["HTR8A"]+ccd_data["HTR8B"]) / 2.0
+    ccd_data["temperature_HTR"] = (ccd_data["HTR8A"]+ccd_data["HTR8B"]) / 2.0
 
 
 def remove_faulty_rows(
