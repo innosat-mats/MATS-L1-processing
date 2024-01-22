@@ -185,7 +185,13 @@ def dataframe_to_ccd_items(
     data = ccd_data.copy()
     if legacy:
         add_ccd_item_attributes(data)
-    convert_image_data(data)
+    try:
+        convert_image_data(data)
+    except KeyError as err:
+        if "ImageCalibrated" in data.keys():
+            logging.warning("`ImageData` not found; already calibrated")
+        else:
+            raise err
     rename_ccd_item_attributes(data)
 
     return remove_faulty_rows(
