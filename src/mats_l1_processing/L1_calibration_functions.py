@@ -442,7 +442,7 @@ def handle_bad_columns(CCDitem, handle_BC=False):
 def flatfield_calibration(CCDitem, image=None):
     """Calibrates the image for each pixel, ie, absolute relativ calibration and flatfield compensation
         Also conversion from to light per second, rather than the total light.
-        Output unit is 10^15 ph m-2 s-1 str-1 nm-1.
+        Output unit is 10^12 ph m-2 s-1 str-1 nm-1.
     
     Args:
         CCDitem:  dictonary containing CCD image and information
