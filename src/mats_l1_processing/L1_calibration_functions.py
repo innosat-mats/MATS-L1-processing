@@ -458,11 +458,8 @@ def flatfield_calibration(CCDitem, image=None):
         image = CCDitem["IMAGE"]
     image_flatf_fact,  error_flag_largeflatf = calculate_flatfield(CCDitem)
 
-    image_calib_nonflipped = (
-        image/(int(CCDitem["TEXPMS"])/1000)/CCDitem["CCDunit"].calib_denominator(CCDitem["GAIN Mode"])
-        / image_flatf_fact
-    )
-
+    image_calib_nonflipped =  absolute_calibration(CCDitem, image=image)/ image_flatf_fact
+    
     error_flag_negative = np.zeros(image.shape, dtype=np.uint16)
     error_flag_negative[image_calib_nonflipped < 0] = 1  # Flag for negative value
 
@@ -473,6 +470,10 @@ def flatfield_calibration(CCDitem, image=None):
 
     return image_calib_nonflipped, error_flag
 
+def absolute_calibration(CCDitem, image):
+    # Returns the image in units of 10**12 photons/nm/m2/str/pixel/s
+    image_in_ph=image/(int(CCDitem["TEXPMS"])/1000)/CCDitem["CCDunit"].calib_denominator(CCDitem["GAIN Mode"])
+    return image_in_ph
 
 def calculate_flatfield(CCDitem):
     """Calculates the flatfield factor for binned images, otherwise simply returns

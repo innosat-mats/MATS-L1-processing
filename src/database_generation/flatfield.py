@@ -398,6 +398,7 @@ def make_flatfield(channel, calibration_file, plotresult=False, plotallplots=Fal
     #Rescale fields aftertaken mean / median filter. Should not make much diffrence (none at all for the mean filter i.e. wo baffle )
     flatfield_wo_baffle_scaled=scale_field(flatfield_s_wo_baffle)
     flatfield_w_baffle_scaled=scale_field(flatfield_s_w_baffle)
+    np.save('output/flatfield_wo_baffle_scaled_'+channel+'_HSM.npy', flatfield_wo_baffle_scaled)
 
     ratio_w_to_wo_scaled=flatfield_w_baffle_scaled/flatfield_wo_baffle_scaled
     zs = SGolayFilter2(window_size=31, poly_order=1)(ratio_w_to_wo_scaled)

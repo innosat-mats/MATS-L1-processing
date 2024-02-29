@@ -50,7 +50,7 @@ fonttools==4.43.0
     # via matplotlib
 gitdb==4.0.10
     # via gitpython
-gitpython==3.1.37
+gitpython==3.1.41
     # via -r requirements.in
 jmespath==1.0.1
     # via
@@ -86,7 +86,7 @@ pandas==1.5.2
     # via -r requirements.in
 pep517==0.13.0
     # via build
-pillow==10.0.1
+pillow==10.2.0
     # via matplotlib
 publication==0.0.3
     # via

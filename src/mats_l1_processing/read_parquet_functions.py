@@ -67,6 +67,33 @@ def rename_ccd_item_attributes(ccd_data: DataFrame) -> None:
         inplace=True,
     )
 
+def reverse_rename_ccd_item_attributes(ccd_data: DataFrame) -> None:
+    """Reversing the renaming done by rename_ccd_item_attributes
+    Args:
+        ccd_data (DataFrame):   CCD data for which translate attributes.
+
+    Returns:
+        None:   Operation is performed in place.
+    """
+
+    ccd_data.rename(
+        columns={
+            "EXP Nanoseconds": "EXPNanoseconds",
+            "EXP Date": "EXPDate",
+            "WDW Mode": "WDWMode",
+            "WDW InputDataWindow": "WDWInputDataWindow",
+            "NCBIN CCDColumns": "NCBINCCDColumns",
+            "NCBIN FPGAColumns": "NCBINFPGAColumns",
+            "GAIN Mode": "GAINMode",
+            "GAIN Timing": "GAINTiming",
+            "GAIN Truncation": "GAINTruncation",
+            "BC": "BadColumns",
+            "ImageFileName": "ImageName",
+            "File": "OriginFile",
+        },
+        inplace=True,
+    )
+
 def convert_image_data(ccd_data: DataFrame) -> None:
     """Convert image data from PNG data to float representation.
     
@@ -185,7 +212,13 @@ def dataframe_to_ccd_items(
     data = ccd_data.copy()
     if legacy:
         add_ccd_item_attributes(data)
-    convert_image_data(data)
+    try:
+        convert_image_data(data)
+    except KeyError as err:
+        if "ImageCalibrated" in data.keys():
+            logging.warning("`ImageData` not found; already calibrated")
+        else:
+            raise err
     rename_ccd_item_attributes(data)
 
     return remove_faulty_rows(
@@ -194,6 +227,23 @@ def dataframe_to_ccd_items(
         remove_errors,
         remove_warnings,
     ).to_dict("records")
+
+def CCDitems_to_dataframe(CCDitems: List[CCDItem]):
+    """Converts CCDitems back to a DataFrame.
+
+    Args:
+        CCDitems (List[CCDItem]):   The CCDitems to convert.
+
+    Returns:
+        DataFrame:   The CCDitems as a DataFrame.
+    """
+    import pandas as pd
+
+    # # Turn CCDitems back into a dataframe
+    df = pd.DataFrame(CCDitems)
+    reverse_rename_ccd_item_attributes(df)
+
+    return df
 
 
 def read_ccd_data_in_interval(
