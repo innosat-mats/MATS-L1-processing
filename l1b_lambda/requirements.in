@@ -2,7 +2,7 @@ build
 aws-cdk-lib
 aws-cdk.aws-lambda-python-alpha
 pandas
-pyarrow
+pyarrow>=14.0.0
 joblib
 scipy
 toml

@@ -97,7 +97,7 @@ publication==0.0.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-pyarrow==10.0.1
+pyarrow==15.0.0
     # via -r requirements.in
 pyparsing==3.0.9
     # via matplotlib
