@@ -430,8 +430,8 @@ def read_instrument_data_in_interval(
 
 
     filterlist = (
-        (ds.field("TMHeaderTime") >= pa.scalar(Timestamp(start)))
-        & (ds.field("TMHeaderTime") <= pa.scalar(Timestamp(stop)))
+        (ds.field("TMHeaderTime") >= Timestamp(start))
+        & (ds.field("TMHeaderTime") <= Timestamp(stop))
     )
     if filter != None:
         for variable, value in filter.items():
