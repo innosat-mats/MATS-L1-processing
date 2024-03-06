@@ -22,9 +22,8 @@ from math import isnan
 import warnings
 
 
-
 def flip_image(CCDitem, image=None):
-    """ Flips the image to account for odd number of mirrors in the light path.
+    """Flips the image to account for odd number of mirrors in the light path.
     Args:
         CCDitem
         optional image
@@ -36,14 +35,15 @@ def flip_image(CCDitem, image=None):
     if image is None:
         image = CCDitem["IMAGE"]
 
-    if (CCDitem['channel'] == 'IR1'
-        or CCDitem['channel'] == 'IR3'
-        or CCDitem['channel'] == 'UV1'
-        or CCDitem['channel'] == 'UV2'
-        or CCDitem['channel'] == 'NADIR'
+    if (
+        CCDitem["channel"] == "IR1"
+        or CCDitem["channel"] == "IR3"
+        or CCDitem["channel"] == "UV1"
+        or CCDitem["channel"] == "UV2"
+        or CCDitem["channel"] == "NADIR"
     ):
         image = np.fliplr(image)
-        CCDitem['flipped'] = True
+        CCDitem["flipped"] = True
 
     return image
 
@@ -64,11 +64,13 @@ def make_binary(flag, bits):
 
     return flag
 
+
 # Function to convert decimal to binary and split into 16 bits
 def decimal_to_binary_with_bits(decimal):
-    binary_str = np.binary_repr(decimal)[2:].zfill(16)  # Convert to binary, remove '0b' prefix, and ensure 16 bits
+    binary_str = np.binary_repr(decimal)[2:].zfill(
+        16
+    )  # Convert to binary, remove '0b' prefix, and ensure 16 bits
     return [int(bit) for bit in binary_str]
-
 
 
 # Utility functions
@@ -86,15 +88,16 @@ def combine_flags(flags, bits):
     """
 
     if len(flags) != len(bits):
-        raise ValueError('number of bit values differ from number of flag arrays')
+        raise ValueError("number of bit values differ from number of flag arrays")
 
     total_flag = 0
     tot_bits = np.cumsum(bits)
     tot_bits = np.insert(tot_bits, 0, 0)
     for i in range(len(flags)):
-        total_flag = total_flag+np.left_shift(flags[i], tot_bits[i])
+        total_flag = total_flag + np.left_shift(flags[i], tot_bits[i])
 
     return total_flag
+
 
 # def combine_flags(flags):
 #     """Combines binary flags into one binary flag array.
@@ -121,6 +124,7 @@ def combine_flags(flags, bits):
 #     return total_flag
 # %%
 ## non-linearity-stuff ##
+
 
 # %%
 def row_sum(true_value_mapped_to_pixels):
@@ -150,7 +154,9 @@ def single_pixel(true_value_mapped_to_pixels, non_linearity):
 
 
 def total_model(true_value_mapped_to_pixels, p):
-    return sum_well(shift_register(single_pixel(true_value_mapped_to_pixels, p[0]), p[1]), p[2])
+    return sum_well(
+        shift_register(single_pixel(true_value_mapped_to_pixels, p[0]), p[1]), p[2]
+    )
 
 
 def total_model_scalar(x, CCD, nrowbin, ncolbin):
@@ -160,7 +166,7 @@ def total_model_scalar(x, CCD, nrowbin, ncolbin):
     cal_consts.append(CCD.non_linearity_sumwell)
 
     # expand binned image to pixel values
-    true_value_mapped_to_pixels = np.ones((nrowbin, ncolbin))*x/(nrowbin*ncolbin)
+    true_value_mapped_to_pixels = np.ones((nrowbin, ncolbin)) * x / (nrowbin * ncolbin)
 
     # return modelled value with non-linearity taken into account
     return total_model(true_value_mapped_to_pixels, cal_consts)
@@ -170,11 +176,11 @@ def optimize_function(x, CCD, nrowbin, ncolbin, value):
     # x is true value, y is measured value
     y_model = total_model_scalar(x, CCD, nrowbin, ncolbin)
 
-    return np.abs(y_model-value)
+    return np.abs(y_model - value)
 
 
 def test_for_saturation(CCDunit, nrowbin, ncolbin, value):
-    '''
+    """
     Tests if a value is in the saturated are of a CCD
 
     Author: Ole Martin Christensen
@@ -193,29 +199,44 @@ def test_for_saturation(CCDunit, nrowbin, ncolbin, value):
 
         x: nan if not saturated otherwise equal to
             CCDunit.non_linearity_pixel.saturation*nrowbin*ncolbin
-    '''
+    """
 
-    value_mapped_to_pixels = value/(nrowbin*ncolbin)
-    value_mapped_to_shift_register = value/(ncolbin)
+    value_mapped_to_pixels = value / (nrowbin * ncolbin)
+    value_mapped_to_shift_register = value / (ncolbin)
     value_mapped_to_summation_well = value
 
     x = np.nan
     flag = 0  # 0 = all ok, 1 = pixel reached non-linearity in pixel, row or column,  3 = pixel reached saturation in pixel, row or column
 
-    if value_mapped_to_pixels > CCDunit.non_linearity_pixel.get_measured_non_lin_important():
+    if (
+        value_mapped_to_pixels
+        > CCDunit.non_linearity_pixel.get_measured_non_lin_important()
+    ):
         flag = 1
-    elif value_mapped_to_shift_register > CCDunit.non_linearity_sumrow.get_measured_non_lin_important():
+    elif (
+        value_mapped_to_shift_register
+        > CCDunit.non_linearity_sumrow.get_measured_non_lin_important()
+    ):
         flag = 1
-    elif value_mapped_to_summation_well > CCDunit.non_linearity_sumwell.get_measured_non_lin_important():
+    elif (
+        value_mapped_to_summation_well
+        > CCDunit.non_linearity_sumwell.get_measured_non_lin_important()
+    ):
         flag = 1
 
     if value_mapped_to_pixels > CCDunit.non_linearity_pixel.get_measured_saturation():
-        x = CCDunit.non_linearity_pixel.saturation*nrowbin*ncolbin
+        x = CCDunit.non_linearity_pixel.saturation * nrowbin * ncolbin
         flag = 3
-    elif value_mapped_to_shift_register > CCDunit.non_linearity_sumrow.get_measured_saturation():
-        x = CCDunit.non_linearity_sumrow.saturation*ncolbin
+    elif (
+        value_mapped_to_shift_register
+        > CCDunit.non_linearity_sumrow.get_measured_saturation()
+    ):
+        x = CCDunit.non_linearity_sumrow.saturation * ncolbin
         flag = 3
-    elif value_mapped_to_summation_well > CCDunit.non_linearity_sumwell.get_measured_saturation():
+    elif (
+        value_mapped_to_summation_well
+        > CCDunit.non_linearity_sumwell.get_measured_saturation()
+    ):
         x = CCDunit.non_linearity_sumwell.saturation
         flag = 3
 
@@ -238,18 +259,18 @@ def check_true_value_max(CCDunit, nrowbin, ncolbin, x_true, flag):
         x (float): true number of counts
     """
 
-    value_mapped_to_pixels = x_true/(nrowbin*ncolbin)
-    value_mapped_to_shift_register = x_true/(ncolbin)
+    value_mapped_to_pixels = x_true / (nrowbin * ncolbin)
+    value_mapped_to_shift_register = x_true / (ncolbin)
     value_mapped_to_summation_well = x_true
 
     x_true = x_true
     flag = flag  # 0 = all ok, 1 = pixel reached non-linearity in pixel, row or column,  3 = pixel reached saturation in pixel, row or column
 
     if value_mapped_to_pixels > CCDunit.non_linearity_pixel.saturation:
-        x_true = CCDunit.non_linearity_pixel.saturation*nrowbin*ncolbin
+        x_true = CCDunit.non_linearity_pixel.saturation * nrowbin * ncolbin
         flag = 3
     elif value_mapped_to_shift_register > CCDunit.non_linearity_sumrow.saturation:
-        x_true = CCDunit.non_linearity_sumrow.saturation*ncolbin
+        x_true = CCDunit.non_linearity_sumrow.saturation * ncolbin
         flag = 3
     elif value_mapped_to_summation_well > CCDunit.non_linearity_sumwell.saturation:
         x_true = CCDunit.non_linearity_sumwell.saturation
@@ -258,7 +279,7 @@ def check_true_value_max(CCDunit, nrowbin, ncolbin, x_true, flag):
     return flag, x_true
 
 
-def inverse_model_real(CCDitem, value, method='BFGS'):
+def inverse_model_real(CCDitem, value, method="BFGS"):
     """A method which takes in a CCDitem and uses the 3 non-linearities in the
     CCDUnit and the degree of binnning to get the true count (corrected for
     non-linearity) based on the measured value. This method is slow, so
@@ -288,8 +309,12 @@ def inverse_model_real(CCDitem, value, method='BFGS'):
     flag, x = test_for_saturation(CCDunit, nrowbin, ncolbin, value)
 
     if (flag == 0) or (flag == 1):
-        x_hat = opt.minimize(optimize_function, x0=value, args=(
-            CCDunit, nrowbin, ncolbin, value), method=method)
+        x_hat = opt.minimize(
+            optimize_function,
+            x0=value,
+            args=(CCDunit, nrowbin, ncolbin, value),
+            method=method,
+        )
         x = x_hat.x[0]
         flag, x = check_true_value_max(CCDunit, nrowbin, ncolbin, x, flag)
 
@@ -309,7 +334,7 @@ def inverse_model_table(table, value):
         flag (np.array, dtype = int): flag to indicate high degree of non-linearity and/or saturation
     """
     if not (int(table[2, int(value)]) == int(value)):
-        raise ValueError('table must be indexed with counts')
+        raise ValueError("table must be indexed with counts")
 
     return table[0, int(value)], table[1, int(value)]
 
@@ -323,7 +348,8 @@ def lin_image_from_inverse_model_table(image_bias_sub, table):
         for j in range(image_bias_sub.shape[1]):
             if image_bias_sub[i, j] > 0:
                 image_linear[i, j], error_flag[i, j] = inverse_model_table(
-                    table, image_bias_sub[i, j])
+                    table, image_bias_sub[i, j]
+                )
             else:
                 image_linear[i, j] = image_bias_sub[i, j]
 
@@ -338,7 +364,8 @@ def lin_image_from_inverse_model_real(image_bias_sub, CCDitem):
         for j in range(image_bias_sub.shape[1]):
             if image_bias_sub[i, j] > 0:
                 image_linear[i, j], error_flag[i, j] = inverse_model_real(
-                    CCDitem, image_bias_sub[i, j])
+                    CCDitem, image_bias_sub[i, j]
+                )
             else:
                 image_linear[i, j] = image_bias_sub[i, j]
 
@@ -346,7 +373,7 @@ def lin_image_from_inverse_model_real(image_bias_sub, CCDitem):
 
 
 def get_linearized_image(CCDitem, image_bias_sub, force_table: bool = True):
-    """ Linearizes the image. At the moment not done for NADIR.
+    """Linearizes the image. At the moment not done for NADIR.
 
     Args:
         CCDitem:  dictonary containing CCD image and information
@@ -358,28 +385,29 @@ def get_linearized_image(CCDitem, image_bias_sub, force_table: bool = True):
         flag (np.array, dtype = uint16): flag to indicate problems with the linearisation
     """
 
-    if CCDitem["channel"] == 'NADIR':  # No linearisation of NADIR at the moment
+    if CCDitem["channel"] == "NADIR":  # No linearisation of NADIR at the moment
         image_linear = image_bias_sub
         error_flag = np.zeros(image_bias_sub.shape, dtype=np.uint16)
 
     else:
-        table = CCDitem['CCDunit'].get_table(CCDitem)
+        table = CCDitem["CCDunit"].get_table(CCDitem)
         if table is not None:
             image_linear, error_flag = lin_image_from_inverse_model_table(
-                image_bias_sub, table)
+                image_bias_sub, table
+            )
         else:
             if force_table:
                 from database_generation.linearity import add_table
+
                 add_table(CCDitem)
-                CCDitem['CCDunit'].reload_table()
-                table = CCDitem['CCDunit'].get_table(CCDitem)
+                CCDitem["CCDunit"].reload_table()
+                table = CCDitem["CCDunit"].get_table(CCDitem)
                 image_linear, error_flag = lin_image_from_inverse_model_table(
-                    image_bias_sub, table)
+                    image_bias_sub, table
+                )
             else:
                 try:
-                    raise ValueError(
-                        f"No table for CCD item {CCDitem['ImageName']}"
-                    )
+                    raise ValueError(f"No table for CCD item {CCDitem['ImageName']}")
                 except KeyError:
                     raise ValueError(
                         f"No table for CCD item {CCDitem['ImageFileName']}"
@@ -400,15 +428,18 @@ def loop_over_rows(CCDitem, image_bias_sub):
 
 
 def get_linearized_image_parallelized(CCDitem, image_bias_sub):
-    image_linear_list, error_flag = Parallel(n_jobs=4)(delayed(loop_over_rows)(
-        CCDitem, image_bias_sub[i]) for i in range(image_bias_sub.shape[0]))
+    image_linear_list, error_flag = Parallel(n_jobs=4)(
+        delayed(loop_over_rows)(CCDitem, image_bias_sub[i])
+        for i in range(image_bias_sub.shape[0])
+    )
     return np.array(image_linear_list), np.array(error_flag)
 
 
 ## Bad columns ##
 
+
 def handle_bad_columns(CCDitem, handle_BC=False):
-    """ Handles bad columns. For now just set them to non-bad.
+    """Handles bad columns. For now just set them to non-bad.
     Args:
         CCDitem:  dictonary containing CCD image and information
         handle_BC (optional): switch to tell whether to treat BC or not
@@ -432,18 +463,20 @@ def handle_bad_columns(CCDitem, handle_BC=False):
         # We man have to do somthing more here too but or now just flag all
         # superbins that only consist of bad columns LM 221005
         binnedimage, error_bad_column = meanbin_image_with_BC(
-            CCDitem, error_flag_out=True)
+            CCDitem, error_flag_out=True
+        )
 
     return error_bad_column
 
 
 ## Flatfield ##
 
+
 def flatfield_calibration(CCDitem, image=None):
     """Calibrates the image for each pixel, ie, absolute relativ calibration and flatfield compensation
         Also conversion from to light per second, rather than the total light.
         Output unit is 10^15 ph m-2 s-1 str-1 nm-1.
-    
+
     Args:
         CCDitem:  dictonary containing CCD image and information
         image (optional) np.array: If this is given then it will be used instead of the image in the CCDitem
@@ -456,24 +489,31 @@ def flatfield_calibration(CCDitem, image=None):
 
     if image is None:
         image = CCDitem["IMAGE"]
-    image_flatf_fact,  error_flag_largeflatf = calculate_flatfield(CCDitem)
+    image_flatf_fact, error_flag_largeflatf = calculate_flatfield(CCDitem)
 
-    image_calib_nonflipped =  absolute_calibration(CCDitem, image=image)/ image_flatf_fact
-    
+    image_calib_nonflipped = (
+        absolute_calibration(CCDitem, image=image) / image_flatf_fact
+    )
+
     error_flag_negative = np.zeros(image.shape, dtype=np.uint16)
     error_flag_negative[image_calib_nonflipped < 0] = 1  # Flag for negative value
 
-    error_flag = combine_flags(
-        [error_flag_negative, error_flag_largeflatf], [1, 1])
+    error_flag = combine_flags([error_flag_negative, error_flag_largeflatf], [1, 1])
 
     error_flag = make_binary(error_flag, 2)
 
     return image_calib_nonflipped, error_flag
 
+
 def absolute_calibration(CCDitem, image):
     # Returns the image in units of 10**12 photons/nm/m2/str/pixel/s
-    image_in_ph=image/(int(CCDitem["TEXPMS"])/1000)/CCDitem["CCDunit"].calib_denominator(CCDitem["GAIN Mode"])
+    image_in_ph = (
+        image
+        / (int(CCDitem["TEXPMS"]) / 1000)
+        / CCDitem["CCDunit"].calib_denominator(CCDitem["GAIN Mode"])
+    )
     return image_in_ph
+
 
 def calculate_flatfield(CCDitem):
     """Calculates the flatfield factor for binned images, otherwise simply returns
@@ -491,13 +531,16 @@ def calculate_flatfield(CCDitem):
         CCDunit = CCDitem["CCDunit"]
     except:
         raise Exception("No CCDunit defined for the CCDitem")
-        
+
     image_flat_with_binfactor = bin_image_with_BC(CCDitem, CCDunit.flatfield())
 
-    totbin = int(CCDitem["NRBIN"])*int(CCDitem["NCBIN CCDColumns"]) * \
-    int(CCDitem["NCBIN FPGAColumns"])
-    image_flat_per_singlepixel = image_flat_with_binfactor/totbin
-    #Report error when flatfield factor over 5 %
+    totbin = (
+        int(CCDitem["NRBIN"])
+        * int(CCDitem["NCBIN CCDColumns"])
+        * int(CCDitem["NCBIN FPGAColumns"])
+    )
+    image_flat_per_singlepixel = image_flat_with_binfactor / totbin
+    # Report error when flatfield factor over 5 %
 
     error_flag_flatf = np.zeros(image_flat_per_singlepixel.shape, dtype=np.uint16)
     error_flag_flatf[image_flat_per_singlepixel > 1.05] = 1
@@ -529,18 +572,20 @@ def subtract_dark(CCDitem, image=None):
 
     dark_img = calculate_dark(CCDitem)
 
-    image_dark_sub = image-dark_img
+    image_dark_sub = image - dark_img
 
     # If image becomes negative set flag
     error_flag_negative = np.zeros(image.shape, dtype=np.uint16)
     error_flag_negative[image_dark_sub < 0] = 1
     error_flag_temperature = np.zeros(image.shape, dtype=np.uint16)
     # Filter out cases where the temperature seems wrong.
-    if CCDitem["temperature"] < -50. or CCDitem["temperature"] > 30.:
+    if CCDitem["temperature"] < -50.0 or CCDitem["temperature"] > 30.0:
         error_flag_temperature.fill(1)
 
     error_flag = combine_flags(
-        [error_flag_negative, error_flag_temperature, error_flag_no_temperature], [1, 1, 1])
+        [error_flag_negative, error_flag_temperature, error_flag_no_temperature],
+        [1, 1, 1],
+    )
 
     return image_dark_sub, error_flag
 
@@ -565,10 +610,16 @@ def calculate_dark(CCDitem):
     #    CCDunit=CCD(CCDitem['channel'])
 
     # First estimate dark current using 0D algorithm
-    totdarkcurrent0D = (CCDunit.darkcurrent(CCDitem["temperature"], CCDitem["GAIN Mode"])
-                      * int(CCDitem["TEXPMS"])/1000.0)  # tot dark current in electrons
-    totdarkcurrent2D = (CCDunit.darkcurrent2D(CCDitem["temperature"], CCDitem["GAIN Mode"])
-            * int(CCDitem["TEXPMS"])/ 1000.0)
+    totdarkcurrent0D = (
+        CCDunit.darkcurrent(CCDitem["temperature"], CCDitem["GAIN Mode"])
+        * int(CCDitem["TEXPMS"])
+        / 1000.0
+    )  # tot dark current in electrons
+    totdarkcurrent2D = (
+        CCDunit.darkcurrent2D(CCDitem["temperature"], CCDitem["GAIN Mode"])
+        * int(CCDitem["TEXPMS"])
+        / 1000.0
+    )
 
     # Then based on how large the dark current is , decide on whether to use 0D or 2D subtraction
     if totdarkcurrent0D.mean() > CCDunit.dc_2D_limit:
@@ -576,15 +627,12 @@ def calculate_dark(CCDitem):
     else:
         totdarkcurrent = totdarkcurrent0D.mean() * np.ones(totdarkcurrent2D.shape)
 
-
     dark_calc_image = (
-        CCDunit.ampcorrection
-        * totdarkcurrent
-        / CCDunit.alpha_avr(CCDitem["GAIN Mode"])
+        CCDunit.ampcorrection * totdarkcurrent / CCDunit.alpha_avr(CCDitem["GAIN Mode"])
     )
 
     if (
-        (CCDitem["NRSKIP"] > 0)  
+        (CCDitem["NRSKIP"] > 0)
         or (CCDitem["NCSKIP"] > 0)
         or (CCDitem["NCBIN CCDColumns"] > 1)
         or (CCDitem["NCBIN FPGAColumns"] > 1)
@@ -613,10 +661,13 @@ def bin_image_with_BC(CCDitem, image_nonbinned=None):
     if image_nonbinned is None:
         image_nonbinned = CCDitem["IMAGE"]
 
-    totbin = int(CCDitem["NRBIN"])*int(CCDitem["NCBIN CCDColumns"]) * \
-        int(CCDitem["NCBIN FPGAColumns"])
+    totbin = (
+        int(CCDitem["NRBIN"])
+        * int(CCDitem["NCBIN CCDColumns"])
+        * int(CCDitem["NCBIN FPGAColumns"])
+    )
 
-    sumbinned_image = totbin*meanbin_image_with_BC(CCDitem, image_nonbinned)
+    sumbinned_image = totbin * meanbin_image_with_BC(CCDitem, image_nonbinned)
 
     return sumbinned_image
 
@@ -647,41 +698,47 @@ def meanbin_image_with_BC(CCDitem, image_nonbinned=None, error_flag_out=False):
     if image_nonbinned is None:
         image_nonbinned = CCDitem["IMAGE"]
 
-
-
     # Check if image needs to be binned or shifted
-    nbin_c = int(CCDitem["NCBIN CCDColumns"])*int(CCDitem["NCBIN FPGAColumns"])
+    nbin_c = int(CCDitem["NCBIN CCDColumns"]) * int(CCDitem["NCBIN FPGAColumns"])
     nbin_r = int(CCDitem["NRBIN"])
     ncol = int(CCDitem["NCOL"]) + 1
     nrow = int(CCDitem["NROW"])
     nrskip = int(CCDitem["NRSKIP"])
 
-    totbin = int(CCDitem["NRBIN"])*int(CCDitem["NCBIN CCDColumns"]) * \
-        int(CCDitem["NCBIN FPGAColumns"])
-    if nrskip+nbin_r*nrow > 511:
-        image_nonbinned=padlastrowsofimage(image_nonbinned,nrow)
-    if (totbin > 1 or CCDitem["NCSKIP"] > 0 or CCDitem["NRSKIP"] > 0):
-        image = image_nonbinned[nrskip:nrskip+nbin_r*nrow,
-                                CCDitem["NCSKIP"]:CCDitem["NCSKIP"]+nbin_c*ncol]
+    totbin = (
+        int(CCDitem["NRBIN"])
+        * int(CCDitem["NCBIN CCDColumns"])
+        * int(CCDitem["NCBIN FPGAColumns"])
+    )
+    if nrskip + nbin_r * nrow > 511:
+        image_nonbinned = padlastrowsofimage(image_nonbinned, nrow)
+    if totbin > 1 or CCDitem["NCSKIP"] > 0 or CCDitem["NRSKIP"] > 0:
+        image = image_nonbinned[
+            nrskip : nrskip + nbin_r * nrow,
+            CCDitem["NCSKIP"] : CCDitem["NCSKIP"] + nbin_c * ncol,
+        ]
 
         # Set bad columns to nan
         for i in CCDitem["BC"]:
             image[:, i] = np.nan
 
-        nchunks_r = int(image.shape[0])/nbin_r
+        nchunks_r = int(image.shape[0]) / nbin_r
         if not nchunks_r.is_integer():
             raise Exception(
-                'the size of the image and the binning size are incompatible')
+                "the size of the image and the binning size are incompatible"
+            )
         nchunks_r = int(nchunks_r)
 
-        nchunks_c = int(image.shape[1])/nbin_c
+        nchunks_c = int(image.shape[1]) / nbin_c
         if not nchunks_c.is_integer():
             raise Exception(
-                'the size of the image and the binning size are incompatible')
+                "the size of the image and the binning size are incompatible"
+            )
         nchunks_c = int(nchunks_c)
 
-        meanbinned_image = np.nanmean(np.nanmean(
-            image.reshape(nchunks_r, nbin_r, nchunks_c, nbin_c), 3), 1)
+        meanbinned_image = np.nanmean(
+            np.nanmean(image.reshape(nchunks_r, nbin_r, nchunks_c, nbin_c), 3), 1
+        )
     else:
         meanbinned_image = image_nonbinned
 
@@ -694,10 +751,12 @@ def meanbin_image_with_BC(CCDitem, image_nonbinned=None, error_flag_out=False):
     else:
         return meanbinned_image
 
-def padlastrowsofimage(image,nrow):
-    #Pad image with copies of the last row for when we are reading out row 513 to 515
-    image = np.pad(image, ((0, nrow), (0, 0)), 'edge')
+
+def padlastrowsofimage(image, nrow):
+    # Pad image with copies of the last row for when we are reading out row 513 to 515
+    image = np.pad(image, ((0, nrow), (0, 0)), "edge")
     return image
+
 
 def get_true_image(header, image=None):
     # calculate true image by removing readout offset (pixel blank value) and
@@ -729,11 +788,10 @@ def get_true_image(header, image=None):
     # go through the columns
     for j_c in range(0, int(header["NCOL"] + 1)):  # LM201102 Big fix +1
         # remove blank values and readout offsets
-        bc_comp_fact = (int(header["NCBIN FPGAColumns"]) * ncolbinC / n_coadd[j_c])
-        true_image[0: int(header["NROW"]) + 1, j_c] = (
-            true_image[0: int(header["NROW"] + 1), j_c]
-            - (n_read[j_c] * (header["TBLNK"] - 128)
-               + 128) * bc_comp_fact
+        bc_comp_fact = int(header["NCBIN FPGAColumns"]) * ncolbinC / n_coadd[j_c]
+        true_image[0 : int(header["NROW"]) + 1, j_c] = (
+            true_image[0 : int(header["NROW"] + 1), j_c]
+            - (n_read[j_c] * (header["TBLNK"] - 128) + 128) * bc_comp_fact
         )
 
     # If image becomes negative set flag
@@ -802,20 +860,21 @@ def desmear(image, nrextra, exptimeratio, fill=None):
     """
 
     nrow, ncol = image.shape
-    nr = nrow-nrextra
-    weights = np.tril(
-        exptimeratio*np.ones([nrow, nrow]), -(nrextra+1))+np.diag(np.ones([nrow]))
+    nr = nrow - nrextra
+    weights = np.tril(exptimeratio * np.ones([nrow, nrow]), -(nrextra + 1)) + np.diag(
+        np.ones([nrow])
+    )
     if nrextra > 0:
-        extimage = image - \
-            np.tril(exptimeratio*np.ones([nrow, nrow]), -
-                    1) @ np.vstack((fill, np.zeros([nr, ncol])))
+        extimage = image - np.tril(
+            exptimeratio * np.ones([nrow, nrow]), -1
+        ) @ np.vstack((fill, np.zeros([nr, ncol])))
     else:
         extimage = image
     desmeared = linalg.solve(weights, extimage)
     return desmeared
 
 
-def desmear_true_image(header, image=None, fill_method='lin_row', **kwargs):
+def desmear_true_image(header, image=None, fill_method="lin_row", **kwargs):
     """Subtracts the smearing (due to no shutter) from the image.
 
     Args:
@@ -825,7 +884,7 @@ def desmear_true_image(header, image=None, fill_method='lin_row', **kwargs):
     Returns:
         image (np.array, dtype=float64): desmeared image
         flag (np.array, dtype = uint16): error flag to indicate that the de-smearing gave a negative value as a reslut
-        """
+    """
 
     if image is None:
         image = header["IMAGE"]
@@ -839,30 +898,82 @@ def desmear_true_image(header, image=None, fill_method='lin_row', **kwargs):
 
     T_exposure = float(header["TEXPMS"]) / 1000.0
     if fill_method == "exp_row":
-        H = 1/np.log(np.median(image[1,:])/np.median(image[2,:]))
-        fill_function = np.expand_dims(np.exp((np.arange(nrskip/nrbin)+1)[::-1]/H), axis=1)
-        fill_array = fill_function * \
-            np.repeat(np.expand_dims(image[0, :], axis=1), fill_function.shape[0], axis=1).T
+        H = 1 / np.log(np.median(image[1, :]) / np.median(image[2, :]))
+        fill_function = np.expand_dims(
+            np.exp(2 * ((np.arange(nrskip / nrbin) + 1)[::-1] - 1) / H), axis=1
+        )
+        fill_array = (
+            fill_function
+            * np.repeat(
+                np.expand_dims(image[0, :], axis=1), fill_function.shape[0], axis=1
+            ).T
+        )
+    elif fill_method == "exp_row_median":
+        H = 1 / np.log(np.median(image[1, :]) / np.median(image[2, :]))
+        fill_function = np.expand_dims(
+            np.exp((np.arange(nrskip / nrbin) + 1)[::-1] / H), axis=1
+        )
+        filtered_row = median_filter(image[0, :], size=11, mode="mirror")
+        fill_array = (
+            fill_function
+            * np.repeat(
+                np.expand_dims(filtered_row, axis=1), fill_function.shape[0], axis=1
+            ).T
+        )
     elif fill_method == "lin_row":
-        #make a rough correction for the fact row 2 has some row 1 in it
-        grad=(1 - T_row_extra /T_exposure)*(np.median(image[1,:])-np.median(image[2,:]))
-        fill_function = np.expand_dims(grad*((np.arange(nrskip/nrbin)+1)[::-1]), axis=1)
-        fill_array = fill_function + \
-            np.repeat(np.expand_dims(image[0, :], axis=1), fill_function.shape[0], axis=1).T
+        grad = np.median(image[1, :]) - np.median(image[2, :])
+        fill_function = np.expand_dims(
+            grad * ((np.arange(nrskip / nrbin) + 1)[::-1] + 1), axis=1
+        )
+        fill_array = (
+            fill_function
+            + np.repeat(
+                np.expand_dims(image[0, :], axis=1), fill_function.shape[0], axis=1
+            ).T
+        )
     elif fill_method == "lin_row_median":
-        #make a rough correction for the fact row 2 has some row 1 in it
-        grad=(1 - T_row_extra /T_exposure)*(np.median(image[1,:])-np.median(image[2,:]))
-        fill_function = np.expand_dims(grad*((np.arange(nrskip/nrbin)+1)[::-1]), axis=1)
-        
-        filtered_row = median_filter(image[0, :], size=11, mode='mirror')
-        print(len(filtered_row))
-        fill_array = fill_function + \
-            np.repeat(np.expand_dims(filtered_row, axis=1), fill_function.shape[0], axis=1).T
+        grad = np.median(image[1, :]) - np.median(image[2, :])
+        fill_function = np.expand_dims(
+            grad * ((np.arange(nrskip / nrbin) + 1)[::-1]), axis=1
+        )
+
+        filtered_row = median_filter(image[0, :], size=11, mode="mirror")
+        # print(len(filtered_row))
+        fill_array = (
+            fill_function
+            + np.repeat(
+                np.expand_dims(filtered_row, axis=1), fill_function.shape[0], axis=1
+            ).T
+        )
+    elif fill_method == "lorentz":
+        x0 = -(
+            int(nrskip / nrbin + 1) - 58
+        )  # 58 may need to be adjusted as a function of the pointing
+        y1 = np.median(image[2, :])
+        y2 = np.median(
+            image[4, :]
+        )  # took row 5 index 4 to get a better handle on the gradient
+        gamma = 1 * np.sqrt((y1 / y2 * (2 - x0) ** 2 - (4 - x0) ** 2) / (1 - y1 / y2))
+        fillx = -(np.arange(nrskip / nrbin) + 1)[::-1] - 1
+        fill_function = np.expand_dims(
+            gamma * gamma / ((fillx - x0) ** 2 + gamma * gamma), axis=1
+        )
+        filtered_row = median_filter(image[0, :], size=11, mode="mirror")
+        # filtered_row=image[0, :]
+        A = np.expand_dims(
+            filtered_row / gamma / gamma * ((0 - x0) ** 2 + gamma * gamma), axis=1
+        )
+        # print(len(filtered_row))
+        fill_array = (A @ fill_function.T).T
     else:
         raise Exception("Fill method invalid")
 
-    image = desmear(image, nrextra=fill_function.shape[0], exptimeratio=T_row_extra /
-                    T_exposure, fill=fill_array)
+    image = desmear(
+        image,
+        nrextra=fill_function.shape[0],
+        exptimeratio=T_row_extra / T_exposure,
+        fill=fill_array,
+    )
 
     # row 0 here is the first row to read out from the chip
 
@@ -966,10 +1077,11 @@ def calculate_time_per_row(header):
     return T_row_extra, T_delay
 
 
-#%%
+# %%
 # nadir artifact removal
 
-def artifact_correction(ccditem,image=None):
+
+def artifact_correction(ccditem, image=None):
     """
     Function computing and applying a correction mask on the nadir images. The
     correction masks are computed by assuming a constant bias between the
@@ -994,39 +1106,38 @@ def artifact_correction(ccditem,image=None):
     if image is None:
         image = ccditem["IMAGE"]
 
-    artifact_masks = ccditem['CCDunit'].get_artifact_mask()
+    artifact_masks = ccditem["CCDunit"].get_artifact_mask()
 
     error_flag_mask = np.zeros_like(image, dtype=np.uint16)
     error_flag_no_correction = np.ones_like(image, dtype=np.uint16)
     error_flag = combine_flags([error_flag_mask, error_flag_no_correction], [1, 1])
 
     # if an empty mask is applied
-    if (
-        len(artifact_masks) == 1
-        and np.sum(np.abs(artifact_masks.iloc[0]['bias_mask']) == 0.0)
+    if len(artifact_masks) == 1 and np.sum(
+        np.abs(artifact_masks.iloc[0]["bias_mask"]) == 0.0
     ):
         warnings.warn("Empty mask applied (no correction applied)")
         return image, error_flag
 
     try:
-        azimuth = ccditem["nadir_az"] # nadir azimuth angle of the ccditem
-    except KeyError: # if not available, no correction is applied
-        warnings.warn(
-            "Nadir solar azimuth angle unavailable (no correction applied)"
-        )
+        azimuth = ccditem["nadir_az"]  # nadir azimuth angle of the ccditem
+    except KeyError:  # if not available, no correction is applied
+        warnings.warn("Nadir solar azimuth angle unavailable (no correction applied)")
         return image, error_flag
 
     # if the nadir solar azimuth angle value is nan, an error is raised
     if isnan(azimuth):
-        raise ValueError("nadir_az is NaN (might be an issue in the PlatformData-processing)") 
+        raise ValueError(
+            "nadir_az is NaN (might be an issue in the PlatformData-processing)"
+        )
 
     # list of all the azimuth values in the dataframe
-    mask_azimuth = artifact_masks['azimuth']
+    mask_azimuth = artifact_masks["azimuth"]
 
     # finding the mask which corresponding azimuth angle interval is the closest
     # to the image's azimuth angle
     best_ind = np.argmin(np.abs(mask_azimuth - azimuth))
-    mask = artifact_masks['bias_mask'][best_ind]
+    mask = artifact_masks["bias_mask"][best_ind]
 
     if np.shape(mask) != np.shape(image):
         warnings.warn(
@@ -1037,7 +1148,7 @@ def artifact_correction(ccditem,image=None):
     # substracting the mask
     corrected_im = image - mask
     # removing all negative pixel values
-    corrected_im *= (corrected_im > 0)
+    corrected_im *= corrected_im > 0
 
     # error flag is 1 for pixels being corrected
     error_flag_mask[mask > 0] = 1
@@ -1046,10 +1157,12 @@ def artifact_correction(ccditem,image=None):
 
     return corrected_im, error_flag
 
-#%%
-#Single events and hot pixels
 
-def correct_single_events(CCDitem,image):
+# %%
+# Single events and hot pixels
+
+
+def correct_single_events(CCDitem, image):
     """
     Function to correct for single events. It uses a median filter to fill in values where single
     events are identified. Positions are gotten from database generated by Nickolay Ivchenko.
@@ -1063,21 +1176,24 @@ def correct_single_events(CCDitem,image):
     Returns
     -------
     image_corrected : Image corrected for single events
-        
-    se_mask : A binary mask of pixels where correction is done 
+
+    se_mask : A binary mask of pixels where correction is done
     """
 
-    se_mask = CCDitem['CCDunit'].get_single_event(CCDitem)
-    kernel_size = 3  
+    se_mask = CCDitem["CCDunit"].get_single_event(CCDitem)
+    kernel_size = 3
     image_corrected = image.copy()
-    image_corrected[se_mask==1] = -np.inf
-    median_filtered_data = median_filter(image_corrected, size=kernel_size, mode='nearest')
-    image_corrected[se_mask==1] = median_filtered_data[se_mask==1]
-    se_mask = se_mask.astype(np.uint16) 
+    image_corrected[se_mask == 1] = -np.inf
+    median_filtered_data = median_filter(
+        image_corrected, size=kernel_size, mode="nearest"
+    )
+    image_corrected[se_mask == 1] = median_filtered_data[se_mask == 1]
+    se_mask = se_mask.astype(np.uint16)
 
-    return image_corrected,se_mask
+    return image_corrected, se_mask
 
-def correct_hotpixels(CCDitem,image):
+
+def correct_hotpixels(CCDitem, image):
     """
     Function to correct for hot pixels. Values and positions are gotten from database generated
     by Nickolay Ivchenko.
@@ -1091,18 +1207,18 @@ def correct_hotpixels(CCDitem,image):
     Returns
     -------
     image_corrected : Image corrected for hot pixels
-        
-    hotpixel_mask : A binary mask of pixels where correction is done 
+
+    hotpixel_mask : A binary mask of pixels where correction is done
     """
 
-    _,hotpixel_map = CCDitem['CCDunit'].get_hotpixel_map(CCDitem)
+    _, hotpixel_map = CCDitem["CCDunit"].get_hotpixel_map(CCDitem)
     if len(hotpixel_map) == 0:
         hotpixel_map = np.zeros(image.shape)
     elif hotpixel_map.shape != image.shape:
         hotpixel_map = np.zeros(image.shape)
         warnings.warn("Hot pixel map wrong dimension")
 
-    image_corrected = image-hotpixel_map
-    hotpixel_mask = np.array([hotpixel_map>0],dtype=np.uint16)
+    image_corrected = image - hotpixel_map
+    hotpixel_mask = np.array([hotpixel_map > 0], dtype=np.uint16)
 
-    return image_corrected,hotpixel_mask
+    return image_corrected, hotpixel_mask
