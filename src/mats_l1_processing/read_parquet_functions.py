@@ -277,17 +277,17 @@ def read_ccd_data_in_interval(
     """
 
     if start.tzinfo is None:
-        start.replace(tzinfo=timezone.utc)
+        start = start.replace(tzinfo=timezone.utc)
     if stop.tzinfo is None:
-        stop.replace(tzinfo=timezone.utc)
+        stop = stop.replace(tzinfo=timezone.utc)
 
     partitioning = ds.partitioning(
         schema=pa.schema(
             [
-                ("year", pa.int16()),
-                ("month", pa.int8()),
-                ("day", pa.int8()),
-                ("hour", pa.int8()),
+                ("year", pa.int32()),
+                ("month", pa.int32()),
+                ("day", pa.int32()),
+                ("hour", pa.int32()),
             ]
         ),
     )
@@ -321,7 +321,6 @@ def read_ccd_data_in_interval(
         + stop_with_margin.hour
     )
 
-
     filterlist = (
         (ds.field("EXPDate") >= Timestamp(start))
         & (ds.field("EXPDate") <= Timestamp(stop))
@@ -333,7 +332,7 @@ def read_ccd_data_in_interval(
                     (ds.field(variable) >= value[0])
                     & (ds.field(variable) <= value[1])
                 )
-            elif type(value) in [int,str,float,bool]:
+            elif type(value) in (int, str, float, bool):
                 filterlist &= (
                     (ds.field(variable) == value)                    
                 ) 
@@ -344,12 +343,12 @@ def read_ccd_data_in_interval(
 
     if dataframe.index.name == 'EXPDate':
         dataframe.reset_index(inplace=True)
-        dataframe.set_index('TMHeaderTime',inplace=True)
+        dataframe.set_index('TMHeaderTime', inplace=True)
         dataframe.sort_index(inplace=True)
         dataframe.reset_index(inplace=True)
     else:
-        dataframe.reset_index(drop=True,inplace=True)
-        dataframe.set_index('TMHeaderTime',inplace=True)
+        dataframe.reset_index(drop=True, inplace=True)
+        dataframe.set_index('TMHeaderTime', inplace=True)
         dataframe.sort_index(inplace=True)
         dataframe.reset_index(inplace=True)
 
@@ -390,16 +389,16 @@ def read_instrument_data_in_interval(
     """
 
     if start.tzinfo is None:
-        start.replace(tzinfo=timezone.utc)
+        start = start.replace(tzinfo=timezone.utc)
     if stop.tzinfo is None:
-        stop.replace(tzinfo=timezone.utc)
+        stop = stop.replace(tzinfo=timezone.utc)
 
     partitioning = ds.partitioning(
         schema=pa.schema(
             [
-                ("year", pa.int16()),
-                ("month", pa.int8()),
-                ("day", pa.int8()),
+                ("year", pa.int32()),
+                ("month", pa.int32()),
+                ("day", pa.int32()),
             ]
         ),
     )
@@ -441,7 +440,7 @@ def read_instrument_data_in_interval(
                     (ds.field(variable) >= value[0])
                     & (ds.field(variable) <= value[1])
                 )
-            elif type(value) in [int,str,float,bool]:
+            elif type(value) in (int, str, float, bool):
                 filterlist &= (
                     (ds.field(variable) == value)                    
                 ) 
@@ -451,7 +450,7 @@ def read_instrument_data_in_interval(
 
     dataframe = table.to_pandas()
     dataframe.reset_index(inplace=True)
-    dataframe.set_index('TMHeaderTime',inplace=True)
+    dataframe.set_index('TMHeaderTime', inplace=True)
     dataframe.sort_index(inplace=True)
     dataframe.reset_index(inplace=True)
 
