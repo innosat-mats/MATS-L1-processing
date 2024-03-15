@@ -178,9 +178,92 @@ def read_flatfield_w_baffle(calibration_file, channel):
         np.float64(Image.open(directory + dfile2 + ".pnm")))/2. # read dark background
 
 
-    flatfield_w_baffle = scale_field(pic - picd)
+    flatfield_w_baffle = pic - picd
 
     return flatfield_w_baffle
+
+
+
+
+    
+def read_second_flatfield_w_baffle(channel):
+
+    # Read in a flatfield taken in a different way to compare with and use for error estimation
+    # For IR1, IR2, IR4 and UV1 and UV2 a vertical flatfield is used.
+    #For IR3 another horizontal faltfield is used since the vertical was not good
+    # Reading in images without racfiles.
+
+    if channel != "IR3":
+        directory = '/Users/lindamegner/MATS/retrieval/Calibration/FinalFinalSept2021/FlatfieldsIR124UV_210908/PayloadImages/'
+        if channel == "IR1":
+            filelist = [
+                "1315139160698745856_1",
+                "1315139215614486784_1",
+                "1315140683491622912_1",
+                "1315140750606918400_1"
+            ]
+        elif channel == "IR2":
+            filelist = [
+                "1315139318878006016_4",
+                "1315139365331344640_4",
+                "1315140593069412352_4",
+                "1315140637277480960_4",
+            ]
+
+        elif channel == "IR4":
+            filelist = [
+                "1315139415534683136_2",
+                "1315139462421523968_2",
+                "1315140510849411072_2",
+                "1315140558911407360_2",
+            ]
+
+        elif channel == "UV2":
+            filelist = [
+                "1315139512226760960_6",
+                "1315139614537979136_6",
+                "1315140345809494016_6",
+                "1315140468414031872_6",
+            ]
+
+        elif channel == "UV1":
+            filelist = [
+                "1315139654592239360_5",
+                "1315139943497085696_5",
+                "1315140020567672832_5",
+                "1315140303270797824_5",
+            ]
+
+        elif channel == "NADIR":
+            filelist = [""]
+
+
+    else: # if channel == "IR3":
+        # Reading in the horozizonal flatfield for IR3 since the vertical flatfield was not good.
+        # Also reading from another directory since IR# was not functioning at the first test camapign
+        directory='/Users/lindamegner/MATS/retrieval/Calibration/FinalFinalSept2021/BinningFlatfieldsIR3_210910/PayloadImages/'
+
+        filelist = [
+            "1315316689863510016_3",
+            "1315316743288696320_3",
+            "1315316834330658048_3",
+            "1315316902079223552_3",
+        ]
+
+
+    pfile_B = filelist[0]
+    pfile_SB = filelist[1]
+    pfile_D = filelist[2]
+    pfile_SD = filelist[3]
+
+    pic_B = np.float64(Image.open(directory + pfile_B + ".pnm"))
+    pic_SB = np.float64(Image.open(directory + pfile_SB + ".pnm"))
+    pic_D = np.float64(Image.open(directory + pfile_D + ".pnm"))
+    pic_SD = np.float64(Image.open(directory + pfile_SD + ".pnm"))
+    flatfield_w_baffle = pic_B - pic_SB - (pic_D - pic_SD)
+
+    return flatfield_w_baffle
+
 
 
 def read_flatfield_wo_baffle(calibration_file, channel, sigmode='HSM', reporterror=False):
@@ -374,72 +457,46 @@ def scalefieldtoedgevalue(ratiofield, colstart, colstop, rowstart, rowstop, nnpi
 #%%
 
 def make_flatfield(channel, calibration_file, plotresult=False, plotallplots=False):
-    #Readis in flatfields with and without baffle and morphs them together to create an articicial flatfield with baffle.
-    # Returns the morphed flatfield, the std error of the flatfield without baffle, 
-    # and a field that shows the effect of the baffle compensation added to the flatfield without baffle
+    #Readis in flatfields with baffle taken from the lab at OHB. And reads in another flatfield with baffle 
+    # so that the difference between the two can be used to estimate the error. The second flatfield is 
+    # vertically for IR1, IR2 and IR4. For IR3 there was something in hte image when the vertical field was measured so 
+    # another horizontal field is used. For UV1 and UV2 the flatfields errors....what to do here
     
-    import mats_l1_processing
-    from database_generation.sgolay2 import SGolayFilter2
+
+
     from scipy.signal import medfilt
 
-    #Note the high signal mode flatfields are used even if in low signal mode. They are scaled to be 1 in the middle of the field anyway.
-    #Now both fields are scaled to unity in the middle when read in. 
-    flatfield_wo_baffle, flatfield_wo_baffle_err=read_flatfield_wo_baffle(calibration_file, channel, sigmode='HSM', reporterror=True)
-    flatfield_w_baffle=read_flatfield_w_baffle(calibration_file, channel)
+    #Note the high signal mode flatfields are used even if in low signal mode. 
+    rawflatfield=read_flatfield_w_baffle(calibration_file, channel)
+    
 
+    # Read in a flatfield taken in a different way to compare with and use for error estimation
+    # For IR1, IR2, IR4 and UV1 and UV2 a vertical flatfield is used.
+    #For IR3 another horizontal faltfield is used since the vertical was not good
+
+    rawflatfield2=read_second_flatfield_w_baffle(channel)
 
     # Remove hot pixels by applying a median filter to every row in the 2D array, and rescale. 
-    # Only done for w baffle wo is constructed from means and will not be smoothed.
-    flatfield_s_wo_baffle = flatfield_wo_baffle #Do  not apply median filter to the flatfield without baffle since this is the average
-    flatfield_s_w_baffle = np.apply_along_axis(lambda x: medfilt(x, kernel_size=3), axis=1, arr=flatfield_w_baffle)  
+    flatfield_smooth = np.apply_along_axis(lambda x: medfilt(x, kernel_size=3), axis=1, arr=rawflatfield)  
+    flatfield2_smooth = np.apply_along_axis(lambda x: medfilt(x, kernel_size=3), axis=1, arr=rawflatfield2)
+
+    
+    flatfield_scaled=scale_field(flatfield_smooth)
+    flatfield2_scaled=scale_field(flatfield2_smooth)
+    flatfield_err=(flatfield2_scaled-flatfield_scaled)
+
+
+
 
          
     
-    #Rescale fields aftertaken mean / median filter. Should not make much diffrence (none at all for the mean filter i.e. wo baffle )
-    flatfield_wo_baffle_scaled=scale_field(flatfield_s_wo_baffle)
-    flatfield_w_baffle_scaled=scale_field(flatfield_s_w_baffle)
-    np.save('output/flatfield_wo_baffle_scaled_'+channel+'_HSM.npy', flatfield_wo_baffle_scaled)
 
-    ratio_w_to_wo_scaled=flatfield_w_baffle_scaled/flatfield_wo_baffle_scaled
-    zs = SGolayFilter2(window_size=31, poly_order=1)(ratio_w_to_wo_scaled)
-    grad2d=select_edge_of_baffle_by_plotting(ratio_w_to_wo_scaled,zs, plot=plotallplots)
-
-    colstart, colstop, rowstart, rowstop=define_edge_of_baffle(channel) #Note: a manual selection is needed based on select_edge_of_baffle_by_plotting
-    baffle_scalefield=scalefieldtoedgevalue(zs, colstart, colstop, rowstart, rowstop, nnpix=2, npix=50)
-
-    flatfield=baffle_scalefield*flatfield_wo_baffle_scaled
 
 
     
-    if plotresult:
-        fig, ax = plt.subplots(6,2, figsize=[8,14])
-        plot_CCDimage(flatfield_wo_baffle,fig, ax[0,0], title=channel+' wo baffle')
-        plot_CCDimage(flatfield_w_baffle,fig, ax[0,1], title=channel+ ' w baffle')
-
-        plot_CCDimage(flatfield_wo_baffle-flatfield_s_wo_baffle,fig, ax[1,0], title=channel+'diff smooth and non smooth wo baffle')
-        plot_CCDimage(flatfield_w_baffle-flatfield_s_w_baffle,fig, ax[1,1], title=channel+ 'diff smooth and non smooth w baffle')
-
-        plot_CCDimage(flatfield_wo_baffle_scaled,fig, ax[2,0], title=channel+' wo flatfield scaled')
-        plot_CCDimage(flatfield_w_baffle_scaled,fig, ax[2,1], title=channel+ 'w flatfield scaled')
-        plot_CCDimage(ratio_w_to_wo_scaled,fig, ax[3,0], title=channel+' ratio btw scaled w and scaled wo ')
-        plot_CCDimage(zs,fig, ax[3,1], clim=[0.7, 1.1], title=channel+' sav golay fit')
-        plot_CCDimage(baffle_scalefield,fig, ax[4,0], clim=[0.7, 1.1], title=channel+' scalefield')
-        plot_CCDimage(flatfield,fig, ax[4,1], title=channel+' merged flatfield')
-        plot_CCDimage(flatfield_wo_baffle_scaled-flatfield,fig, ax[5,0], title='difference wo flatfield -  merged flatfield')
-        plot_CCDimage(flatfield_w_baffle_scaled-flatfield,fig, ax[5,1], title='difference w flatfield - merged flatfield')
-        plt.tight_layout()
-        Path("output").mkdir(parents=True, exist_ok=True)
-        fig.savefig("output/Merged_Flatfield_" + channel + ".jpg")
-
-        figS, axS = plt.subplots(3,1, figsize=[5,6])
-        plot_CCDimage(flatfield_wo_baffle, figS, axS[0],title=channel+' Flatfield without baffle')
-        plot_CCDimage(flatfield_w_baffle, figS, axS[1],title=channel+' Flatfield with baffle')
-        plot_CCDimage(flatfield, figS, axS[2],title=channel+' Flatfield merged')
-        plt.tight_layout()
-        fig.savefig("output/Flatfield_w_wo_merged_" + channel + ".jpg")
 
 
-    return flatfield, flatfield_wo_baffle_err, baffle_scalefield
+    return flatfield_scaled, flatfield_err
 
 
 
