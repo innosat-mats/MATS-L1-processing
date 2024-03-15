@@ -442,7 +442,7 @@ def handle_bad_columns(CCDitem, handle_BC=False):
 def flatfield_calibration(CCDitem, image=None):
     """Calibrates the image for each pixel, ie, absolute relativ calibration and flatfield compensation
         Also conversion from to light per second, rather than the total light.
-        Output unit is 10^15 ph m-2 s-1 str-1 nm-1.
+        Output unit is 10^12 ph m-2 s-1 str-1 nm-1.
     
     Args:
         CCDitem:  dictonary containing CCD image and information
@@ -815,7 +815,7 @@ def desmear(image, nrextra, exptimeratio, fill=None):
     return desmeared
 
 
-def desmear_true_image(header, image=None, fill_method='lin_row', **kwargs):
+def desmear_true_image(header, image=None, **kwargs):
     """Subtracts the smearing (due to no shutter) from the image.
 
     Args:
@@ -826,6 +826,15 @@ def desmear_true_image(header, image=None, fill_method='lin_row', **kwargs):
         image (np.array, dtype=float64): desmeared image
         flag (np.array, dtype = uint16): error flag to indicate that the de-smearing gave a negative value as a reslut
         """
+
+    if header["channel"] == 'UV2':
+        fill_method = 'lorentz'
+    elif header["channel"] == 'NADIR':
+        fill_method = 'lin_row_median'
+    else:
+        fill_method = 'exp_row_median'
+
+
 
     if image is None:
         image = header["IMAGE"]
@@ -843,6 +852,12 @@ def desmear_true_image(header, image=None, fill_method='lin_row', **kwargs):
         fill_function = np.expand_dims(np.exp((np.arange(nrskip/nrbin)+1)[::-1]/H), axis=1)
         fill_array = fill_function * \
             np.repeat(np.expand_dims(image[0, :], axis=1), fill_function.shape[0], axis=1).T
+    if fill_method == "exp_row_median":
+        H = 1/np.log(np.median(image[1,:])/np.median(image[2,:]))
+        fill_function = np.expand_dims(np.exp((np.arange(nrskip/nrbin)+1)[::-1]/H), axis=1)
+        filtered_row = median_filter(image[0, :], size=11, mode='mirror')
+        fill_array = fill_function * \
+            np.repeat(np.expand_dims(filtered_row, axis=1), fill_function.shape[0], axis=1).T
     elif fill_method == "lin_row":
         #make a rough correction for the fact row 2 has some row 1 in it
         grad=(1 - T_row_extra /T_exposure)*(np.median(image[1,:])-np.median(image[2,:]))
@@ -858,6 +873,26 @@ def desmear_true_image(header, image=None, fill_method='lin_row', **kwargs):
         print(len(filtered_row))
         fill_array = fill_function + \
             np.repeat(np.expand_dims(filtered_row, axis=1), fill_function.shape[0], axis=1).T
+    elif fill_method == "lorentz":
+        x0 = -(
+            int(nrskip / nrbin + 1) - 58
+        )  # 58 may need to be adjusted as a function of the pointing
+        y1 = np.median(image[2, :])
+        y2 = np.median(
+            image[4, :]
+        )  # took row 5 index 4 to get a better handle on the gradient
+        gamma = 1 * np.sqrt((y1 / y2 * (2 - x0) ** 2 - (4 - x0) ** 2) / (1 - y1 / y2))
+        fillx = -(np.arange(nrskip / nrbin) + 1)[::-1] - 1
+        fill_function = np.expand_dims(
+            gamma * gamma / ((fillx - x0) ** 2 + gamma * gamma), axis=1
+        )
+        filtered_row = median_filter(image[0, :], size=11, mode="mirror")
+        # filtered_row=image[0, :]
+        A = np.expand_dims(
+            filtered_row / gamma / gamma * ((0 - x0) ** 2 + gamma * gamma), axis=1
+        )
+        # print(len(filtered_row))
+        fill_array = (A @ fill_function.T).T
     else:
         raise Exception("Fill method invalid")
 

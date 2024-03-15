@@ -79,7 +79,7 @@ def L1_calibrate(CCDitem, instrument, force_table: bool = True, return_steps=Fal
     image_linear,error_flags_linearity = get_linearized_image(CCDitem, image_bias_sub, force_table)
 
     # Step 4: Desmear
-    image_desmeared, error_flags_desmear= desmear_true_image(CCDitem, image_linear,fill_method="lin_row_median")
+    image_desmeared, error_flags_desmear= desmear_true_image(CCDitem, image_linear)
     #    image_desmeared = desmear_true_image(CCDitem)
 
     # Step 5 Remove dark current
