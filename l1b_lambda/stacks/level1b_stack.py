@@ -1,4 +1,4 @@
-from aws_cdk import Duration, Stack, RemovalPolicy
+from aws_cdk import Duration, Size, Stack, RemovalPolicy
 from aws_cdk.aws_lambda import (
     Architecture, DockerImageFunction, DockerImageCode,
 )
@@ -7,6 +7,8 @@ from aws_cdk.aws_s3 import Bucket
 from aws_cdk.aws_s3_notifications import SqsDestination
 from aws_cdk.aws_sqs import DeadLetterQueue, Queue
 from constructs import Construct
+
+AUX_DATA_BUCKET = "mats-aux-data"
 
 
 class Level1BStack(Stack):
@@ -17,6 +19,8 @@ class Level1BStack(Stack):
         input_bucket_name: str,
         output_bucket_name: str,
         data_source: str,
+        memory_size: int = 4096,
+        storage_size: int = 1024,
         lambda_timeout: Duration = Duration.seconds(900),
         queue_retention_period: Duration = Duration.days(14),
         code_version: str = "",
@@ -37,13 +41,22 @@ class Level1BStack(Stack):
             output_bucket_name,
         )
 
+        aux_data_bucket = Bucket.from_bucket_name(
+            self,
+            "MatsAuxDataBucket",
+            AUX_DATA_BUCKET,
+        )
+
+        l1b_name = f"Level1BLambda{data_source}{'Dev' if development else ''}"
         level1b_lambda = DockerImageFunction(
             self,
-            f"Level1BLambda{data_source}{'Dev' if development else ''}",
+            l1b_name,
+            function_name=l1b_name,
             code=DockerImageCode.from_image_asset("."),
             timeout=lambda_timeout,
             architecture=Architecture.X86_64,
-            memory_size=4096,
+            memory_size=memory_size,
+            ephemeral_storage_size=Size.mebibytes(storage_size),
             environment={
                 "L1B_BUCKET": output_bucket.bucket_name,
                 "L1B_VERSION": code_version,
@@ -81,3 +94,4 @@ class Level1BStack(Stack):
 
         input_bucket.grant_read(level1b_lambda)
         output_bucket.grant_put(level1b_lambda)
+        aux_data_bucket.grant_read_write(level1b_lambda)

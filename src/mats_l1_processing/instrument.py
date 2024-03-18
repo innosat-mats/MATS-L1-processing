@@ -8,21 +8,16 @@ is included.
 
 """
 
-from cmath import e
+import os
 import toml
 import numpy as np
-import scipy
 import pickle
 import pandas as pd
-import scipy.io
 from scipy.io import loadmat
-import sqlite3 as sqlite
 from datetime import datetime
 from scipy.ndimage import median_filter
+import sqlite3
 
-# Define a function to deserialize the blob data
-def deserialize_blob(blob):
-    return pickle.loads(blob)
 
 class CCD:
     """Class to represent a single physical CCD on MATS, a.k.a CCDunit
@@ -100,6 +95,32 @@ class CCD:
             end_datetime (datetime): datetime on which to end extraction calibration parameters (default: None) 
 
         """
+
+        def get_sqlite_data(
+            filename: str,
+            table: str,
+        ) -> pd.DataFrame:
+            if filename.startswith("s3://"):
+                from boto3 import client
+                from tempfile import gettempdir
+                s3 = client("s3")
+                bucket = filename[5:].split("/")[0]
+                key = filename[6 + len(bucket):]
+                db_name = key.split("/")[-1]
+                db_path = f"{gettempdir()}/{db_name}"
+                if not os.path.exists(db_path):
+                    s3.download_file(bucket, key, db_path)
+                return get_sqlite_data(db_path, table)
+            conn = sqlite3.connect(filename)
+            query = f'''
+                SELECT * FROM {table}
+                WHERE datetime BETWEEN '{start_datetime}' AND '{end_datetime}'
+                AND channel = '{self.channel}'
+            '''
+            data = pd.read_sql_query(query, conn)
+            data['datetime'] = pd.to_datetime(data['datetime'])
+            conn.close()
+            return data
 
         self.channel = channel
         if channel == "IR1":
@@ -234,7 +255,6 @@ class CCD:
                 + "_HSM.npy"
             )
 
-
         # Non-linearity
         if channel!="NADIR":
             with open(calibration_data["linearity"]["pixel"]
@@ -270,7 +290,6 @@ class CCD:
             self.ampcorrection = 1
         
         # Absolute and relative calibration constants
-        
         
         df = pd.read_csv(calibration_data["abs_rel_calib"]["abs_rel_calib_constants"], comment="#",
                          skipinitialspace=True, skiprows=()) 
@@ -332,29 +351,13 @@ class CCD:
 
         # single event correction
         filename = calibration_data['hot_pixels']['single_events']
-        disk_conn = sqlite.connect(filename)
-        query = f'''
-            SELECT * FROM SingleEvents
-            WHERE datetime BETWEEN '{start_datetime}' AND '{end_datetime}'
-            AND channel = '{self.channel}'
-        '''
-        self.single_event = pd.read_sql_query(query, disk_conn)
-        self.single_event['datetime'] = pd.to_datetime(self.single_event['datetime'])
-        disk_conn.close()
+        self.single_event = get_sqlite_data(filename, "SingleEvents")
 
         # hot pixel correction
         filename = calibration_data['hot_pixels']['hot_pixels']
-        disk_conn = sqlite.connect(filename)
-        query = f'''
-            SELECT * FROM hotpixelmaps
-            WHERE datetime BETWEEN '{start_datetime}' AND '{end_datetime}'
-            AND channel = '{self.channel}'
-        '''
-        self.hot_pixels = pd.read_sql_query(query, disk_conn)
-        self.hot_pixels['datetime'] = pd.to_datetime(self.hot_pixels['datetime'])
+        self.hot_pixels = get_sqlite_data(filename, "hotpixelmaps")
         # Convert the HPM to a NumPy array
-        self.hot_pixels['HPM'] = self.hot_pixels['HPM'].apply(deserialize_blob)
-        disk_conn.close()
+        self.hot_pixels['HPM'] = self.hot_pixels['HPM'].apply(pickle.loads)
                 
     def calib_denominator(self, mode): 
         """Get calibration constant that should be divided by to get unit 10^15 ph m-2 s-1 str-1 nm-1.
@@ -564,7 +567,7 @@ class CCD:
             mapdate = row['datetime'].values[0]
         else:
             mapdate = date
-            hotpixel_map=np.array([])
+            hotpixel_map = np.array([])
 
         return mapdate, hotpixel_map
 
