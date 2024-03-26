@@ -186,15 +186,15 @@ def read_flatfield_w_baffle(calibration_file, channel):
 
 
     
-def read_second_flatfield_w_baffle(channel):
+def read_second_flatfield_w_baffle(calibration_file, channel):
 
     # Read in a flatfield taken in a different way to compare with and use for error estimation
     # For IR1, IR2, IR4 and UV1 and UV2 a vertical flatfield is used.
     #For IR3 another horizontal faltfield is used since the vertical was not good
     # Reading in images without racfiles.
-
+    calibration_data=toml.load(calibration_file)
     if channel != "IR3":
-        directory = '/Users/lindamegner/MATS/retrieval/Calibration/FinalFinalSept2021/FlatfieldsIR124UV_210908/PayloadImages/'
+        directory = calibration_data["flatfield"]["baffle_flatfield_secondIR124UV12"]
         if channel == "IR1":
             filelist = [
                 "1315139160698745856_1",
@@ -241,7 +241,8 @@ def read_second_flatfield_w_baffle(channel):
     else: # if channel == "IR3":
         # Reading in the horozizonal flatfield for IR3 since the vertical flatfield was not good.
         # Also reading from another directory since IR# was not functioning at the first test camapign
-        directory='/Users/lindamegner/MATS/retrieval/Calibration/FinalFinalSept2021/BinningFlatfieldsIR3_210910/PayloadImages/'
+
+        directory = calibration_data["flatfield"]["baffle_flatfield_secondIR3"]
 
         filelist = [
             "1315316689863510016_3",
@@ -474,7 +475,7 @@ def make_flatfield(channel, calibration_file, plotresult=False, plotallplots=Fal
     # For IR1, IR2, IR4 and UV1 and UV2 a vertical flatfield is used.
     #For IR3 another horizontal faltfield is used since the vertical was not good
 
-    rawflatfield2=read_second_flatfield_w_baffle(channel)
+    rawflatfield2=read_second_flatfield_w_baffle(calibration_file,channel)
 
     # Remove hot pixels by applying a median filter to every row in the 2D array, and rescale. 
     flatfield_smooth = np.apply_along_axis(lambda x: medfilt(x, kernel_size=3), axis=1, arr=rawflatfield)  
