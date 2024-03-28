@@ -1137,7 +1137,13 @@ def correct_hotpixels(CCDitem,image):
         hotpixel_map = np.zeros(image.shape)
         warnings.warn("Hot pixel map wrong dimension")
 
-    image_corrected = image-hotpixel_map
-    hotpixel_mask = np.array([hotpixel_map>0],dtype=np.uint16)
+    #Take away hot pixel correction For UV1 and UV2
+    if CCDitem["channel"] in ['IR1', 'IR2', 'IR3', 'IR4']:
+        image_corrected = image-hotpixel_map
+        hotpixel_mask = np.array([hotpixel_map>0],dtype=np.uint16)
+    else:
+        image_corrected = image
+        hotpixel_mask = np.zeros(image.shape,dtype=np.uint16)
+        
 
     return image_corrected,hotpixel_mask
