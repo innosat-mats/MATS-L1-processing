@@ -93,10 +93,12 @@ def handle_ccd_data(ccd_data: DataFrame, instrument: Instrument) -> DataFrame:
     l1b_data.drop(["ImageData", "Errors", "Warnings"], axis=1, inplace=True)
     l1b_data = l1b_data[l1b_data.ImageCalibrated != None]  # noqa: E711
     l1b_data["ImageCalibrated"] = [
-        ic.tolist() if ic is not None else [] for ic in l1b_data["ImageCalibrated"]
+        ic.tolist() if ic is not None else []
+        for ic in l1b_data["ImageCalibrated"]
     ]
     l1b_data["CalibrationErrors"] = [
-        ce.tolist() if ce is not None else [] for ce in l1b_data["CalibrationErrors"]
+        ce.tolist() if ce is not None else []
+        for ce in l1b_data["CalibrationErrors"]
     ]
 
     return l1b_data
