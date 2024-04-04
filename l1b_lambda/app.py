@@ -43,8 +43,8 @@ Level1BStack(
     data_source="CCD",
     code_version=f"{tag} ({repo.head.commit})",
     development=development,
-    memory_size=5120,
-    storage_size=1024,
+    memory_size=6144,
+    storage_size=2048,
 )
 
 Level1BStack(
