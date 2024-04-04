@@ -90,7 +90,7 @@ packaging==23.2
     #   matplotlib
 pandas==2.2.1
     # via -r requirements.in
-pillow==10.2.0
+pillow==10.3.0
     # via matplotlib
 publication==0.0.3
     # via
