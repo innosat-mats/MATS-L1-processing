@@ -129,7 +129,7 @@ tomli==2.0.1
     # via
     #   build
     #   pyproject-hooks
-tqdm==4.66.2
+tqdm==4.66.3
     # via -r requirements.in
 typeguard==2.13.3
     # via
