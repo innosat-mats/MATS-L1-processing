@@ -378,6 +378,12 @@ class CCD:
             raise ValueError('Mode must be "High" or "Low"')
         return calib_denominator
         
+        
+    def getrawdark(self, log_a, log_b, T):
+        #calculates dark current in electrons/s
+        rawdark = 10 ** (log_a * T + log_b)
+        return rawdark
+    
 
     def darkcurrent(self, T, mode):  # electrons/s
         """Get an average dark current for a channel. 
@@ -393,13 +399,24 @@ class CCD:
 
         """
 
-        if mode == "High":
-            darkcurrent = 10 ** (self.log_a_avr_HSM * T + self.log_b_avr_HSM)
-        elif mode == "Low":
-            darkcurrent = 10 ** (self.log_a_avr_LSM * T + self.log_b_avr_LSM)
+        if mode == 'High':
+            log_a_avr=self.log_a_avr_HSM
+            log_b_avr=self.log_b_avr_HSM
+            log_a_std=self.log_a_std_HSM
+            log_b_std=self.log_b_std_HSM
+        elif mode == 'Low':
+            log_a_avr=self.log_a_avr_LSM
+            log_b_avr=self.log_b_avr_LSM 
+            log_a_std=self.log_a_std_LSM
+            log_b_std=self.log_b_std_LSM           
         else:
-            raise ValueError('Mode must be "high" or "low"')
+            raise Exception("Undefined mode")
+
+        darkcurrent = self.getrawdark(log_a_avr, log_b_avr, T)
+
+
         return darkcurrent
+        
 
     def darkcurrent2D(self, T, mode):  # electrons/s
         """Get an 2D field of dark currents for a CCD. 
@@ -412,13 +429,25 @@ class CCD:
             darkcurrent (np.array): average dark current of the CCD
 
         """
+
         if mode == 'High':
-            darkcurrent = 10 ** (self.log_a_img_avr_HSM * T + self.log_b_img_avr_HSM)
+            log_a_img_avr=self.log_a_img_avr_HSM
+            log_b_img_avr=self.log_b_img_avr_HSM
+            log_a_img_std=self.log_a_img_err_HSM
+            log_b_img_std=self.log_b_img_err_HSM
         elif mode == 'Low':
-            darkcurrent = 10 ** (self.log_a_img_avr_LSM * T + self.log_b_img_avr_LSM)
+            log_a_img_avr=self.log_a_img_avr_LSM
+            log_b_img_avr=self.log_b_img_avr_LSM 
+            log_a_img_std=self.log_a_img_err_LSM
+            log_b_img_std=self.log_b_img_err_LSM           
         else:
             raise Exception("Undefined mode")
+        darkcurrent=self.getrawdark(log_a_img_avr, log_b_img_avr, T)
+
         return darkcurrent
+        
+
+
 
     def ro_avr(self, mode):
         """?. 
