@@ -385,7 +385,7 @@ class CCD:
         return rawdark
     
 
-    def darkcurrent(self, T, mode, reporterror=False):  # electrons/s
+    def darkcurrent(self, T, mode):  # electrons/s
         """Get an average dark current for a channel. 
 
         This method can be used of the dark current signal is very low, since using the 2D functions become noisy then.
@@ -418,7 +418,7 @@ class CCD:
         return darkcurrent
         
 
-    def darkcurrent2D(self, T, mode, reporterror=False):  # electrons/s
+    def darkcurrent2D(self, T, mode):  # electrons/s
         """Get an 2D field of dark currents for a CCD. 
 
         Args:
