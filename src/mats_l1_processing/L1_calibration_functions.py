@@ -472,7 +472,14 @@ def flatfield_calibration(CCDitem, image=None):
 
 def absolute_calibration(CCDitem, image):
     # Returns the image in units of 10**12 photons/nm/m2/str/pixel/s
-    image_in_ph=image/(int(CCDitem["TEXPMS"])/1000)/CCDitem["CCDunit"].calib_denominator(CCDitem["GAIN Mode"])
+    totbin=int(CCDitem["NRBIN"])*int(CCDitem["NCBIN CCDColumns"])*int(CCDitem["NCBIN FPGAColumns"])
+
+    #divide by totbin since the image bins are summed, but the absolute calibration factors are
+    # given per steradian. When binning pixels the steridian that the superbin covers gets larger, 
+    # but the signal per steradian is the same, i.e we should not sum but meanbin. 
+    image_in_ph=image/(int(CCDitem["TEXPMS"])/1000)/CCDitem["CCDunit"].calib_denominator(CCDitem["GAIN Mode"])/totbin
+    
+    
     return image_in_ph
 
 def calculate_flatfield(CCDitem):
@@ -492,18 +499,15 @@ def calculate_flatfield(CCDitem):
     except:
         raise Exception("No CCDunit defined for the CCDitem")
         
-    image_flat_with_binfactor = bin_image_with_BC(CCDitem, CCDunit.flatfield())
+    flatfield_meanbinned = meanbin_image_with_BC(CCDitem, CCDunit.flatfield())
 
-    totbin = int(CCDitem["NRBIN"])*int(CCDitem["NCBIN CCDColumns"]) * \
-    int(CCDitem["NCBIN FPGAColumns"])
-    image_flat_per_singlepixel = image_flat_with_binfactor/totbin
+
     #Report error when flatfield factor over 5 %
+    error_flag_flatf = np.zeros(flatfield_meanbinned.shape, dtype=np.uint16)
+    error_flag_flatf[flatfield_meanbinned > 1.05] = 1
+    error_flag_flatf[flatfield_meanbinned < 0.95] = 1
 
-    error_flag_flatf = np.zeros(image_flat_per_singlepixel.shape, dtype=np.uint16)
-    error_flag_flatf[image_flat_per_singlepixel > 1.05] = 1
-    error_flag_flatf[image_flat_per_singlepixel < 0.95] = 1
-
-    return image_flat_with_binfactor, error_flag_flatf
+    return flatfield_meanbinned, error_flag_flatf
 
 
 def subtract_dark(CCDitem, image=None):
