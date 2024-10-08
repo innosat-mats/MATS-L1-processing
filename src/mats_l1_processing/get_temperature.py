@@ -49,23 +49,23 @@ def add_temperature_info(CCDitem, temperaturedata=None, relativetimedata=None, t
 
         # Add shift to the temperature These temperatures are relative to UV2 CCD , ie. HTR8A
         if CCDitem["channel"] == "IR1":
-            CCDitem["temperature"] = HTR8A  # +1.4
+            CCDitem["temperature"] = (HTR8A+HTR8B)*0.5  # +1.4
         elif CCDitem["channel"] == "IR2":
-            CCDitem["temperature"] = HTR8A  # +1
+            CCDitem["temperature"] = (HTR8A+HTR8B)*0.5  # +1
         elif CCDitem["channel"] == "IR3":
-            CCDitem["temperature"] = HTR8A  # +1
+            CCDitem["temperature"] = (HTR8A+HTR8B)*0.5  # +1
         elif CCDitem["channel"] == "IR4":
-            CCDitem["temperature"] = HTR8A  # +1
+            CCDitem["temperature"] = (HTR8A+HTR8B)*0.5  # +1
         elif CCDitem["channel"] == "UV1":
-            CCDitem["temperature"] = HTR8A  # +0
+            CCDitem["temperature"] = HTR8B  # +0
         elif CCDitem["channel"] == "UV2":
             CCDitem["temperature"] = HTR8A  # -0.5   # + 0.4 for Lindas measurements
         elif CCDitem["channel"] == "NADIR":
-            CCDitem["temperature"] = HTR8A
+            CCDitem["temperature"] = (HTR8A+HTR8B)*0.5
         else:
             raise Exception("the CCD lacks defined temperature")
 
-        CCDitem["temperature_HTR"] = (HTR8A+HTR8B)/2.0
+        CCDitem["temperature_HTR"] = (HTR8A+HTR8B)*0.5
         
         try: 
             CCDitem["temperature_ADC"]

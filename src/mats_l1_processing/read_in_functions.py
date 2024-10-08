@@ -202,6 +202,8 @@ def add_and_rename_CCDitem_info(CCDitem):
         # Convert BC to array of integer instead of str
         if CCDitem["BC"] == "[]":
             CCDitem["BC"] = np.array([])
+        elif len(CCDitem["BC"]) == 0:
+            pass
         else:
             strlist = CCDitem["BC"][1:-1].split(" ")
             CCDitem["BC"] = np.array([int(i) for i in strlist])
