@@ -122,60 +122,9 @@ def combine_flags(flags, bits):
 # %%
 ## non-linearity-stuff ##
 
-# %%
-def row_sum(true_value_mapped_to_pixels):
-    CCD_binned = np.sum(true_value_mapped_to_pixels, axis=0)
-    return CCD_binned
-
-
-def col_sum(true_value_mapped_to_pixels):
-    CCD_binned = np.sum(true_value_mapped_to_pixels, axis=0)
-    return CCD_binned
-
-
-def transfer_function(value_in, non_linearity):
-    return non_linearity.get_measured_value(value_in)
-
-
-def sum_well(true_value_mapped_to_pixels, non_linearity):
-    return transfer_function(col_sum(true_value_mapped_to_pixels), non_linearity)
-
-
-def shift_register(true_value_mapped_to_pixels, non_linearity):
-    return transfer_function(row_sum(true_value_mapped_to_pixels), non_linearity)
-
-
-def single_pixel(true_value_mapped_to_pixels, non_linearity):
-    return transfer_function(true_value_mapped_to_pixels, non_linearity)
-
-
-def total_model(true_value_mapped_to_pixels, p):
-    return sum_well(shift_register(single_pixel(true_value_mapped_to_pixels, p[0]), p[1]), p[2])
-
-
-def total_model_scalar(x, CCD, nrowbin, ncolbin):
-    cal_consts = []
-    cal_consts.append(CCD.non_linearity_pixel)
-    cal_consts.append(CCD.non_linearity_sumrow)
-    cal_consts.append(CCD.non_linearity_sumwell)
-
-    # expand binned image to pixel values
-    true_value_mapped_to_pixels = np.ones((nrowbin, ncolbin))*x/(nrowbin*ncolbin)
-
-    # return modelled value with non-linearity taken into account
-    return total_model(true_value_mapped_to_pixels, cal_consts)
-
-
-def optimize_function(x, CCD, nrowbin, ncolbin, value):
-    # x is true value, y is measured value
-    y_model = total_model_scalar(x, CCD, nrowbin, ncolbin)
-
-    return np.abs(y_model-value)
-
-
 def test_for_saturation(CCDunit, nrowbin, ncolbin, value):
     '''
-    Tests if a value is in the saturated are of a CCD
+    Tests if a value is in the saturated
 
     Author: Ole Martin Christensen
 
@@ -188,87 +137,36 @@ def test_for_saturation(CCDunit, nrowbin, ncolbin, value):
     Returns:
         flag (int): Flag to mark saturation.
             0 = all ok,
-            1 = pixel reached non-linearity in pixel, row or column,
+            1 = pixel reached heavily non-linear region,
             3 = pixel reached saturation in pixel, row or column
-
-        x: nan if not saturated otherwise equal to
-            CCDunit.non_linearity_pixel.saturation*nrowbin*ncolbin
     '''
 
     value_mapped_to_pixels = value/(nrowbin*ncolbin)
     value_mapped_to_shift_register = value/(ncolbin)
     value_mapped_to_summation_well = value
 
-    x = np.nan
-    flag = 0  # 0 = all ok, 1 = pixel reached non-linearity in pixel, row or column,  3 = pixel reached saturation in pixel, row or column
+    if np.isscalar(value):
+        flag = 0  # 0 = all ok, 1 = pixel reached non-linearity in pixel, row or column,  3 = pixel reached saturation in pixel, row or column
+        if value >= CCDunit.non_linearity.get_measured_non_lin_important():
+            flag = 1
+        if value_mapped_to_pixels >= CCDunit.non_linearity.get_measured_saturation(sattype="pixel"):
+            flag = 3
+        elif value_mapped_to_shift_register >= CCDunit.non_linearity.get_measured_saturation(sattype="sumrow"):
+            flag = 3
+        elif value_mapped_to_summation_well >= CCDunit.non_linearity.get_measured_saturation(sattype="sumwell"):
+            flag = 3
 
-    if value_mapped_to_pixels > CCDunit.non_linearity_pixel.get_measured_non_lin_important():
-        flag = 1
-    elif value_mapped_to_shift_register > CCDunit.non_linearity_sumrow.get_measured_non_lin_important():
-        flag = 1
-    elif value_mapped_to_summation_well > CCDunit.non_linearity_sumwell.get_measured_non_lin_important():
-        flag = 1
+    elif isinstance(value, np.ndarray):
+        flag = np.zeros(value.shape)  # 0 = all ok, 1 = pixel reached non-linearity in pixel, row or column,  3 = pixel reached saturation in pixel, row or column
+        flag[value >= CCDunit.non_linearity.get_measured_non_lin_important()] = 1
+        flag[value_mapped_to_pixels >= CCDunit.non_linearity.get_measured_saturation(sattype="pixel")] = 3
+        flag[value_mapped_to_pixels >= CCDunit.non_linearity.get_measured_saturation(sattype="sumrow")] = 3
+        flag[value_mapped_to_pixels >= CCDunit.non_linearity.get_measured_saturation(sattype="sumwell")] = 3
 
-    if value_mapped_to_pixels > CCDunit.non_linearity_pixel.get_measured_saturation():
-        x = CCDunit.non_linearity_pixel.saturation*nrowbin*ncolbin
-        flag = 3
-    elif value_mapped_to_shift_register > CCDunit.non_linearity_sumrow.get_measured_saturation():
-        x = CCDunit.non_linearity_sumrow.saturation*ncolbin
-        flag = 3
-    elif value_mapped_to_summation_well > CCDunit.non_linearity_sumwell.get_measured_saturation():
-        x = CCDunit.non_linearity_sumwell.saturation
-        flag = 3
+    return flag
 
-    return flag, x
-
-
-def check_true_value_max(CCDunit, nrowbin, ncolbin, x_true, flag):
-    """A method which takes in a CCDunit and binning factors and flags
-    for saturation, and sets value to the saturated value if needed.
-
-    Args:
-        CCDunit (obj): A CCDUnit object
-        nrowbin (int): number of rows binned
-        ncolbin (int): nuber of cols binned
-        x_true (float): true value of counts
-        flag (int): flag of pixel (to be modified)
-
-    Returns:
-        flag (int): flag to indicate high degree of non-linearity and/or saturation
-        x (float): true number of counts
+def inverse_model_real(CCDitem, value):
     """
-
-    value_mapped_to_pixels = x_true/(nrowbin*ncolbin)
-    value_mapped_to_shift_register = x_true/(ncolbin)
-    value_mapped_to_summation_well = x_true
-
-    x_true = x_true
-    flag = flag  # 0 = all ok, 1 = pixel reached non-linearity in pixel, row or column,  3 = pixel reached saturation in pixel, row or column
-
-    if value_mapped_to_pixels > CCDunit.non_linearity_pixel.saturation:
-        x_true = CCDunit.non_linearity_pixel.saturation*nrowbin*ncolbin
-        flag = 3
-    elif value_mapped_to_shift_register > CCDunit.non_linearity_sumrow.saturation:
-        x_true = CCDunit.non_linearity_sumrow.saturation*ncolbin
-        flag = 3
-    elif value_mapped_to_summation_well > CCDunit.non_linearity_sumwell.saturation:
-        x_true = CCDunit.non_linearity_sumwell.saturation
-        flag = 3
-
-    return flag, x_true
-
-
-def inverse_model_real(CCDitem, value, method='BFGS'):
-    """A method which takes in a CCDitem and uses the 3 non-linearities in the
-    CCDUnit and the degree of binnning to get the true count (corrected for
-    non-linearity) based on the measured value. This method is slow, so
-    if the binning factors are common its faster to pre-calculate a table
-    and use *inverse_model_table* instead.
-
-    Args:
-        CCDitem (dict): Dictionary of type CCDItem
-        value: Measured value of a pixel
-        method: Method to be used in solving the inverse problem
 
     Returns:
         x (np.array, dtype=float): true number of counts
@@ -284,68 +182,12 @@ def inverse_model_real(CCDitem, value, method='BFGS'):
     ncolbin = CCDitem["NCBIN CCDColumns"]
 
     # Check that values are within the linear region:
+    x_true = CCDunit.non_linearity.get_true_image(value)
+    flag = test_for_saturation(CCDunit, nrowbin, ncolbin, x_true).astype('uint16')
 
-    flag, x = test_for_saturation(CCDunit, nrowbin, ncolbin, value)
+    return x_true, flag
 
-    if (flag == 0) or (flag == 1):
-        x_hat = opt.minimize(optimize_function, x0=value, args=(
-            CCDunit, nrowbin, ncolbin, value), method=method)
-        x = x_hat.x[0]
-        flag, x = check_true_value_max(CCDunit, nrowbin, ncolbin, x, flag)
-
-    return x, flag
-
-
-def inverse_model_table(table, value):
-    """Takes in a pre-calculated table and a measured value
-    and finds the true number of counts.
-
-    Args:
-        table (np.array): lookup table of true counts and flags indexed with counts
-        value (float): measured number of counts
-
-    Returns:
-        x (np.array, dtype=float): true number of counts
-        flag (np.array, dtype = int): flag to indicate high degree of non-linearity and/or saturation
-    """
-    if not (int(table[2, int(value)]) == int(value)):
-        raise ValueError('table must be indexed with counts')
-
-    return table[0, int(value)], table[1, int(value)]
-
-
-def lin_image_from_inverse_model_table(image_bias_sub, table):
-
-    image_linear = np.zeros(image_bias_sub.shape)
-    error_flag = np.zeros(image_bias_sub.shape, dtype=np.uint16)
-
-    for i in range(image_bias_sub.shape[0]):
-        for j in range(image_bias_sub.shape[1]):
-            if image_bias_sub[i, j] > 0:
-                image_linear[i, j], error_flag[i, j] = inverse_model_table(
-                    table, image_bias_sub[i, j])
-            else:
-                image_linear[i, j] = image_bias_sub[i, j]
-
-    return image_linear, error_flag
-
-
-def lin_image_from_inverse_model_real(image_bias_sub, CCDitem):
-    image_linear = np.zeros(image_bias_sub.shape)
-    error_flag = np.zeros(image_bias_sub.shape, dtype=np.uint16)
-
-    for i in range(image_bias_sub.shape[0]):
-        for j in range(image_bias_sub.shape[1]):
-            if image_bias_sub[i, j] > 0:
-                image_linear[i, j], error_flag[i, j] = inverse_model_real(
-                    CCDitem, image_bias_sub[i, j])
-            else:
-                image_linear[i, j] = image_bias_sub[i, j]
-
-    return image_linear, error_flag
-
-
-def get_linearized_image(CCDitem, image_bias_sub, force_table: bool = True):
+def get_linearized_image(CCDitem, image_bias_sub):
     """ Linearizes the image. At the moment not done for NADIR.
 
     Args:
@@ -358,52 +200,20 @@ def get_linearized_image(CCDitem, image_bias_sub, force_table: bool = True):
         flag (np.array, dtype = uint16): flag to indicate problems with the linearisation
     """
 
-    if CCDitem["channel"] == 'NADIR':  # No linearisation of NADIR at the moment
-        image_linear = image_bias_sub
-        error_flag = np.zeros(image_bias_sub.shape, dtype=np.uint16)
-
-    else:
-        table = CCDitem['CCDunit'].get_table(CCDitem)
-        if table is not None:
-            image_linear, error_flag = lin_image_from_inverse_model_table(
-                image_bias_sub, table)
-        else:
-            if force_table:
-                from database_generation.linearity import add_table
-                add_table(CCDitem)
-                CCDitem['CCDunit'].reload_table()
-                table = CCDitem['CCDunit'].get_table(CCDitem)
-                image_linear, error_flag = lin_image_from_inverse_model_table(
-                    image_bias_sub, table)
-            else:
-                try:
-                    raise ValueError(
-                        f"No table for CCD item {CCDitem['ImageName']}"
-                    )
-                except KeyError:
-                    raise ValueError(
-                        f"No table for CCD item {CCDitem['ImageFileName']}"
-                    )
+    image_linear, error_flag = inverse_model_real(CCDitem,image_bias_sub)
 
     error_flag = make_binary(error_flag, 2)
 
     return image_linear, error_flag
 
 
-def loop_over_rows(CCDitem, image_bias_sub):
-    image_linear = np.zeros(image_bias_sub.shape)
-    error_flag = np.zeros(image_bias_sub.shape)
-    for j in range(image_bias_sub.shape[0]):
-        image_linear[j], error_flag[j] = inverse_model_real(CCDitem, image_bias_sub[j])
+# def loop_over_rows(CCDitem, image_bias_sub):
+#     image_linear = np.zeros(image_bias_sub.shape)
+#     error_flag = np.zeros(image_bias_sub.shape)
+#     for j in range(image_bias_sub.shape[0]):
+#         image_linear[j], error_flag[j] = inverse_model_real(CCDitem, image_bias_sub[j])
 
-    return image_linear, error_flag
-
-
-def get_linearized_image_parallelized(CCDitem, image_bias_sub):
-    image_linear_list, error_flag = Parallel(n_jobs=4)(delayed(loop_over_rows)(
-        CCDitem, image_bias_sub[i]) for i in range(image_bias_sub.shape[0]))
-    return np.array(image_linear_list), np.array(error_flag)
-
+#     return image_linear, error_flag
 
 ## Bad columns ##
 
@@ -745,7 +555,7 @@ def get_true_image(header, image=None):
     error_flag[true_image < 0] = 1
 
     error_flag = make_binary(error_flag, 1)
-
+    
     return true_image, error_flag
 
 

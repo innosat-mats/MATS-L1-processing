@@ -76,9 +76,7 @@ class CCD:
         flatfield_HSM (np.array): flatfield image for HSM 
         flatfield_LSM (np.array): flatfield image for LSM 
 
-        non_linearity_pixel (nonLinearity): Linearity of an average pixel
-        non_linearity_sumrow (nonLinearity): Linearity of the shift register
-        non_linearity_sumwell (nonLinearity): Linerarity of the summation well
+        non_linearity (nonLinearity): Linearity of channel
 
         ampcorrection (float): correction for pre-amplification
 
@@ -256,30 +254,7 @@ class CCD:
             )
 
         # Non-linearity
-        if channel!="NADIR":
-            with open(calibration_data["linearity"]["pixel"]
-                + "_" + str(self.channelnumber)
-                + ".pkl", 'rb') as fp:
-    
-                self.non_linearity_pixel = pickle.load(fp)
-    
-            with open(calibration_data["linearity"]["sumrow"]
-                + "_" + str(self.channelnumber)
-                + ".pkl", 'rb') as fp:
-    
-                self.non_linearity_sumrow = pickle.load(fp)
-    
-            with open(calibration_data["linearity"]["sumwell"]
-                + "_" + str(self.channelnumber)
-                + ".pkl", 'rb') as fp:
-    
-                self.non_linearity_sumwell = pickle.load(fp)
-            
-            if 'tables' in calibration_data["linearity"]:
-                self.tablefolder = calibration_data["linearity"]["tables"]
-                self.tables = pd.read_csv(self.tablefolder + 'tables.csv')
-            else:
-                self.tables = None
+        self.non_linearity = nonLinearity(channelnumber, pd.read_csv(calibration_data["linearity"]["linearity"]))
 
         # Amplification correction for UV channels
         if self.channel == "UV1" or self.channel == "UV2":
@@ -497,42 +472,6 @@ class CCD:
         flatfield = self.flatfield_HSM
 
         return flatfield
-
-    def get_table(self,CCDitem):
-        """Check to see if there is a precalculated non linearity table for the CCDMacro used 
-
-        Args:
-            CCDitem (dict): Dictionary of type CCDitem
-
-        Returns:
-            lookup_table (np.array): a lookup table for the non-linearty
-
-        """
-        
-        if self.tables is None:
-            table = None
-
-        else: 
-            df_table = self.tables.loc[(self.tables['CCDSEL'] == CCDitem['CCDSEL']) & (self.tables['NRBIN'] == CCDitem['NRBIN']) & (self.tables['NCBIN CCDColumns'] == CCDitem['NCBIN CCDColumns']) & (self.tables['GAIN Mode'] == CCDitem['GAIN Mode'])]
-        
-            if len(df_table)>0:
-                table = np.load(self.tablefolder + df_table.iloc[0]['Tablefile'] +'.npy')
-            else:
-                table = None
-            
-        return table
-
-    def reload_table(self):
-        """Reloads non-linearity tables 
-
-        Args:
-            None
-
-        Returns:
-            None
-
-        """
-        self.tables = pd.read_csv(self.tablefolder + 'tables.csv')
         
     def get_channel_quaternion(self):
         """Read the channel quaternion from file
@@ -615,46 +554,17 @@ class nonLinearity:
         fit_parameters (list, np.array or obj) = parmeter of object describing the non-linearity fit. 
         covariance (np.array) = covariances of the non-linear fit
     """
-    def __init__(self,channel, fittype='threshold2', fit_parameters=None, covariance=None, fit_threshold=1e9,dfdx_saturation=0.05,dfdx_non_lin_important=0.5):
-        """Init method for CCD class
+    def __init__(self, channel, non_linearity_data ):
+        """Init method for nonLinearity class """
 
-        Args:
-            channel (str) = channel name 
-            fittype (str): Type of fit the non-linearity is representing
-            fit_parameters (list, np.array or obj) = parmeter of object describing the non-linearity fit.
-            covariance (np.array) = numpy array describing the unceritainty of the fit
-            fit_threshold (optional) = max value of measured data used in fitting of the non-linearity
-            dfdx_saturation (float) = the first derivative at which the sensor is considered saturated (default 0.05)
-            dfdx_non_lin_important (float) = the first derivative value where non_linearity becomes important.
-            
-        """
-        self.fittype = fittype
-        self.fit_threshold = fit_threshold
         self.channel = channel
-
-        if isinstance(covariance, np.ndarray):
-            self.covariance = covariance
-        else:
-            self.covariance = None
-
-        if fit_parameters == None:
-            self.saturation = 1e9
-            self.non_lin_important = 1e9
-
-            if fittype=='polyfit1':
-                self.fit_parameters = np.array([1,0])
-            elif fittype=='polyfit2':
-                self.fit_parameters = np.array([0,1,0])
-            elif fittype=='threshold2':
-                a,b,e = (1,0,0)
-                self.fit_parameters = [a,b,e]
-            else:
-                raise NotImplementedError
-        else:
-            self.fit_parameters = fit_parameters
-            self.saturation = self.calc_non_lin_important(dfdx_saturation)
-            self.non_lin_important = self.calc_non_lin_important(dfdx_non_lin_important)
-
+        df = non_linearity_data[non_linearity_data['channel'] == channel]
+        self.b = df["b"].item() 
+        self.e = df["e"].item() # this is in true values
+        self.sumwell_saturation = df["sumwell_saturation"].item() # this is in measured values
+        self.sumrow_saturation = df["sumrow_saturation"].item() # this is in measured values
+        self.pixel_saturation = df["pixel_saturation"].item() # this is in measured values
+        self.non_lin_important = df["non_lin_important"].item() # this is in true values
 
     def get_measured_image(self, image_true):
         """Method to get a measured value for a given true image (forward model)
@@ -667,7 +577,9 @@ class nonLinearity:
 
         """
         image_measured = np.zeros(image_true.shape)
-        if image_measured.ndim == 1:
+        if image_measured.ndim == 0:
+            image_measured = self.get_measured_value(image_true)
+        elif image_measured.ndim == 1:
             for i in range(image_measured.shape[0]):
                 image_measured[i] = self.get_measured_value(image_true[i])
         else:
@@ -687,69 +599,81 @@ class nonLinearity:
             (float) measured value taking into account non-linearity. 
 
         """
-        # function to get the expected measured count for a given true count value
-        # returns value and an errorcode: 
-        # 0 = all good, 1 = non linear part important, 2 = value exceeds fit threshold 
 
-        if (self.fittype=='polyfit1') or (self.fittype=='polyfit2'):
-            if np.any(x_true > self.saturation):
-                return self.saturation
-            else:
-                return np.polyval(self.fit_parameters,x_true)
+        b = self.b
+        e = self.e
 
-        elif self.fittype == 'threshold2':
-            a = self.fit_parameters[0]
-            b = self.fit_parameters[1]
-            e = self.fit_parameters[2]
-
-            if np.any(x_true < e):
-                return a*x_true             
-
-            elif np.any(x_true<self.saturation):
-                return b*(x_true-e)**2+a*(x_true-e)+a*e
-
-            else:
-                return b*(self.saturation-e)**2+a*(self.saturation-e)+a*e
-
+        if x_true < e:
+            y = x_true
         else:
-            raise NotImplementedError(self.fittype)
+            y = b*(x_true-e)**2 + x_true
 
-        
-    def get_measured_saturation(self):
-        return self.get_measured_value(self.saturation)
+        return y
+       
+    def get_measured_saturation(self, sattype="sumwell"):
+        if sattype == "sumwell":
+            return self.sumwell_saturation
+        elif sattype == "sumrow":
+            return self.sumrow_saturation
+        elif sattype == "pixel":
+            return self.pixel_saturation
+        else:
+            raise ValueError("saturation type invalid")
 
     def get_measured_non_lin_important(self):
         return self.get_measured_value(self.non_lin_important)
 
-    def calc_non_lin_important(self,beta):
-        if self.fittype != 'threshold2':
-            raise NotImplementedError
-        else:
-            a = self.fit_parameters[0]
-            b = self.fit_parameters[1]
-            e = self.fit_parameters[2]
-            if b<0:
-                threshold = (beta+2*b*e-a)/(2*b)
-            else:
-                beta = 1+beta
-                threshold = (beta+2*b*e-a)/(2*b)
-        
-        return threshold
+    def calc_non_lin_important(self,max_non_linearity=0.95):
+        beta = (-np.sqrt(1-max_non_linearity)*np.sqrt(
+            1- (max_non_linearity + 4*self.b*self.e)) 
+            + max_non_linearity + 2*self.b*self.e - 1)/(2*self.b)
+        return beta
 
-    def get_random_fit_parameter(self):
-        """Method to returns the fit parameters, except that they are randomly sampled from the fitted distribution (rather than just the mean)
+
+    def get_true_image(self, image_measured):
+        """Method to get a estimated image for a given measured image (inverse model)
 
         Args:
+            image_measured (np.array): Measured image
 
         Returns:
-            (np.array) fit parameters from random sample 
+            (np.array) estimaged true image taking into account non-linearity. 
 
         """
-        if isinstance(self.covariance, np.ndarray):
-            return np.random.multivariate_normal(self.fit_parameters, self.covariance, size=None, check_valid='warn', tol=1e-8)
+        image_true = np.zeros(image_measured.shape)
+        if image_true.ndim == 0:
+            image_true = self.get_true_value(image_measured)
+        elif image_true.ndim == 1:
+            for i in range(image_true.shape[0]):
+                image_true[i] = self.get_true_value(image_measured[i])
         else:
-            return self.fit_parameters
-            
+            for i in range(image_true.shape[0]):
+                for j in range(image_true.shape[1]):
+                    image_true[i,j] = self.get_true_value(image_measured[i,j])
+
+        return image_true
+
+    def get_true_value(self,x_measured):
+        """Method to get a estimated true value for a given measured value (inverse model)
+
+        Args:
+            x_measured (float): Measured value of the signal
+
+        Returns:
+            (float) estimated true value taking into account non-linearity. 
+
+        """
+
+        b = self.b
+        e = self.e
+
+        if x_measured < e:
+            x_true = x_measured
+        else:
+            x_true = (np.sqrt(-4*e*b+4*b*x_measured+1)+2*e*b-1)/(2*b)
+
+        return x_true
+
 
 
 class Instrument:

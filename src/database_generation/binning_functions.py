@@ -26,18 +26,15 @@ import warnings
 # BOTH FPGA AND ON-CHIP & ROW SETTINGS;
 
 
-def bin_ref(ref, CCDItem,CCD=None):
+def bin_ref(ref, CCDItem):
     # simple code for binning
 
-    if CCD == None:
-        raise NotImplementedError('CCD unit needed')
+    binned,signal_factor = bin_ref_linear(ref,CCDItem)
+    return binned, signal_factor
 
-    binned = bin_ref_non_linear(ref,CCDItem,CCD)
-
-    return binned
-
-def bin_ref_non_linear(ref,CCDItem,CCD):
-
+def bin_ref_linear(ref,CCDItem, bias_error = 3):
+    #bias error = value subtracted from bias before manual binning is done
+    #test image
     nrow, ncol, nrskip, ncskip, nrbin, ncbin, exptime = (
         CCDItem["NROW"],
         CCDItem["NCOL"] + 1,
@@ -48,6 +45,7 @@ def bin_ref_non_linear(ref,CCDItem,CCD):
         CCDItem["TEXPMS"],
     )
 
+    #reference image
     nrowr, ncolr, nrskipr, ncskipr, nrbinr, ncbinr, exptimer = (
         ref["NROW"],
         ref["NCOL"] + 1,
@@ -58,96 +56,33 @@ def bin_ref_non_linear(ref,CCDItem,CCD):
         ref["TEXPMS"],
     )
 
-    exptimefactor = int((exptime - 2000) / (exptimer - 2000))
-    # reference image mapped to each pixel and scaled with exptimefactor that will be binned according to 'ccd' settings
-    if np.any(ref["IMAGE"]<0):
-        warnings.warn('reference image has negative values')
+    exptimefactor = float(exptime) / float(exptimer)
 
-    imgref = CCD.non_linearity_pixel.get_measured_image(ref["IMAGE"]*exptimefactor/ncbinr/nrbinr)
+    if CCDItem["channel"]=='NADIR':
+        bias_error = 6
 
-    if (not np.any(ref["IMAGE"]<0)) and (np.any(imgref<0)):
-        warnings.warn('non-linear reference image has negative values')
+    imgref = ref["IMAGE"]*exptimefactor/ncbinr/nrbinr - bias_error
 
-    if np.any(imgref<0):
-        warnings.warn('Image has negative values')
-
-    # images must cover the same ccd section
+        # images must cover the same ccd section
     if ncskip == ncskipr and nrskip == nrskipr:
-
         # declare zero array for row binning
         rowbin = np.zeros([nrow, ncolr])
-
         for j in range(0, nrow):
-            rowbin[j, :] = CCD.non_linearity_sumrow.get_measured_image(imgref[j * nrbin : (j + 1) * nrbin, :].sum(axis=0))
+            rowbin[j, :] = imgref[j * nrbin : (j + 1) * nrbin, :].sum(axis=0)
             if np.any(rowbin[j, :]<0):    
                 warnings.warn('rowbin has negative values')
 
         binned = np.zeros([nrow, ncol])
-
         for j in range(0, ncol):
-            binned[:, j] = CCD.non_linearity_sumwell.get_measured_image(rowbin[:, j * ncbin : (j + 1) * ncbin].sum(axis=1))
+            binned[:, j] = rowbin[:, j * ncbin : (j + 1) * ncbin].sum(axis=1)
             if np.any(binned[:, j] <0):
                 warnings.warn('colbin has negative values')
-        
 
-        return binned
-
-    else:
-
-        sys.exit("Error: images not from the same CCD region.")
-
-
-def bin_ref_FPGA(ref, ccd):
-
-    # simple code for binning
-    nrow, ncol, nrskip, ncskip, nrbin, ncbin, exptime = (
-        ccd["NROW"],
-        ccd["NCOL"] + 1,
-        ccd["NRSKIP"],
-        ccd["NCSKIP"],
-        ccd["NRBIN"],
-        ccd["NCBIN CCDColumns"],
-        ccd["TEXPMS"],
-    )
-
-    nrowr, ncolr, nrskipr, ncskipr, nrbinr, ncbinr, exptimer = (
-        ref["NROW"],
-        ref["NCOL"] + 1,
-        ref["NRSKIP"],
-        ref["NCSKIP"],
-        ref["NRBIN"],
-        ref["NCBIN CCDColumns"],
-        ref["TEXPMS"],
-    )
-
-    exptimefactor = int((exptime - 2000) / (exptimer - 2000))
-    # reference image that will be binned according to 'ccd' settings
-    imgref = ref["IMAGE"]
-
-    # in case reference image is already a binned image
-    ncbin, nrbin = int(ncbin / ncbinr), int(nrbin / nrbinr)
-
-    # images must cover the same ccd section
-    if ncskip == ncskipr and nrskip == nrskipr:
-
-        colbin = np.zeros([nrowr, ncol])
-
-        for j in range(0, ncol):
-            colbin[:, j] = imgref[:, j * ncbin : (j + 1) * ncbin].sum(axis=1)
-
-        # declare zero array for row binning
-        binned = np.zeros([nrow, ncol])
-
-        for j in range(0, nrow):
-            binned[j, :] = colbin[j * nrbin : (j + 1) * nrbin, :].sum(axis=0)
-
-        binned = binned * exptimefactor
-        return binned
+        return binned, exptimefactor*ncbin*nrbin
 
     else:
 
         sys.exit("Error: images not from the same CCD region.")
-
 
 def img_diff(image1, image2):
 
@@ -183,9 +118,10 @@ def get_binning_test_data_from_CCD_item(
     test_type_filter="all",
     add_bias=False,
     remove_blanks=True,
-    CCD=None,
     n_pixels_to_use=0
 ):
+
+    drop_first_column = True #Drop first column in analysis since it shows anomoulus behavior for some experiments
 
 
     CCDitems_use = []
@@ -253,40 +189,48 @@ def get_binning_test_data_from_CCD_item(
     bin_input = copy.deepcopy(CCDl_list)
 
     # replace images with the images with subtrated dark
-    for i in range(0, len(CCDs_list)):
+    for i in range(0, len(CCDl_list)):
         bin_input[i]["IMAGE"] = CCDl_sub_img[i].copy()
-
+        bin_input[i]["TEXPMS"] = bin_input[i]["TEXPMS"]-2000 #2000ms removed since short int image is 2000ms
     # create manually binned images
-    for i in range(0, len(CCDs_list)):
+    signal_factors = []
+    for i in range(0, len(CCDr_list)):
 
         # replace reference image that should be binned manually with one where the dark is removed
         ref = copy.deepcopy(CCDr_list[i])
         ref["IMAGE"] = CCDr_sub_img[i].copy()
+        ref["TEXPMS"] = ref["TEXPMS"] - 2000 #2000ms removed since short int image is 2000ms
 
         # bin reference image according to bin_input settings, where non-linearity from other components are compansated for!
-        binned_reference = bin_ref(copy.deepcopy(ref), bin_input[i].copy(),CCD)
+        binned_reference,signal_factor = bin_ref(copy.deepcopy(ref), bin_input[i].copy())
 
         # adding bias to get the correct values for non-linearity
         if add_bias:
-            binned_reference = binned_reference + CCDs_list[i]["IMAGE"]
+            binned_reference = binned_reference + get_true_image(CCDs_list[i])[0]
 
         binned.append(binned_reference)
+        signal_factors.append(signal_factor)
 
     man_tot = np.array([])
     inst_tot = np.array([])
     test_type_tot = np.array([])
     channel_tot = np.array([])
+    signal_factors_tot = np.array([])
 
     for i in range(0, len(CCDs_list)):
 
         if test_type[i] == test_type_filter or (
-            test_type_filter == "all" and test_type[i] != "ref"
+            (test_type_filter == "all") and (test_type[i] != "ref")
         ):
             # adding bias to get the correct values for non-linearity
             if add_bias:
-                inst_bin = CCDl_list[i]["IMAGE"].copy()
+                inst_bin = CCDl_sub_img[i].copy() + get_true_image(CCDs_list[i])[0]
             else:
                 inst_bin = CCDl_sub_img[i].copy()
+
+            if drop_first_column:
+                inst_bin = inst_bin[:,1:]
+                binned[i] = binned[i][:,1:]
 
             if n_pixels_to_use>0:
                 indexes_to_use = np.random.rand(n_pixels_to_use)*len(inst_bin.flatten())
@@ -301,15 +245,21 @@ def get_binning_test_data_from_CCD_item(
                 test_type_tot,
                 [test_type[i]] * len(inst_bin.flatten()[indexes_to_use]),
             )
+
             channel_tot = np.append(
                 channel_tot, CCDs_list[i]["CCDSEL"] * np.ones(len(inst_bin.flatten()[indexes_to_use]))
+            )
+
+            signal_factors_tot = np.append(
+                signal_factors_tot,
+                [signal_factors[i]] * len(inst_bin.flatten()[indexes_to_use]),
             )
 
         else:
             pass
             # print("Skipping image " + str(i) + " of type " + test_type[i])
 
-    return man_tot, inst_tot, channel_tot, test_type_tot
+    return man_tot, inst_tot, channel_tot, test_type_tot, signal_factors_tot 
 
 
 # %%
