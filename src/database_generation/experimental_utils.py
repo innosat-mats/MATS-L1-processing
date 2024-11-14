@@ -26,7 +26,7 @@ def plotCCDitem(CCDitem, fig, axis, title="", clim=999, aspect="auto", altvec=No
     return sp
 
 
-def plot_CCDimage(image, fig=None, axis=None, title="", clim=None, aspect="auto", altvec=None, borders=False, nrsig=2):
+def plot_CCDimage(image, fig=None, axis=None, title="", clim=None, aspect="auto", altvec=None, borders=False, nrsig=2, colorbar=True, cmap="magma"):
     """Plots a CCD image in a figure, 
     note that optional argument altvec ONLY specifies the upper and lower limit of the y-axis,
     not the actual altitudes of the image"""
@@ -39,12 +39,12 @@ def plot_CCDimage(image, fig=None, axis=None, title="", clim=None, aspect="auto"
     
     
     if altvec is not None:
-        sp = axis.imshow(image, cmap="magma", origin="lower", interpolation="none", extent=[0, image.shape[1], altvec[0], altvec[-1]])
+        sp = axis.imshow(image, cmap=cmap, origin="lower", interpolation="none", extent=[0, image.shape[1], altvec[0], altvec[-1]])
         axis.set_ylabel('Altitude')        
         #x_indices = np.arange(image.shape[1])
         #x_grid, y_grid = np.meshgrid(x_indices, altvec)
     else:
-        sp = axis.imshow(image, cmap="magma", origin="lower", interpolation="none")
+        sp = axis.imshow(image, cmap=cmap, origin="lower", interpolation="none")
     
     if clim=='minmax':
         clim=[image.min(), image.max()]
@@ -62,7 +62,8 @@ def plot_CCDimage(image, fig=None, axis=None, title="", clim=None, aspect="auto"
         sp.set_clim([mean - nrsig * std, mean + nrsig * std])
     else:
         sp.set_clim(clim)
-    fig.colorbar(sp, ax=axis)
+    if colorbar==True:
+        fig.colorbar(sp, ax=axis)
     axis.set_title(title)
     axis.set_aspect(aspect)
     return sp

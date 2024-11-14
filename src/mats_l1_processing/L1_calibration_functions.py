@@ -916,6 +916,8 @@ def correct_single_events(CCDitem,image):
     """
 
     se_mask = CCDitem['CCDunit'].get_single_event(CCDitem)
+    #Fix bug. Set the corner pixel (last row last column) to zero
+    se_mask[-1,-1] = 0
     kernel_size = 3  
     image_corrected = image.copy()
     image_corrected[se_mask==1] = -np.inf
