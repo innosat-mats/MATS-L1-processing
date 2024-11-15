@@ -27,8 +27,8 @@ if development:
 else:
     input_bucket_name_ccd = "ops-payload-level1a-v0.9"
     output_bucket_name_ccd = "ops-payload-level1b-v0.9"
-    input_bucket_name_pm = "ops-payload-level1a-pm-v0.3"
-    output_bucket_name_pm = "ops-payload-level1b-pm-v0.1"
+    input_bucket_name_pm = "ops-payload-level1a-pm-v0.9"
+    output_bucket_name_pm = "ops-payload-level1b-pm-v0.9"
 
 try:
     tag: Optional[TagReference] = repo.tags[-1]
