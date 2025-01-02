@@ -116,8 +116,8 @@ def get_binning_test_data_from_CCD_item(
     CCDitems,
     channels=[1, 2, 3, 4, 5, 6, 7],
     test_type_filter="all",
-    add_bias=False,
-    remove_blanks=True,
+    add_bias=True,
+    remove_blanks=False,
     n_pixels_to_use=0
 ):
 

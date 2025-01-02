@@ -648,7 +648,8 @@ def desmear_true_image(header, image=None, **kwargs):
     else:
         fill_method = 'exp_row_median'
 
-
+    if 'fill_method' in kwargs:
+        fill_method = kwargs['fill_method']
 
     if image is None:
         image = header["IMAGE"]
