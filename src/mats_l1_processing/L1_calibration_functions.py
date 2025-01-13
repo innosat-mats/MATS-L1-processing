@@ -654,6 +654,7 @@ def desmear_true_image(header, image=None, **kwargs):
     if image is None:
         image = header["IMAGE"]
 
+    gamma_error = False
     nrow = int(header["NROW"])
     ncol = int(header["NCOL"]) + 1
     nrskip = int(header["NRSKIP"])
@@ -695,7 +696,9 @@ def desmear_true_image(header, image=None, **kwargs):
         y2 = np.median(
             image[4, :]
         )  # took row 5 index 4 to get a better handle on the gradient
-        gamma = 1 * np.sqrt((y1 / y2 * (2 - x0) ** 2 - (4 - x0) ** 2) / (1 - y1 / y2))
+        gamma = 1 * np.sqrt((y1 / y2 * (2 - x0) ** 2 - (4 - x0) ** 2) / (1 - y1 / y2)) 
+        if isnan(gamma):
+            gamma_error = True
         fillx = -(np.arange(nrskip / nrbin) + 1)[::-1] - 1
         fill_function = np.expand_dims(
             gamma * gamma / ((fillx - x0) ** 2 + gamma * gamma), axis=1
@@ -710,16 +713,25 @@ def desmear_true_image(header, image=None, **kwargs):
     else:
         raise Exception("Fill method invalid")
 
-    image = desmear(image, nrextra=fill_function.shape[0], exptimeratio=T_row_extra /
+
+    error_flag_gamma = np.zeros(image.shape, dtype=np.uint16)
+    if gamma_error:
+        error_flag_gamma = error_flag_gamma + 1
+        image = image
+    else:
+        image = desmear(image, nrextra=fill_function.shape[0], exptimeratio=T_row_extra /
                     T_exposure, fill=fill_array)
 
     # row 0 here is the first row to read out from the chip
 
     # Flag for negative values
-    error_flag = np.zeros(image.shape, dtype=np.uint16)
-    error_flag[image < 0] = 1
+    error_flag_negative = np.zeros(image.shape, dtype=np.uint16)
+    error_flag_negative[image < 0] = 1
 
-    error_flag = make_binary(error_flag, 1)
+    error_flag = combine_flags(
+    [error_flag_negative, error_flag_gamma], [1, 1])
+
+    error_flag = make_binary(error_flag, 2)
 
     return image, error_flag
 
