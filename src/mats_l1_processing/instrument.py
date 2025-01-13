@@ -114,6 +114,7 @@ class CCD:
                 SELECT * FROM {table}
                 WHERE datetime BETWEEN '{start_datetime}' AND '{end_datetime}'
                 AND channel = '{self.channel}'
+                ORDER BY datetime DESC
             '''
             data = pd.read_sql_query(query, conn)
             data['datetime'] = pd.to_datetime(data['datetime'])
@@ -529,7 +530,7 @@ class CCD:
         df = self.hot_pixels
         date = np.datetime64(CCDitem['EXP Date'],'s').astype(datetime)
         channelname = CCDitem["channel"]
-        row = df[(df.datetime.dt.date == date.date()) & (df.channel == channelname)]
+        row = df[(df.datetime <= date) & (df.channel == channelname)]
         if len(row)>0:
             hotpixel_map = row['HPM'].values[0]
             mapdate = row['datetime'].values[0]
