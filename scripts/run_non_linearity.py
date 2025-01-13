@@ -173,10 +173,13 @@ params = curve_fit(threshold_fit, x, y,p0=np.array([-0.0001,10000,30000]))
 #     new_row = {'channel': channel, 'b': b, 'e': non_lin, 'sat': sat, 'non_lin_important': non_lin_important, 'sumwell_saturation': sumwell_saturation, 'sumrow_saturation': sumrow_saturation, 'pixel_saturation': pixel_saturation }
 #     non_linearity_data.loc[len(non_linearity_data)] = new_row
 
-non_linearity_data = linearity.make_linearity(calibration_file)
-non_linearity_data.to_csv('linearity.csv')
+#non_linearity_data = linearity.make_linearity(calibration_file)
+#non_linearity_data.to_csv('linearity.csv')
 
 #%%
+
+non_linearity_data = pd.read_csv('linearity.csv')
+
 from matplotlib import pyplot as plt
 from matplotlib.pyplot import cm
 
@@ -203,13 +206,12 @@ plt.show()
 # %%
 y_fit = np.arange(0,35000)
 e = non_linearity_data['e'][0]
-sat = non_linearity_data['sat'][0]
+sat = non_linearity_data['sumwell_saturation'][0]
 b = non_linearity_data['b'][0]
 x_fit,flag = threshold_fit_inv(y_fit,sumwell_saturation,b,e)
 y_sat = threshold_fit(np.array([sat]),sat,b,e)[0]
 
 # %%
-plt.plot(np.array([0,40000]),np.array([0,40000]),'k-',linewidth=0.5)
 plt.scatter(x,y,1,color='0.7',alpha=0.1)
 plt.plot(x_fit[flag==0],y_fit[flag==0])
 plt.plot(x_fit[flag==1],y_fit[flag==1])
@@ -217,10 +219,11 @@ plt.plot(x_fit[flag==2],y_fit[flag==2])
 plt.plot(np.array([0,40000]),np.array([sumwell_saturation,sumwell_saturation]),'k:')# %%
 plt.plot(np.array([e,e]),np.array([0,e]),'k--')
 plt.plot(np.array([0,e]),np.array([e,e]),'k--')
+plt.plot(np.array([0,40000]),np.array([0,40000]),'k-',linewidth=0.5)
 plt.xlim([0,40000])
 plt.ylim([0,40000])
-plt.xlabel('estimated value')
-plt.ylabel('measured value')
+plt.xlabel('estimated value (counts)')
+plt.ylabel('measured value (counts)')
 plt.legend(['data','valid', 'highly non-linear', 'saturated','saturation limit','start of non-linearity'])
 plt.show()
 # %%
