@@ -955,7 +955,8 @@ def correct_hotpixels(CCDitem,image):
     -------
     image_corrected : Image corrected for hot pixels
         
-    hotpixel_mask : A binary mask of pixels where correction is done 
+    error_flag : A binary mask of pixels where correction is done 
+    (1 hot pixel done, 3 no-hot pixel correction applied for entire image)
     """
 
     _,hotpixel_map = CCDitem['CCDunit'].get_hotpixel_map(CCDitem)
@@ -965,13 +966,21 @@ def correct_hotpixels(CCDitem,image):
         hotpixel_map = np.zeros(image.shape)
         warnings.warn("Hot pixel map wrong dimension")
 
-    #Take away hot pixel correction For UV1 and UV2
-    if CCDitem["channel"] in ['IR1', 'IR2', 'IR3', 'IR4']:
+    #Take away hot pixel correction if map exists
+    if np.any(hotpixel_map):
         image_corrected = image-hotpixel_map
         hotpixel_mask = np.array([hotpixel_map>0],dtype=np.uint16)
+        hot_pixel_not_applied = np.zeros(image.shape,dtype=np.uint16)
     else:
         image_corrected = image
         hotpixel_mask = np.zeros(image.shape,dtype=np.uint16)
+        hot_pixel_not_applied = np.ones(image.shape,dtype=np.uint16)
+
+
+    error_flag = combine_flags(
+    [hotpixel_mask, hot_pixel_not_applied], [1, 1])
+
+    error_flag = make_binary(error_flag, 2)
         
 
-    return image_corrected,hotpixel_mask
+    return image_corrected,error_flag
