@@ -71,7 +71,7 @@ class Level1BStack(Stack):
             queue_name=queue_name,
             retention_period=queue_retention_period,
             visibility_timeout=lambda_timeout,
-            removal_policy=RemovalPolicy.RETAIN,
+            # removal_policy=RemovalPolicy.RETAIN,
             dead_letter_queue=DeadLetterQueue(
                 max_receive_count=1,
                 queue=Queue(
