@@ -14,9 +14,7 @@ The MATLAB script can be found here: https://github.com/OleMartinChristensen/MAT
 """
 
 import numpy as np
-import scipy.optimize as opt
 from scipy.ndimage import median_filter
-from joblib import Parallel, delayed
 from numpy import linalg
 from math import isnan
 import warnings
@@ -961,7 +959,7 @@ def correct_hotpixels(CCDitem,image):
 
     _,hotpixel_map = CCDitem['CCDunit'].get_hotpixel_map(CCDitem)
     if len(hotpixel_map) == 0:
-        warnings.warning("No Hot pixel map")
+        warnings.warn(f"No Hot pixel map {CCDitem['channel']}")
         hotpixel_map = np.zeros(image.shape)
     elif hotpixel_map.shape != image.shape:
         hotpixel_map = np.zeros(image.shape)

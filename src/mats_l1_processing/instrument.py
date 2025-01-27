@@ -9,6 +9,7 @@ is included.
 """
 
 import os
+from typing import Literal
 import toml
 import numpy as np
 import pickle
@@ -96,7 +97,7 @@ class CCD:
 
         def get_sqlite_data(
             filename: str,
-            table: str,
+            table: Literal["hotpixelmaps","SingleEvents"],
         ) -> pd.DataFrame:
             if filename.startswith("s3://"):
                 from boto3 import client
@@ -110,12 +111,19 @@ class CCD:
                     s3.download_file(bucket, key, db_path)
                 return get_sqlite_data(db_path, table)
             conn = sqlite3.connect(filename)
-            query = f'''
-                SELECT * FROM {table}
-                WHERE datetime BETWEEN '{start_datetime}' AND '{end_datetime}'
-                AND channel = '{self.channel}'
-                ORDER BY datetime DESC
-            '''
+            if table=="hotpixelmaps":
+                query = f'''
+                    SELECT * FROM {table}
+                    AND channel = '{self.channel}'
+                    ORDER BY datetime DESC
+                '''
+            else:
+                query = f'''
+                    SELECT * FROM {table}
+                    WHERE datetime BETWEEN '{start_datetime}' AND '{end_datetime}'
+                    AND channel = '{self.channel}'
+                    ORDER BY datetime DESC
+                '''
             data = pd.read_sql_query(query, conn)
             data['datetime'] = pd.to_datetime(data['datetime'])
             conn.close()

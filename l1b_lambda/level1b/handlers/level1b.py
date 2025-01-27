@@ -21,7 +21,7 @@ from mats_l1_processing import read_parquet_functions as rpf  # type: ignore
 Event = Dict[str, Any]
 Context = Any
 
-HPSE_BUFFER = dt.timedelta(minutes=1)
+HPSE_BUFFER = dt.timedelta(minutes=5)
 
 
 class InvalidMessage(Exception):
