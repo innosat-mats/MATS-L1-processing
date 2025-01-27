@@ -961,6 +961,7 @@ def correct_hotpixels(CCDitem,image):
 
     _,hotpixel_map = CCDitem['CCDunit'].get_hotpixel_map(CCDitem)
     if len(hotpixel_map) == 0:
+        warnings.warning("No Hot pixel map")
         hotpixel_map = np.zeros(image.shape)
     elif hotpixel_map.shape != image.shape:
         hotpixel_map = np.zeros(image.shape)
