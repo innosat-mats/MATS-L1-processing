@@ -114,7 +114,7 @@ class CCD:
             if table=="hotpixelmaps":
                 query = f'''
                     SELECT * FROM {table}
-                    AND channel = '{self.channel}'
+                    WHERE channel = '{self.channel}'
                     ORDER BY datetime DESC
                 '''
             else:
