@@ -1,4 +1,4 @@
-from aws_cdk import Duration, Size, Stack, RemovalPolicy
+from aws_cdk import Duration, Size, Stack
 from aws_cdk.aws_lambda import (
     Architecture, DockerImageFunction, DockerImageCode,
 )
