@@ -136,7 +136,7 @@ def add_ccd_item_attributes(ccd_data: DataFrame) -> None:
         None:   Operation is performed in place.
     """
 
-    ccd_data["channel"] = [channel_num_to_str[c] for c in ccd_data["CCDSEL"]]
+    #ccd_data["channel"] = [channel_num_to_str[c] for c in ccd_data["CCDSEL"]] This is now done in level 0 to level 1a processing
     ccd_data["flipped"] = False
 
     # CCDitem["id"] should not be needed in operational retrieval. Keeping it
