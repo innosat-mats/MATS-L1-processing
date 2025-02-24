@@ -18,7 +18,7 @@ from scipy.ndimage import median_filter
 from numpy import linalg
 from math import isnan
 import warnings
-from scipy.ndimage import uniform_filter1d
+
 
 
 def flip_image(CCDitem, image=None):
@@ -656,7 +656,7 @@ def desmear_true_image(header, image=None, **kwargs):
         fill_method = 'lorentz'
     elif header["channel"] == 'NADIR':
         fill_method = 'lin_row_median'
-    elif header["TPsza"] > 395: #Nighttime
+    elif header["TPsza"] > 95: #Nighttime
         fill_method = 'lin_row_median'
     else:
         fill_method = 'exp_row_median'
@@ -685,7 +685,6 @@ def desmear_true_image(header, image=None, **kwargs):
         H=calculate_scaleheight(image[1,:],image[2,:])
         fill_function = np.expand_dims(np.exp((np.arange(nrskip/nrbin)+1)[::-1]/H), axis=1)
         filtered_row = median_filter(image[0, :], size=11, mode='mirror')
-        #filtered_row=uniform_filter1d(image[0, :],size=11)
         fill_array = fill_function * \
             np.repeat(np.expand_dims(filtered_row, axis=1), fill_function.shape[0], axis=1).T
     elif fill_method == "lin_row":
