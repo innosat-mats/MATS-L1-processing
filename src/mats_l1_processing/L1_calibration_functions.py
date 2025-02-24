@@ -18,7 +18,7 @@ from scipy.ndimage import median_filter
 from numpy import linalg
 from math import isnan
 import warnings
-
+from scipy.ndimage import uniform_filter1d
 
 
 def flip_image(CCDitem, image=None):
@@ -626,6 +626,19 @@ def desmear(image, nrextra, exptimeratio, fill=None):
     desmeared = linalg.solve(weights, extimage)
     return desmeared
 
+def calculate_scaleheight(row1,row2):
+    #Calculate the scaleheight from two rows
+    H = 1/np.log(np.median(row1)/np.median(row2))
+    #check if MAD (Median Absolute Deviation) is larger than half the median, 
+    # and in that case set H to the largest resonable estimate, since large value means flat atmosphere
+    mad1=np.median(np.abs(row1-np.median(row1)))
+    mad2=np.median(np.abs(row2-np.median(row2)))
+    if mad1 > 0.5*np.median(row1) or mad2>0.5*np.median(row2):
+        H = 1/np.log((np.median(row1)-mad1)/(np.median(row2)+mad2))
+
+    return H
+
+
 
 def desmear_true_image(header, image=None, **kwargs):
     """Subtracts the smearing (due to no shutter) from the image.
@@ -642,6 +655,8 @@ def desmear_true_image(header, image=None, **kwargs):
     if header["channel"] == 'UV2':
         fill_method = 'lorentz'
     elif header["channel"] == 'NADIR':
+        fill_method = 'lin_row_median'
+    elif header["TPsza"] > 395: #Nighttime
         fill_method = 'lin_row_median'
     else:
         fill_method = 'exp_row_median'
@@ -667,9 +682,10 @@ def desmear_true_image(header, image=None, **kwargs):
         fill_array = fill_function * \
             np.repeat(np.expand_dims(image[0, :], axis=1), fill_function.shape[0], axis=1).T
     if fill_method == "exp_row_median":
-        H = 1/np.log(np.median(image[1,:])/np.median(image[2,:]))
+        H=calculate_scaleheight(image[1,:],image[2,:])
         fill_function = np.expand_dims(np.exp((np.arange(nrskip/nrbin)+1)[::-1]/H), axis=1)
         filtered_row = median_filter(image[0, :], size=11, mode='mirror')
+        #filtered_row=uniform_filter1d(image[0, :],size=11)
         fill_array = fill_function * \
             np.repeat(np.expand_dims(filtered_row, axis=1), fill_function.shape[0], axis=1).T
     elif fill_method == "lin_row":
