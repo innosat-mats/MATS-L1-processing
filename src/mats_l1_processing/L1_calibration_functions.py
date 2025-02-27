@@ -629,13 +629,12 @@ def desmear(image, nrextra, exptimeratio, fill=None):
 def calculate_scaleheight(row1,row2):
     #Calculate the scaleheight from two rows
     H = 1/np.log(np.median(row1)/np.median(row2))
-    #check if MAD (Median Absolute Deviation) is larger than half the median, 
+    #check if MAD (Median Absolute Deviation) is large, ie H is not reliable
     # and in that case set H to the largest resonable estimate, since large value means flat atmosphere
     mad1=np.median(np.abs(row1-np.median(row1)))
     mad2=np.median(np.abs(row2-np.median(row2)))
-    if mad1 > 0.5*np.median(row1) or mad2>0.5*np.median(row2):
-        H = 1/np.log((np.median(row1)-mad1)/(np.median(row2)+mad2))
-
+    if abs(np.median(row1)-np.median(row2))< np.sqrt(mad1**2+mad2**2):
+        H=-1000000 #set to large value (negative or positive does not matter)
     return H
 
 
@@ -732,11 +731,15 @@ def desmear_true_image(header, image=None, **kwargs):
         error_flag_gamma = error_flag_gamma + 1
         image = image
     else:
-        image = desmear(image, nrextra=fill_function.shape[0], exptimeratio=T_row_extra /
+        image_desmear = desmear(image, nrextra=fill_function.shape[0], exptimeratio=T_row_extra /
                     T_exposure, fill=fill_array)
 
-    # row 0 here is the first row to read out from the chip
-
+        if (np.mean(image_desmear)/np.mean(image) > 1.) or (np.mean(image_desmear)/np.mean(image) < 0.25): #Sanity check of desmearing
+            error_flag_gamma = error_flag_gamma + 1
+            image = image
+        else:
+            image=image_desmear
+            
     # Flag for negative values
     error_flag_negative = np.zeros(image.shape, dtype=np.uint16)
     error_flag_negative[image < 0] = 1
