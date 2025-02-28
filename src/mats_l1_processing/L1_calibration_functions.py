@@ -734,7 +734,7 @@ def desmear_true_image(header, image=None, **kwargs):
         image_desmear = desmear(image, nrextra=fill_function.shape[0], exptimeratio=T_row_extra /
                     T_exposure, fill=fill_array)
 
-        if (np.mean(image_desmear)/np.mean(image) > 1.) or (np.mean(image_desmear)/np.mean(image) < 0.25): #Sanity check of desmearing
+        if (np.any((image_desmear/image) > 1.)) or (np.mean(image_desmear)/np.mean(image) < 0.25): #Sanity check of desmearing
             error_flag_gamma = error_flag_gamma + 1
             image = image
         else:
