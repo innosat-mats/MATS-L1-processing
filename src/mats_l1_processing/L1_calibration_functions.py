@@ -626,6 +626,18 @@ def desmear(image, nrextra, exptimeratio, fill=None):
     desmeared = linalg.solve(weights, extimage)
     return desmeared
 
+def calculate_scaleheight(row1,row2):
+    #Calculate the scaleheight from two rows
+    H = 1/np.log(np.median(row1)/np.median(row2))
+    #check if MAD (Median Absolute Deviation) is large, ie H is not reliable
+    # and in that case set H to the largest resonable estimate, since large value means flat atmosphere
+    mad1=np.median(np.abs(row1-np.median(row1)))
+    mad2=np.median(np.abs(row2-np.median(row2)))
+    if abs(np.median(row1)-np.median(row2))< np.sqrt(mad1**2+mad2**2):
+        H=-1000000 #set to large value (negative or positive does not matter)
+    return H
+
+
 
 def desmear_true_image(header, image=None, **kwargs):
     """Subtracts the smearing (due to no shutter) from the image.
@@ -642,6 +654,8 @@ def desmear_true_image(header, image=None, **kwargs):
     if header["channel"] == 'UV2':
         fill_method = 'lorentz'
     elif header["channel"] == 'NADIR':
+        fill_method = 'lin_row_median'
+    elif header["TPsza"] > 95: #Nighttime
         fill_method = 'lin_row_median'
     else:
         fill_method = 'exp_row_median'
@@ -667,7 +681,7 @@ def desmear_true_image(header, image=None, **kwargs):
         fill_array = fill_function * \
             np.repeat(np.expand_dims(image[0, :], axis=1), fill_function.shape[0], axis=1).T
     if fill_method == "exp_row_median":
-        H = 1/np.log(np.median(image[1,:])/np.median(image[2,:]))
+        H=calculate_scaleheight(image[1,:],image[2,:])
         fill_function = np.expand_dims(np.exp((np.arange(nrskip/nrbin)+1)[::-1]/H), axis=1)
         filtered_row = median_filter(image[0, :], size=11, mode='mirror')
         fill_array = fill_function * \
@@ -717,11 +731,15 @@ def desmear_true_image(header, image=None, **kwargs):
         error_flag_gamma = error_flag_gamma + 1
         image = image
     else:
-        image = desmear(image, nrextra=fill_function.shape[0], exptimeratio=T_row_extra /
+        image_desmear = desmear(image, nrextra=fill_function.shape[0], exptimeratio=T_row_extra /
                     T_exposure, fill=fill_array)
 
-    # row 0 here is the first row to read out from the chip
-
+        if (np.any((image_desmear/image) > 1.)) or (np.mean(image_desmear)/np.mean(image) < 0.25): #Sanity check of desmearing
+            error_flag_gamma = error_flag_gamma + 1
+            image = image
+        else:
+            image=image_desmear
+            
     # Flag for negative values
     error_flag_negative = np.zeros(image.shape, dtype=np.uint16)
     error_flag_negative[image < 0] = 1

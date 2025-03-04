@@ -26,7 +26,7 @@ if development:
     output_bucket_name_ccd = "dev-payload-level1b-pm"
 else:
     input_bucket_name_ccd = "ops-payload-level1a-v1.0"
-    output_bucket_name_ccd = "ops-payload-level1b-v1.0"
+    output_bucket_name_ccd = "ops-payload-level1b-v1.0.1"
     input_bucket_name_pm = "ops-payload-level1a-pm-v1.0"
     output_bucket_name_pm = "ops-payload-level1b-pm-v1.0"
 
