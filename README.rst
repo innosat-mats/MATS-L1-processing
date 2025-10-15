@@ -21,7 +21,7 @@ Installation
 
 3.
 	a.  Add calibration_data and testdata folder from box (Calibration/CalibrationSoftware/testdata) 
-to root folder. https://chalmersuniversity.box.com/s/d25rklkjtw9shsayff3g34sryru6piv8
+to root folder. https://su.drive.sunet.se/s/GFLstEoc5R99JKP
 
 	b. This repo contains a subrepo "instrument data". First time cloning the main repo:
 		`git submodule update --init --recursive`
