@@ -20,8 +20,8 @@ Installation
 2. run $pip install . or $pip install -e . if you want to do development for the package
 
 3.
-	a.  Add calibration_data and testdata folder from box (Calibration/CalibrationSoftware/testdata) 
-to root folder. https://chalmersuniversity.box.com/s/d25rklkjtw9shsayff3g34sryru6piv8
+	a.  Add calibration_data and testdata folder from box (Calibration/CalibrationSoftware/softwaredata) 
+to root folder. https://su.drive.sunet.se/s/6NiSdeYL7yPFdiX
 
 	b. This repo contains a subrepo "instrument data". First time cloning the main repo:
 		`git submodule update --init --recursive`
