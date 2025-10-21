@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the following metadata."
+title: "MATS-L1-processing"
+authors:
+  - family-names: Megner
+    given-names: Linda
+  - family-names: Christensen
+    given-names: Ole Martin
+  - family-names: Linder
+    given-names: Björn
+  - family-names: Murtagh
+    given-names: Donal P.
+  - family-names: Ivchenko
+    given-names: Nickolay
+  - family-names: Giono
+    given-names: Gabriel
+  - family-names: Olentsenko
+    given-names: Georgi
+  - family-names: Kern
+    given-names: Louis
+  - family-names: Möller
+    given-names: Joakim
+  - family-names: Skyman
+    given-names: Ida-Sofia
+  - family-names: Gumbel
+    given-names: Jörg
+  - family-names: Krasauskas
+    given-names: Lukas
+  - family-names: Stegman
+    given-names: Jacek
+repository-code: "https://github.com/your-username/your-repo-name"
+license: MIT
+keywords:
+  - atmospheric science
+  - satellite data
+  - measurement techniques
+  - contributors
