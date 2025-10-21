@@ -1,0 +1,45 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the following metadata."
+title: "MATS-L1-processing"
+authors:
+  - family-names: Megner
+    given-names: Linda
+    orcid: https://orcid.org/0000-0002-8016-1343
+  - family-names: Christensen
+    given-names: Ole Martin
+    orcid: https://orcid.org/0000-0002-2454-549X
+  - family-names: Linder
+    given-names: Björn
+    orcid: https://orcid.org/0009-0003-7558-5373
+  - family-names: Murtagh
+    given-names: Donal P.
+  - family-names: Ivchenko
+    given-names: Nickolay
+    orcid: https://orcid.org/0000-0003-2422-5426
+  - family-names: Giono
+    given-names: Gabriel
+  - family-names: Olentsenko
+    given-names: Georgi
+  - family-names: Kern
+    given-names: Louis
+  - family-names: Möller
+    given-names: Joakim
+    orcid: https://orcid.org/0009-0007-5394-7432
+  - family-names: Skyman
+    given-names: Ida-Sofia
+    orcid: https://orcid.org/0000-0002-2221-4048
+  - family-names: Gumbel
+    given-names: Jörg
+    orcid: https://orcid.org/0000-0002-4645-4601
+  - family-names: Krasauskas
+    given-names: Lukas
+  - family-names: Stegman
+    given-names: Jacek
+repository-code: "https://github.com/innosat-mats/MATS-L1-processing"
+doi: 10.5281/zenodo.17398458
+license: MIT
+keywords:
+  - atmospheric science
+  - satellite data
+  - measurement techniques
+  - contributors
