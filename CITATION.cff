@@ -35,7 +35,8 @@ authors:
     given-names: Lukas
   - family-names: Stegman
     given-names: Jacek
-repository-code: "https://github.com/your-username/your-repo-name"
+repository-code: "https://github.com/innosat-mats/MATS-L1-processing"
+doi: 10.5281/zenodo.17398458
 license: MIT
 keywords:
   - atmospheric science
