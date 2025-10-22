@@ -5,6 +5,19 @@ MATS-L1-processing
 
 Code for calibration of MATS images
 
+Deployments status
+==================
+
+.. image:: https://zenodo.org/badge/176311526.svg
+   :target: https://zenodo.org/badge/latestdoi/176311526
+   :alt: DOI
+
+.. image:: https://github.com/innosat-mats/level1a/actions/workflows/ci.yml/badge.svg
+   :alt: CI
+
+.. image:: https://github.com/innosat-mats/level1a/actions/workflows/cd.yml/badge.svg
+   :alt: CD
+
 Description
 ===========
 
