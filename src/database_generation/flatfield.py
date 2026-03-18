@@ -117,7 +117,7 @@ def read_flatfield_w_baffle(calibration_file, channel):
 
     calibration_data=toml.load(calibration_file)
 
-    directory = calibration_data["flatfield"][
+    directory = calibration_data["primary_data"]["flatfield"][
         "baffle_flatfield"
     ]  #'/Users/lindamegner/MATS/retrieval/Calibration/Final_AIT_2021/LimbFlatfield/Flatfield20210421/PayloadImages/'
 
@@ -194,7 +194,7 @@ def read_second_flatfield_w_baffle(calibration_file, channel):
     # Reading in images without racfiles.
     calibration_data=toml.load(calibration_file)
     if channel != "IR3":
-        directory = calibration_data["flatfield"]["baffle_flatfield_secondIR124UV12"]
+        directory = calibration_data["primary_data"]["flatfield"]["baffle_flatfield"]
         if channel == "IR1":
             filelist = [
                 "1315139160698745856_1",

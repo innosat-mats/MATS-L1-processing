@@ -10,28 +10,31 @@ title = "Level 1 calibration files for testing this package"
     fittype = 'threshold2'
     remove_blanks = 'true'
 
-#Folders and parameters for performing calibration
-[darkcurrent]
-	folder =  "calibration_data/MATS_CCD_DC_calibration_FINAL/"
-    dc_2D_limit=0 #limit in counts above which 2D dark current subtraction is done
-    default_temp = 0
-[flatfield]
-	flatfieldfolder = "calibration_data/flatfields/"
+[primary_data.flatfield]
 	flatfieldfolder_cold_unprocessed = "calibration_data/20200330_flatfields_0C/"
 	baffle_flatfield = "calibration_data/Flatfield20210421/PayloadImages/"
+
+
+# Folders and parameters for performing calibration
+[darkcurrent]
+    folder = 'l1b_lambda/instrument_data/calibration_data/darkcurrent/'
+    dc_2D_limit = 0  # limit in counts above which 2D dark current subtraction is done
+    default_temp = -15
+[flatfield]
+    flatfieldfolder = 'l1b_lambda/instrument_data/calibration_data/flatfields/'
 [linearity]
-    linearity = "calibration_data/linearity/linearity.csv"
+	linearity = 'l1b_lambda/instrument_data/calibration_data/linearity/linearity.csv'
 [abs_rel_calib]
-    abs_rel_calib_constants= "calibration_data/abs_rel_calib/abs_rel_calib_constants.csv"
+    abs_rel_calib_constants = 'l1b_lambda/instrument_data/calibration_data/abs_rel_calib/abs_rel_calib_constants.csv'
 [pointing]
-    qprime = 'calibration_data/pointing/'
+    qprime = 'l1b_lambda/instrument_data/calibration_data/pointing/'
 [artifact]
-    nadir = 'calibration_data/artifact/mask_op.pkl'
-    blank = 'calibration_data/artifact/blank.pkl'
+    nadir = 'l1b_lambda/instrument_data/calibration_data/artifact/mask_op.pkl'
+    blank = 'l1b_lambda/instrument_data/calibration_data/artifact/blank.pkl'
 [hot_pixels]
     hot_pixels = 'calibration_data/hot_pixels/hpms.db'
     single_events = 'calibration_data/hot_pixels/SE.db'
 [photometer]
-    thermistor_table = 'calibration_data/photometers/AlbedoFM_Thermistors_Temp_vs_bits.mat'
-    FM1_spline = 'calibration_data/photometers/SignFM1_Rad_raw.pkl'
-    FM2_spline = 'calibration_data/photometers/SignFM2_Rad_raw.pkl'
+    thermistor_table = 'l1b_lambda/instrument_data/calibration_data/photometers/AlbedoFM_Thermistors_Temp_vs_bits.mat'
+    FM1_spline = 'l1b_lambda/instrument_data/calibration_data/photometers/SignFM1_Rad_raw.pkl'
+    FM2_spline = 'l1b_lambda/instrument_data/calibration_data/photometers/SignFM2_Rad_raw.pkl'
