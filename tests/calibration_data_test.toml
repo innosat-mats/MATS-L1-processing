@@ -11,8 +11,10 @@ title = "Level 1 calibration files for testing this package"
     remove_blanks = 'true'
 
 [primary_data.flatfield]
-	flatfieldfolder_cold_unprocessed = "calibration_data/20200330_flatfields_0C/"
+	flatfieldfolder_cold_unprocessed = "calibration_data/20200330_flatfields_0C/"  # used by read_flatfield_wo_baffle, which is not called by the current make_flatfield pipeline
 	baffle_flatfield = "calibration_data/Flatfield20210421/PayloadImages/"
+	baffle_flatfield_second = "calibration_data/FlatfieldsIR124UV_210908/PayloadImages/"
+	baffle_flatfield_secondIR3 = "calibration_data/BinningFlatfieldsIR3_210910/PayloadImages/"
 
 
 # Folders and parameters for performing calibration

@@ -24,8 +24,8 @@ def test_calibrate():
     with open('testdata/CCD_items_in_orbit_nightglow_example.pkl', 'rb') as f:
         CCDitems = pickle.load(f)
 
-    start_date  = np.datetime64(CCDitems[0]['EXP Date'],'s').astype(datetime)
-    end_date  = np.datetime64(CCDitems[-1]['EXP Date'],'s').astype(datetime)
+    start_date  = pd.Timestamp(CCDitems[0]['EXP Date']).floor('s').to_pydatetime().replace(tzinfo=None)
+    end_date  = pd.Timestamp(CCDitems[-1]['EXP Date']).floor('s').to_pydatetime().replace(tzinfo=None)
 
     instrument = Instrument("tests/calibration_data_test.toml",start_datetime=start_date,end_datetime=end_date)    
 
@@ -185,11 +185,11 @@ def test_calibration_output():
 
 def photometer_assertion(photometer_data,photometer_data_out,i,i_out,j):
     try: 
-        assert(np.any(photometer_data.iloc[j][i]== photometer_data_out.iloc[j][i_out]))
+        assert(np.any(photometer_data.iloc[j].iloc[i]== photometer_data_out.iloc[j].iloc[i_out]))
     except AssertionError:
-        if np.isnan(photometer_data_out.iloc[j][i_out]):
-            pass           
-        elif np.abs(((photometer_data.iloc[j][i] - photometer_data_out.iloc[j][i_out])/photometer_data_out.iloc[j][i_out]))<0.015:
+        if np.isnan(photometer_data_out.iloc[j].iloc[i_out]):
+            pass
+        elif np.abs(((photometer_data.iloc[j].iloc[i] - photometer_data_out.iloc[j].iloc[i_out])/photometer_data_out.iloc[j].iloc[i_out]))<0.015:
             pass
         elif (photometer_data.iloc[j].index[i] == 'pmTEXPMS'):
             pass
@@ -222,3 +222,6 @@ def test_photometer():
                 photometer_assertion(photometer_data,photometer_data_out,i+1,i,j)
             else:
                 photometer_assertion(photometer_data,photometer_data_out,i+2,i,j)
+
+
+test_photometer()
