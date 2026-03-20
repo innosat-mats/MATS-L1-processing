@@ -114,15 +114,23 @@ def scale_field(field, errorfield=None):
     
 
 def read_flatfield_w_baffle(calibration_file, channel):
+    # Reads the primary flatfield with baffle, taken on 2021-04-21 at OHB (files 1303*,
+    # baffle_flatfield = Flatfield20210421/PayloadImages/).
+    #
+    # Each channel has four images in its filelist:
+    #   index 0: dark frame before the illuminated image
+    #   index 1: illuminated (signal) frame
+    #   index 2: dark frame after the illuminated image
+    #   index 3: unused
+    # The dark background is estimated as the mean of the two bracketing dark frames (index 0 and 2),
+    # which is then subtracted from the illuminated frame to give the flatfield_w_baffle.
+    #
+    # All six limb channels (IR1-IR4, UV1, UV2) were functioning during this campaign.
+    # NADIR has no flatfield measurement and is not handled here.
 
     calibration_data=toml.load(calibration_file)
 
-    directory = calibration_data["flatfield"][
-        "baffle_flatfield"
-    ]  #'/Users/lindamegner/MATS/retrieval/Calibration/Final_AIT_2021/LimbFlatfield/Flatfield20210421/PayloadImages/'
-
-    # Read in flatfields taken in April 2021 with baffle Snippet frpm protocol1.txt below
-    # TODO: add filename to calibration_file or autoread
+    directory = calibration_data["primary_data"]["flatfield"]["baffle_flatfield"]
     if channel == "IR1":
         filelist = [
             "1303052462743530240_1",
@@ -188,13 +196,30 @@ def read_flatfield_w_baffle(calibration_file, channel):
     
 def read_second_flatfield_w_baffle(calibration_file, channel):
 
-    # Read in a flatfield taken in a different way to compare with and use for error estimation
-    # For IR1, IR2, IR4 and UV1 and UV2 a vertical flatfield is used.
-    #For IR3 another horizontal faltfield is used since the vertical was not good
+    # Read in a second flatfield taken independently from the primary one (read_flatfield_w_baffle)
+    # to compare with and use for error estimation.
+    #
+    # The primary flatfield (baffle_flatfield) was taken on 2021-04-21 at OHB (files 1303*).
+    #
+    # For IR1, IR2, IR4, UV1 and UV2, the second flatfield is a vertical flatfield taken on
+    # 2021-09-08 (files 1315*, baffle_flatfield_second = FlatfieldsIR124UV_210908).
+    # Note: IR3 was not functioning during this campaign and has no images here.
+    #
+    # For IR3, a horizontal flatfield taken on 2021-09-10 is used instead (files 1315316*,
+    # baffle_flatfield_secondIR3 = BinningFlatfieldsIR3_210910), because the vertical flatfield
+    # for IR3 was not good and IR3 was absent from the earlier campaign.
+    #
+    # The toml keys baffle_flatfield_second and baffle_flatfield_secondIR3 were added under
+    # [primary_data.flatfield] to keep the second-campaign directories separate from the primary
+    # baffle_flatfield directory. Previously the code incorrectly reused baffle_flatfield for the
+    # second set, and the IR3 branch referenced a wrong toml section (["flatfield"] instead of
+    # ["primary_data"]["flatfield"]).
+    #
+    
     # Reading in images without racfiles.
     calibration_data=toml.load(calibration_file)
     if channel != "IR3":
-        directory = calibration_data["flatfield"]["baffle_flatfield_secondIR124UV12"]
+        directory = calibration_data["primary_data"]["flatfield"]["baffle_flatfield_second"]
         if channel == "IR1":
             filelist = [
                 "1315139160698745856_1",
@@ -242,7 +267,7 @@ def read_second_flatfield_w_baffle(calibration_file, channel):
         # Reading in the horozizonal flatfield for IR3 since the vertical flatfield was not good.
         # Also reading from another directory since IR# was not functioning at the first test camapign
 
-        directory = calibration_data["flatfield"]["baffle_flatfield_secondIR3"]
+        directory = calibration_data["primary_data"]["flatfield"]["baffle_flatfield_secondIR3"]
 
         filelist = [
             "1315316689863510016_3",
@@ -268,9 +293,13 @@ def read_second_flatfield_w_baffle(calibration_file, channel):
 
 
 def read_flatfield_wo_baffle(calibration_file, channel, sigmode='HSM', reporterror=False):
+    # NOTE: this function is not called by make_flatfield or run_make_flatfield.py.
+    # The current flatfield pipeline uses only the baffle flatfields (read_flatfield_w_baffle
+    # and read_second_flatfield_w_baffle). This function and the corresponding toml key
+    # flatfieldfolder_cold_unprocessed are retained for potential future use.
     CCDunit=CCD(channel,calibration_file)
     calibration_data=toml.load(calibration_file)
-    flatfield_wo_baffle, flatfield_wo_baffle_err = read_flatfield(CCDunit, sigmode, calibration_data["flatfield"]["flatfieldfolder_cold_unprocessed"], reporterror=True)
+    flatfield_wo_baffle, flatfield_wo_baffle_err = read_flatfield(CCDunit, sigmode, calibration_data["primary_data"]["flatfield"]["flatfieldfolder_cold_unprocessed"], reporterror=True)
     if reporterror:
         return flatfield_wo_baffle, flatfield_wo_baffle_err
     else:

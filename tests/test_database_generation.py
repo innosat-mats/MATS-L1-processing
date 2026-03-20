@@ -19,7 +19,7 @@ def test_generate_flatfield():
 
 
 def test_get_linearity():
-    make_linearity([1], calibration_file, plot=False)
+    make_linearity(calibration_file)
 
 #def test_get_threshold():
 #    p=np.array([0.98,-0.0000047, 6916])

@@ -37,20 +37,20 @@ def calibrate_pm(df: DataFrame, photometer: Photometer):
 # =================================
 # Change raw temperature data to °C
 #   define pmBkg_Tpd, pmBkg_Tif, pmAband_Tpd, pmAband_Tif
-    pmBkg_Tpd = np.NaN * np.ones_like(PM1_Tpd_bit)   # Temperature of the Bkg photometer photodiode
-    pmBkg_Tif = np.NaN * np.ones_like(PM1_Tif_bit)   # Temperature of the Bkg photometer filter
-    pmAband_Tpd = np.NaN * np.ones_like(PM2_Tpd_bit) # Temperature of the A-band photometer photodiode
-    pmAband_Tif = np.NaN * np.ones_like(PM2_Tif_bit) # Temperature of the A-band photometer filter
+    pmBkg_Tpd = np.nan * np.ones_like(PM1_Tpd_bit)   # Temperature of the Bkg photometer photodiode
+    pmBkg_Tif = np.nan * np.ones_like(PM1_Tif_bit)   # Temperature of the Bkg photometer filter
+    pmAband_Tpd = np.nan * np.ones_like(PM2_Tpd_bit) # Temperature of the A-band photometer photodiode
+    pmAband_Tif = np.nan * np.ones_like(PM2_Tif_bit) # Temperature of the A-band photometer filter
 
     for ij in range(len(PM1_Tpd_bit)):
-        index11 =  np.where(bitar == round(PM1_Tpd_bit[ij],1))
-        pmBkg_Tpd[ij] = TempFM1pd_raw[index11]
-        index12 =  np.where(bitar == round(PM1_Tif_bit[ij],1))
-        pmBkg_Tif[ij] = TempFM1if_raw[index12]
-        index13 =  np.where(bitar == round(PM2_Tpd_bit[ij],1))
-        pmAband_Tpd[ij] = TempFM2pd_raw[index13]
-        index14 =  np.where(bitar == round(PM2_Tif_bit[ij],1))
-        pmAband_Tif[ij] = TempFM2if_raw[index14]
+        index11 =  np.where(bitar == round(PM1_Tpd_bit.iloc[ij],1))
+        pmBkg_Tpd[ij] = TempFM1pd_raw[index11][0]
+        index12 =  np.where(bitar == round(PM1_Tif_bit.iloc[ij],1))
+        pmBkg_Tif[ij] = TempFM1if_raw[index12][0]
+        index13 =  np.where(bitar == round(PM2_Tpd_bit.iloc[ij],1))
+        pmAband_Tpd[ij] = TempFM2pd_raw[index13][0]
+        index14 =  np.where(bitar == round(PM2_Tif_bit.iloc[ij],1))
+        pmAband_Tif[ij] = TempFM2if_raw[index14][0]
 
 # ==============================
 # Change raw photometer data to photons cm-2 str-1 s-1
@@ -60,8 +60,8 @@ def calibrate_pm(df: DataFrame, photometer: Photometer):
 
     for ik in range(len(PM1_Sig_bit)):
 
-        pmBkg_Sig[ik] = SignFM1_Rad_raw(pmBkg_Tpd[ik],PM1_Sig_bit[ik])
-        pmAband_Sig[ik] = SignFM2_Rad_raw(pmAband_Tpd[ik],PM2_Sig_bit[ik])
+        pmBkg_Sig[ik] = SignFM1_Rad_raw(pmBkg_Tpd[ik],PM1_Sig_bit.iloc[ik]).item()
+        pmAband_Sig[ik] = SignFM2_Rad_raw(pmAband_Tpd[ik],PM2_Sig_bit.iloc[ik]).item()
 
         # index21 = np.where(Temperatur == round(pmBkg_Tpd[ik],1)) #OMC 2023.04.04: Shoud interpolation be used insted of lookup table?
         # index22 = np.where(Temperatur == round(pmAband_Tpd[ik],1)) #OMC 2023.04.04: Shoud interpolation be used insted of lookup table?

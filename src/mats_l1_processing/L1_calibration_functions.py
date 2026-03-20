@@ -186,7 +186,7 @@ def inverse_model_real(CCDitem, value):
     return x_true, flag
 
 def get_linearized_image(CCDitem, image_bias_sub):
-    """ Linearizes the image. At the moment not done for NADIR.
+    """ Linearizes the image. Applied to all channels including NADIR (channel 7 data exists in linearity.csv).
 
     Args:
         CCDitem:  dictonary containing CCD image and information

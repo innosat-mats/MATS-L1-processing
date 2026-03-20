@@ -509,7 +509,7 @@ class CCD:
             se_mask (np.array): numpy array which marks any single event in image
         """
         df = self.single_event
-        date = np.datetime64(CCDitem['EXP Date'],'s').astype(datetime)
+        date = pd.Timestamp(CCDitem['EXP Date']).floor('s').to_pydatetime().replace(tzinfo=None)
         single_events = df[df.datetime==date]
         
         se_mask = np.zeros(CCDitem['IMAGE'].shape)
@@ -536,7 +536,7 @@ class CCD:
         """
 
         df = self.hot_pixels
-        date = np.datetime64(CCDitem['EXP Date'],'s').astype(datetime)
+        date = pd.Timestamp(CCDitem['EXP Date']).floor('s').to_pydatetime().replace(tzinfo=None)
         channelname = CCDitem["channel"]
         row = df[(df.datetime <= date) & (df.channel == channelname)]
         if len(row)>0:
