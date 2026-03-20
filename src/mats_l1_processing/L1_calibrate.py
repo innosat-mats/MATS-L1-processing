@@ -107,7 +107,7 @@ def L1_calibrate(CCDitem, instrument, force_table: bool = True, return_steps=Fal
     error_flags_dark,error_flags_flatfield],
     [1,1,2,1,2,2,3,2]).squeeze()
     
-    CCDitem["errors"] = image_calibrated
+    CCDitem["errors"] = errors
 
     if return_steps:
         return image_lsb, image_se_corrected, image_hot_pixel_corrected, image_bias_sub, image_linear, image_desmeared, image_dark_sub, image_flatfielded, image_flipped, image_calibrated, errors
