@@ -84,10 +84,11 @@ def handle_ccd_data(ccd_data: DataFrame, instrument: Instrument) -> DataFrame:
             "ImageCalibrated",
             "CalibrationErrors",
             "qprime",
+            "flipped",
         ],
     )
     l1b_data = concat([
-        ccd_data,
+        ccd_data.drop(columns=["flipped"]),
         calibrated,
     ], axis=1).set_index("EXPDate").sort_index()
     l1b_data.drop(["ImageData", "Errors", "Warnings"], axis=1, inplace=True)
