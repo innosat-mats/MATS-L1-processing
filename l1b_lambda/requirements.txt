@@ -50,7 +50,7 @@ fonttools==4.49.0
     # via matplotlib
 gitdb==4.0.11
     # via gitpython
-gitpython==3.1.42
+gitpython==3.1.47
     # via -r requirements.in
 importlib-metadata==7.0.1
     # via build
@@ -156,6 +156,7 @@ typing-extensions==4.10.0
     # via
     #   boto3-stubs
     #   cattrs
+    #   gitpython
     #   jsii
 tzdata==2024.1
     # via pandas
