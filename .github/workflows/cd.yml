@@ -14,10 +14,10 @@ jobs:
           submodules: "true"
           token: ${{ secrets.INSTRUMENT_DATA_TOKEN }}
 
-      - name: Setup node 18
+      - name: Setup node 22
         uses: actions/setup-node@v2
         with:
-          node-version: "18"
+          node-version: "22"
 
       - name: Install aws-cdk
         run: |
