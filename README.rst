@@ -69,6 +69,30 @@ to root folder. https://su.drive.sunet.se/s/6NiSdeYL7yPFdiX
 
 5. run pytest by typing "pytest" in root folder
 
+Replay Level1A files to Level1B queue
+==========
+
+Use ``scripts/enqueue_level1b_sqs.py`` to enqueue synthetic S3 notifications to the Level1B SQS queue.
+
+- Preview what would be sent:
+	``uv run --with boto3 scripts/enqueue_level1b_sqs.py --start 2023-02-01 --end 2023-05-10 --dry-run``
+- Preview using hourly partitions (YYYY/MM/DD/HH) under a base prefix:
+	``uv run --with boto3 scripts/enqueue_level1b_sqs.py --start 2023-02-01 --end 2023-02-02 --dry-run --profile mats --prefix CCD``
+- Send messages for CCD default ops bucket/queue:
+	``uv run --with boto3 scripts/enqueue_level1b_sqs.py --start 2023-02-01 --end 2023-05-10``
+- Use development queue defaults:
+	``uv run --with boto3 scripts/enqueue_level1b_sqs.py --start 2023-02-01 --end 2023-05-10 --development``
+- Use a specific AWS profile:
+	``uv run --with boto3 scripts/enqueue_level1b_sqs.py --start 2023-02-01 --end 2023-05-10 --dry-run --profile <your-profile>``
+
+Useful flags:
+
+- ``--data-source PM`` for photometer track
+- ``--bucket`` and ``--queue-name`` to override defaults
+- ``--prefix`` is the base path before partition folders ``YYYY/MM/DD/HH``
+- ``--match-mode`` can be ``partition`` (default) or ``last-modified``
+- ``--max-messages`` to cap replay size
+
 Detailed instruction for Windows
 ==========
 
