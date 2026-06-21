@@ -32,14 +32,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
 
-      - name: Setup python 3.9
+      - name: Setup python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: 3.11
 
       - name: Upgrade pip
         run: |
-          python3.9 -m pip install --upgrade pip
+          python3.11 -m pip install --upgrade pip
 
       - name: Install Lambda 1B dependencies
         run: |
