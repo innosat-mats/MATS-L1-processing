@@ -30,24 +30,48 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
 
-      - name: Setup python 3.11
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version-file: ".python-version"
 
-      - name: Upgrade pip
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Sync development environment
         run: |
-          python3.11 -m pip install --upgrade pip
+          uv sync --python "$(cat .python-version)" --group dev
 
       - name: Install Lambda 1B dependencies
         run: |
-          cd l1b_lambda
-          pip install -r requirements.txt
+          uv pip install -r l1b_lambda/requirements.txt
+
+      - name: Verify Lambda wheel-only compatibility (x86_64, cp311)
+        run: |
+          uv run python -m pip download \
+            --only-binary=:all: \
+            --platform manylinux2014_x86_64 \
+            --implementation cp \
+            --python-version 311 \
+            --abi cp311 \
+            -r l1b_lambda/level1b/requirements.txt \
+            -d /tmp/lambda-wheel-check
+
+      - name: Verify Lambda wheel-only compatibility (arm64, cp311)
+        run: |
+          uv run python -m pip download \
+            --only-binary=:all: \
+            --platform manylinux2014_aarch64 \
+            --implementation cp \
+            --python-version 311 \
+            --abi cp311 \
+            -r l1b_lambda/level1b/requirements.txt \
+            -d /tmp/lambda-wheel-check-arm64
 
       - name: Build and install MATS L1 Processing
         run: |
-          python -m build --wheel --no-isolation .
-          pip install ./dist/mats_l1_processing-0.0.0-py2.py3-none-any.whl
+          uv build
+          uv pip install ./dist/*.whl
 
       - name: Deploy stacks
         run: |
