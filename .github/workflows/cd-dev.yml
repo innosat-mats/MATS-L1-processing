@@ -35,14 +35,14 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version-file: ".python-version"
+          python-version: "3.11"
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v4
 
       - name: Sync development environment
         run: |
-          uv sync --python "$(cat .python-version)" --group dev
+          uv sync --python 3.11 --group dev
 
       - name: Install Lambda 1B dependencies
         run: |
