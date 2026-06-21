@@ -48,7 +48,7 @@ jobs:
 
       - name: Verify Lambda wheel-only compatibility (x86_64, cp311)
         run: |
-          uv run python -m pip download \
+          python -m pip download \
             --only-binary=:all: \
             --platform manylinux2014_x86_64 \
             --implementation cp \
@@ -59,7 +59,7 @@ jobs:
 
       - name: Verify Lambda wheel-only compatibility (arm64, cp311)
         run: |
-          uv run python -m pip download \
+          python -m pip download \
             --only-binary=:all: \
             --platform manylinux2014_aarch64 \
             --implementation cp \
