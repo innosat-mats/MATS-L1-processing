@@ -72,7 +72,7 @@ Detailed instruction for Windows
 7. Download test and calibraiton data from box and put into root folder of package
 
 8. Setup conda environment
-	$conda create -n python=3.9
+	$conda create -n python=3.11
 	$conda install pip
 
 9. Install package
