@@ -13,8 +13,12 @@ from stacks.level1b_stack import Level1BStack
 app = App()
 repo = git.Repo("..")
 
+dist_wheels = sorted((Path("..") / "dist").glob("mats_l1_processing-*.whl"))
+if not dist_wheels:
+    raise FileNotFoundError("No built mats_l1_processing wheel found in ../dist")
+
 copyfile(
-    Path("..") / "dist" / "mats_l1_processing-0.0.0-py2.py3-none-any.whl",
+    dist_wheels[-1],
     Path(".") / "mats_l1_processing-0.0.0-py2.py3-none-any.whl",
 )
 

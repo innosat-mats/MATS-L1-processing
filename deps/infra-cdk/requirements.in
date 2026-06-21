@@ -1,0 +1,10 @@
+# CDK and deployment dependencies for l1b_lambda.
+build
+aws-cdk-lib
+aws-cdk.aws-lambda-python-alpha
+boto3
+gitpython
+types-boto3
+types-botocore
+types-Pillow
+types-toml
