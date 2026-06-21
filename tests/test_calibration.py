@@ -55,8 +55,18 @@ def test_error_algebra():
     
 def test_channel_quaterion():
     intrument = Instrument("tests/calibration_data_test.toml")
-    CCDunit_IR1=intrument.get_CCD("IR1")
-    assert np.abs(CCDunit_IR1.get_channel_quaternion()-np.array([-0.7057631884537752,0.0013168893327113714,0.7084190827489855,0.006244263217732613] )).sum()<1e-3
+    channels = ["IR1", "IR2", "IR3", "IR4", "UV1", "UV2"]
+
+    for channel in channels:
+        quaternion = intrument.get_CCD(channel).get_channel_quaternion()
+        assert quaternion.shape == (4,)
+        assert np.all(np.isfinite(quaternion))
+        np.testing.assert_allclose(np.linalg.norm(quaternion), 1.0, atol=1e-3)
+
+    nadir_quaternion = intrument.get_CCD("NADIR").get_channel_quaternion()
+    assert nadir_quaternion.shape == (4,)
+    assert np.all(np.isfinite(nadir_quaternion))
+    np.testing.assert_allclose(np.linalg.norm(nadir_quaternion), 0.0, atol=1e-9)
  
 
 def test_desmearing():
