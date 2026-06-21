@@ -16,7 +16,7 @@ jobs:
         - name: Install General Dependencies
           run: |
             python3.11 -m pip install --upgrade pip
-            pip install tox
+            pip install "tox<4.27"
         
         - name: Install Lambda 1B dependencies
           run: |
