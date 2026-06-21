@@ -48,7 +48,7 @@ jobs:
 
       - name: Build and install MATS L1 Processing
         run: |
-          python -m build .
+          python -m build --wheel --no-isolation .
           pip install ./dist/mats_l1_processing-0.0.0-py2.py3-none-any.whl
 
       - name: Deploy stacks
