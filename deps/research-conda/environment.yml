@@ -15,4 +15,3 @@ dependencies:
   - pip:
       - toml>=0.10,<0.11
       - pwlf>=2.2,<3
-      - -e .
