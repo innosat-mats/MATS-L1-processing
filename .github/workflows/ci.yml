@@ -11,34 +11,54 @@ jobs:
         - name: Setup Python
           uses: actions/setup-python@v5
           with:
-            python-version: 3.11
+            python-version-file: ".python-version"
 
-        - name: Install General Dependencies
+        - name: Setup uv
+          uses: astral-sh/setup-uv@v4
+
+        - name: Sync development environment
           run: |
-            python3.11 -m pip install --upgrade pip
-            pip install "tox<4.27"
+            uv sync --python "$(cat .python-version)" --group dev
         
         - name: Install Lambda 1B dependencies
           run: |
-            cd l1b_lambda
-            pip install -r requirements.txt
+            uv pip install -r l1b_lambda/requirements.txt
+
+        - name: Verify Lambda wheel-only compatibility (x86_64, cp311)
+          run: |
+            python -m pip download \
+              --only-binary=:all: \
+              --platform manylinux2014_x86_64 \
+              --implementation cp \
+              --python-version 311 \
+              --abi cp311 \
+              -r l1b_lambda/level1b/requirements.txt \
+              -d /tmp/lambda-wheel-check
+
+        - name: Verify Lambda wheel-only compatibility (arm64, cp311)
+          run: |
+            python -m pip download \
+              --only-binary=:all: \
+              --platform manylinux2014_aarch64 \
+              --implementation cp \
+              --python-version 311 \
+              --abi cp311 \
+              -r l1b_lambda/level1b/requirements.txt \
+              -d /tmp/lambda-wheel-check-arm64
 
         - name: Build and install MATS L1 Processing
           run: |
-            python -m build --wheel --no-isolation .
-            pip install ./dist/mats_l1_processing-0.0.0-py2.py3-none-any.whl
+            uv build
+            uv pip install ./dist/*.whl
         
         - name: Run unit tests
           run: |
-            cd l1b_lambda
-            tox -e py311
+            uv run tox -c l1b_lambda/tox.ini -e py311
 
         - name: Run lint checks
           run: |
-            cd l1b_lambda
-            tox -e lint
+            uv run tox -c l1b_lambda/tox.ini -e lint
 
         - name: Run type checks
           run: |
-            cd l1b_lambda
-            tox -e mypy
+            uv run tox -c l1b_lambda/tox.ini -e ty

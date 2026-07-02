@@ -28,11 +28,36 @@ generating the database to use in this calibration (database_generation).
 Installation
 ==========
 
-1. Install pip in your current envirnoment (e.g. $conda install pip )
+1. Choose one of the supported environment workflows:
 
-2. run $pip install . or $pip install -e . if you want to do development for the package
+	a. ``uv`` workflow (recommended for CI and pip users):
 
-3.
+		- Create environment and install development dependencies:
+		  ``uv sync --group dev``
+		- Install package in editable mode:
+		  ``uv pip install -e .``
+
+	b. Conda workflow (recommended for research users):
+
+		- Create and activate environment:
+		  ``conda env create -f deps/research-conda/environment.yml``
+		  ``conda activate mats-l1-processing``
+		- Keep editable install from the repo root:
+		  ``pip install -e .``
+
+2. Dependency tracks are split to reduce deployment drift:
+
+	- ``deps/research-conda/environment.yml``: researcher environment
+	- ``deps/infra-cdk/requirements.in``: CDK/deployment tooling
+	- ``deps/lambda-runtime/requirements.in``: Lambda runtime dependencies
+	- ``deps/shared/base.in``: shared baseline constraints
+
+3. Maintain lock files for Lambda and infrastructure with ``uv``:
+
+	- ``uv pip compile -p 3.11 -o l1b_lambda/requirements.txt l1b_lambda/requirements.in``
+	- ``uv pip compile -p 3.11 -o l1b_lambda/level1b/requirements.txt l1b_lambda/level1b/requirements.in``
+
+4.
 	a.  Add calibration_data and testdata folder from box (Calibration/CalibrationSoftware/softwaredata) 
 to root folder. https://su.drive.sunet.se/s/6NiSdeYL7yPFdiX
 
@@ -42,16 +67,46 @@ to root folder. https://su.drive.sunet.se/s/6NiSdeYL7yPFdiX
 		`git submodule update --recursive --remote`
 
 
-4. run pytest by typing "pytest" in root folder
+5. run pytest by typing "pytest" in root folder
+
+Replay Level1A files to Level1B queue
+==========
+
+Use ``scripts/enqueue_level1b_sqs.py`` to enqueue synthetic S3 notifications to the Level1B SQS queue.
+
+- Preview what would be sent:
+	``uv run --with boto3 scripts/enqueue_level1b_sqs.py --start 2023-02-01 --end 2023-05-10 --dry-run``
+- Preview using hourly partitions (YYYY/MM/DD/HH) under a base prefix:
+	``uv run --with boto3 scripts/enqueue_level1b_sqs.py --start 2023-02-01 --end 2023-02-02 --dry-run --profile mats --prefix CCD``
+- Send messages for CCD default ops bucket/queue:
+	``uv run --with boto3 scripts/enqueue_level1b_sqs.py --start 2023-02-01 --end 2023-05-10``
+- Use development queue defaults:
+	``uv run --with boto3 scripts/enqueue_level1b_sqs.py --start 2023-02-01 --end 2023-05-10 --development``
+- Use a specific AWS profile:
+	``uv run --with boto3 scripts/enqueue_level1b_sqs.py --start 2023-02-01 --end 2023-05-10 --dry-run --profile <your-profile>``
+
+Useful flags:
+
+- ``--data-source PM`` for photometer track
+- ``--bucket`` and ``--queue-name`` to override defaults
+- ``--prefix`` is the base path before partition folders ``YYYY/MM/DD/HH``
+- ``--match-mode`` can be ``partition`` (default) or ``last-modified``
+- ``--max-messages`` to cap replay size
 
 Detailed instruction for Windows
 ==========
 
-1. Download Anaconda navigator and update to newest version
+1. Install one of the supported environment managers:
 
-2. Download git for windows
+	a. Recommended for researchers (Conda):
+		Install Anaconda or Miniconda.
 
-3. Make user account on github.com
+	b. Recommended for CI-style local workflows (uv):
+		Install ``uv`` from https://docs.astral.sh/uv/getting-started/installation/
+
+2. Download Git for Windows.
+
+3. Make a user account on GitHub.
 
 4. Make ssh-key in git-bash:
 	$ssh-keygen -t ed25519 -C "user@mail.com"
@@ -69,21 +124,23 @@ Detailed instruction for Windows
 6. Clone repository
 	$git clone git@github.com:innosat-mats/MATS-L1-processing.git
 
-7. Download test and calibraiton data from box and put into root folder of package
+7. Download test and calibration data from box and put into root folder of package.
 
-8. Setup conda environment
-	$conda create -n python=3.11
-	$conda install pip
+8. Set up environment (choose one):
+
+	a. Conda workflow:
+		$conda env create -f deps/research-conda/environment.yml
+		$conda activate mats-l1-processing
+
+	b. uv workflow:
+		$uv sync --python 3.11 --group dev
 
 9. Install package
 	$pip install -e .
+	or
+	$uv pip install -e .
 
 10. Test module
 	$pytest
-
-
-Note
-====
-
-This project has been set up using PyScaffold 4.0.1. For details and usage
-information on PyScaffold see https://pyscaffold.org/.
+	or
+	$uv run pytest

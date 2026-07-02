@@ -1,17 +1,1 @@
-build
-aws-cdk-lib
-aws-cdk.aws-lambda-python-alpha
-pandas
-pyarrow
-joblib
-scipy
-toml
-numpy
-matplotlib
-tqdm
-boto3
-gitpython
-types-boto3
-types-botocore
-types-Pillow
-types-toml
+-r ../deps/infra-cdk/requirements.in
